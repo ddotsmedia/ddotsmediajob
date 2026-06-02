@@ -54,8 +54,10 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
+          command_timeout: 20m
           script: |
+            set -e
             cd /var/www/ddotsmediajobs
             git fetch --all --prune
             git reset --hard origin/main
-            BRANCH=main bash deploy/deploy.sh
+            bash deploy/deploy-prod.sh
