@@ -1,0 +1,42 @@
+{
+  "name": "@ddots/api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./client": "./src/client.ts",
+    "./lib/typesense": "./src/lib/typesense.ts",
+    "./lib/anthropic": "./src/lib/anthropic.ts",
+    "./lib/queue": "./src/lib/queue.ts",
+    "./lib/email": "./src/lib/email.ts",
+    "./lib/r2": "./src/lib/r2.ts"
+  },
+  "scripts": {
+    "worker": "tsx watch src/worker.ts",
+    "search:sync": "tsx src/scripts/sync-search.ts",
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.1",
+    "@aws-sdk/client-s3": "^3.717.0",
+    "@aws-sdk/s3-request-presigner": "^3.717.0",
+    "@ddots/auth": "workspace:*",
+    "@ddots/db": "workspace:*",
+    "@ddots/email": "workspace:*",
+    "@ddots/shared": "workspace:*",
+    "@trpc/server": "^11.0.0-rc.660",
+    "bullmq": "^5.34.5",
+    "ioredis": "^5.4.2",
+    "resend": "^4.0.1",
+    "superjson": "^2.2.2",
+    "typesense": "^1.8.2",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}

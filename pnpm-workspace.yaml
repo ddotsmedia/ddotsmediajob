@@ -1,0 +1,5 @@
+packages:
+  - "apps/web"
+  - "packages/*"
+  # apps/mobile is a standalone Expo project — installed & run separately
+  # (see apps/mobile/README.md) so its React Native deps don't affect the web build.

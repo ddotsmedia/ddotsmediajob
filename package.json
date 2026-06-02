@@ -1,0 +1,30 @@
+{
+  "name": "ddotsmediajobs",
+  "private": true,
+  "version": "1.0.0",
+  "description": "DdotsMediaJobs — UAE job portal (ddotsmediajobs.com)",
+  "packageManager": "pnpm@10.32.1",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "start": "turbo run start",
+    "lint": "turbo run lint --filter=@ddots/web",
+    "typecheck": "turbo run typecheck",
+    "db:generate": "pnpm --filter @ddots/db db:generate",
+    "db:migrate": "pnpm --filter @ddots/db db:migrate",
+    "db:push": "pnpm --filter @ddots/db db:push",
+    "db:seed": "pnpm --filter @ddots/db db:seed",
+    "db:studio": "pnpm --filter @ddots/db db:studio",
+    "worker": "pnpm --filter @ddots/api worker",
+    "search:sync": "pnpm --filter @ddots/api search:sync",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json}\""
+  },
+  "devDependencies": {
+    "prettier": "^3.4.2",
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.3"
+  }
+}

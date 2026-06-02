@@ -1,0 +1,470 @@
+import { relations, sql } from 'drizzle-orm';
+import {
+  boolean,
+  integer,
+  jsonb,
+  pgEnum,
+  pgTable,
+  primaryKey,
+  real,
+  text,
+  timestamp,
+  uniqueIndex,
+  index,
+  uuid,
+  varchar,
+} from 'drizzle-orm/pg-core';
+import {
+  JOB_TYPES,
+  VISA_STATUS,
+  EXPERIENCE_LEVELS,
+  SALARY_PERIODS,
+  JOB_STATUS,
+  APPLICATION_STATUS,
+  USER_ROLES,
+  ALERT_FREQUENCY,
+} from '@ddots/shared/constants';
+
+// ─── Enums ───────────────────────────────────────────────
+export const userRoleEnum = pgEnum('user_role', USER_ROLES);
+export const jobTypeEnum = pgEnum('job_type', JOB_TYPES);
+export const visaStatusEnum = pgEnum('visa_status', VISA_STATUS);
+export const experienceLevelEnum = pgEnum('experience_level', EXPERIENCE_LEVELS);
+export const salaryPeriodEnum = pgEnum('salary_period', SALARY_PERIODS);
+export const jobStatusEnum = pgEnum('job_status', JOB_STATUS);
+export const applicationStatusEnum = pgEnum('application_status', APPLICATION_STATUS);
+export const alertFrequencyEnum = pgEnum('alert_frequency', ALERT_FREQUENCY);
+export const companySizeEnum = pgEnum('company_size', ['1-10', '11-50', '51-200', '201-500', '500-1000', '1000-plus']);
+
+const timestamps = {
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true })
+    .defaultNow()
+    .notNull()
+    .$onUpdate(() => new Date()),
+};
+
+// ─── Users (Auth.js core) ────────────────────────────────
+export const users = pgTable(
+  'users',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    name: varchar('name', { length: 160 }),
+    email: varchar('email', { length: 255 }).notNull(),
+    emailVerified: timestamp('email_verified', { withTimezone: true }),
+    image: text('image'),
+    passwordHash: text('password_hash'),
+    role: userRoleEnum('role').default('jobseeker').notNull(),
+    isBanned: boolean('is_banned').default(false).notNull(),
+    plan: varchar('plan', { length: 20 }).default('free').notNull(), // free | premium
+    premiumUntil: timestamp('premium_until', { withTimezone: true }),
+    lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex('users_email_idx').on(t.email)],
+);
+
+// Auth.js Drizzle adapter tables
+export const accounts = pgTable(
+  'accounts',
+  {
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    type: varchar('type', { length: 32 }).notNull(),
+    provider: varchar('provider', { length: 64 }).notNull(),
+    providerAccountId: varchar('provider_account_id', { length: 255 }).notNull(),
+    refresh_token: text('refresh_token'),
+    access_token: text('access_token'),
+    expires_at: integer('expires_at'),
+    token_type: varchar('token_type', { length: 32 }),
+    scope: text('scope'),
+    id_token: text('id_token'),
+    session_state: text('session_state'),
+  },
+  (t) => [primaryKey({ columns: [t.provider, t.providerAccountId] })],
+);
+
+export const sessions = pgTable('sessions', {
+  sessionToken: text('session_token').primaryKey(),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  expires: timestamp('expires', { withTimezone: true }).notNull(),
+});
+
+export const verificationTokens = pgTable(
+  'verification_tokens',
+  {
+    identifier: text('identifier').notNull(),
+    token: text('token').notNull(),
+    expires: timestamp('expires', { withTimezone: true }).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.identifier, t.token] })],
+);
+
+// ─── Companies ───────────────────────────────────────────
+export const companies = pgTable(
+  'companies',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    slug: varchar('slug', { length: 120 }).notNull(),
+    name: varchar('name', { length: 160 }).notNull(),
+    logoUrl: text('logo_url'),
+    coverUrl: text('cover_url'),
+    website: text('website'),
+    about: text('about'),
+    industry: varchar('industry', { length: 120 }),
+    emirateSlug: varchar('emirate_slug', { length: 40 }),
+    size: companySizeEnum('size'),
+    isVerified: boolean('is_verified').default(false).notNull(),
+    ratingAvg: real('rating_avg').default(0).notNull(),
+    ratingCount: integer('rating_count').default(0).notNull(),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex('companies_slug_idx').on(t.slug)],
+);
+
+// ─── Employer profiles ───────────────────────────────────
+export const employerProfiles = pgTable('employer_profiles', {
+  userId: uuid('user_id')
+    .primaryKey()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  companyId: uuid('company_id').references(() => companies.id, { onDelete: 'set null' }),
+  companyName: varchar('company_name', { length: 160 }).notNull(),
+  position: varchar('position', { length: 120 }),
+  phone: varchar('phone', { length: 30 }),
+  website: text('website'),
+  about: text('about'),
+  industry: varchar('industry', { length: 120 }),
+  emirateSlug: varchar('emirate_slug', { length: 40 }),
+  logoUrl: text('logo_url'),
+  size: companySizeEnum('size'),
+  isVerified: boolean('is_verified').default(false).notNull(),
+  verificationStatus: varchar('verification_status', { length: 20 }).default('unverified').notNull(), // unverified | pending | verified | rejected
+  verificationDocUrl: text('verification_doc_url'),
+  verificationNote: text('verification_note'),
+  tradeLicenseNo: varchar('trade_license_no', { length: 80 }),
+  ...timestamps,
+});
+
+// ─── Jobseeker profiles ──────────────────────────────────
+export const jobseekerProfiles = pgTable('jobseeker_profiles', {
+  userId: uuid('user_id')
+    .primaryKey()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  headline: varchar('headline', { length: 160 }),
+  bio: text('bio'),
+  phone: varchar('phone', { length: 30 }),
+  emirateSlug: varchar('emirate_slug', { length: 40 }),
+  categorySlug: varchar('category_slug', { length: 40 }),
+  experienceLevel: experienceLevelEnum('experience_level'),
+  visaStatus: visaStatusEnum('visa_status'),
+  skills: jsonb('skills').$type<string[]>().default([]).notNull(),
+  resumeUrl: text('resume_url'),
+  resumeData: jsonb('resume_data').$type<Record<string, unknown>>(),
+  openToWork: boolean('open_to_work').default(true).notNull(),
+  profileViews: integer('profile_views').default(0).notNull(),
+  ...timestamps,
+});
+
+// ─── Jobs ────────────────────────────────────────────────
+export const jobs = pgTable(
+  'jobs',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    slug: varchar('slug', { length: 120 }).notNull(),
+    employerId: uuid('employer_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    companyId: uuid('company_id').references(() => companies.id, { onDelete: 'set null' }),
+    title: varchar('title', { length: 160 }).notNull(),
+    description: text('description').notNull(),
+    categorySlug: varchar('category_slug', { length: 40 }).notNull(),
+    emirateSlug: varchar('emirate_slug', { length: 40 }).notNull(),
+    location: varchar('location', { length: 160 }),
+    jobType: jobTypeEnum('job_type').notNull(),
+    experienceLevel: experienceLevelEnum('experience_level').notNull(),
+    visaStatus: visaStatusEnum('visa_status').default('any').notNull(),
+    salaryMin: integer('salary_min'),
+    salaryMax: integer('salary_max'),
+    salaryPeriod: salaryPeriodEnum('salary_period').default('monthly').notNull(),
+    salaryHidden: boolean('salary_hidden').default(false).notNull(),
+    isRemote: boolean('is_remote').default(false).notNull(),
+    isUrgent: boolean('is_urgent').default(false).notNull(),
+    isFresher: boolean('is_fresher').default(false).notNull(),
+    isFeatured: boolean('is_featured').default(false).notNull(),
+    skills: jsonb('skills').$type<string[]>().default([]).notNull(),
+    benefits: jsonb('benefits').$type<string[]>().default([]).notNull(),
+    applyEmail: varchar('apply_email', { length: 255 }),
+    applyUrl: text('apply_url'),
+    status: jobStatusEnum('status').default('pending').notNull(),
+    rejectionReason: text('rejection_reason'),
+    viewCount: integer('view_count').default(0).notNull(),
+    applicationCount: integer('application_count').default(0).notNull(),
+    aiGenerated: boolean('ai_generated').default(false).notNull(),
+    publishedAt: timestamp('published_at', { withTimezone: true }),
+    expiresAt: timestamp('expires_at', { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex('jobs_slug_idx').on(t.slug),
+    index('jobs_status_idx').on(t.status),
+    index('jobs_category_idx').on(t.categorySlug),
+    index('jobs_emirate_idx').on(t.emirateSlug),
+    index('jobs_employer_idx').on(t.employerId),
+    index('jobs_published_idx').on(t.publishedAt),
+  ],
+);
+
+// ─── Applications ────────────────────────────────────────
+export const applications = pgTable(
+  'applications',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    jobId: uuid('job_id')
+      .notNull()
+      .references(() => jobs.id, { onDelete: 'cascade' }),
+    seekerId: uuid('seeker_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    status: applicationStatusEnum('status').default('applied').notNull(),
+    coverLetter: text('cover_letter'),
+    resumeUrl: text('resume_url'),
+    phone: varchar('phone', { length: 30 }),
+    matchScore: integer('match_score'),
+    employerNote: text('employer_note'),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex('applications_job_seeker_idx').on(t.jobId, t.seekerId),
+    index('applications_seeker_idx').on(t.seekerId),
+    index('applications_status_idx').on(t.status),
+  ],
+);
+
+// ─── Saved jobs ──────────────────────────────────────────
+export const savedJobs = pgTable(
+  'saved_jobs',
+  {
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    jobId: uuid('job_id')
+      .notNull()
+      .references(() => jobs.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.jobId] })],
+);
+
+// ─── Job alerts ──────────────────────────────────────────
+export const jobAlerts = pgTable(
+  'job_alerts',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    keywords: varchar('keywords', { length: 160 }),
+    categorySlug: varchar('category_slug', { length: 40 }),
+    emirateSlug: varchar('emirate_slug', { length: 40 }),
+    jobType: jobTypeEnum('job_type'),
+    frequency: alertFrequencyEnum('frequency').default('daily').notNull(),
+    channel: varchar('channel', { length: 16 }).default('email').notNull(), // email | whatsapp
+    whatsappNumber: varchar('whatsapp_number', { length: 30 }),
+    isActive: boolean('is_active').default(true).notNull(),
+    lastSentAt: timestamp('last_sent_at', { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [index('job_alerts_user_idx').on(t.userId), index('job_alerts_active_idx').on(t.isActive)],
+);
+
+// ─── Blog ────────────────────────────────────────────────
+export const blogPosts = pgTable(
+  'blog_posts',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    slug: varchar('slug', { length: 160 }).notNull(),
+    title: varchar('title', { length: 200 }).notNull(),
+    excerpt: text('excerpt'),
+    content: text('content').notNull(),
+    coverUrl: text('cover_url'),
+    authorId: uuid('author_id').references(() => users.id, { onDelete: 'set null' }),
+    category: varchar('category', { length: 60 }),
+    tags: jsonb('tags').$type<string[]>().default([]).notNull(),
+    isPublished: boolean('is_published').default(false).notNull(),
+    publishedAt: timestamp('published_at', { withTimezone: true }),
+    viewCount: integer('view_count').default(0).notNull(),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex('blog_slug_idx').on(t.slug), index('blog_published_idx').on(t.isPublished)],
+);
+
+// ─── WhatsApp groups ─────────────────────────────────────
+export const whatsappGroups = pgTable(
+  'whatsapp_groups',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    name: varchar('name', { length: 160 }).notNull(),
+    inviteUrl: text('invite_url').notNull(),
+    categorySlug: varchar('category_slug', { length: 40 }),
+    emirateSlug: varchar('emirate_slug', { length: 40 }),
+    description: text('description'),
+    memberCount: integer('member_count').default(0).notNull(),
+    isActive: boolean('is_active').default(true).notNull(),
+    ...timestamps,
+  },
+  (t) => [index('wa_category_idx').on(t.categorySlug), index('wa_emirate_idx').on(t.emirateSlug)],
+);
+
+// ─── Salary reports (crowd-sourced) ──────────────────────
+export const salaryReports = pgTable(
+  'salary_reports',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+    jobTitle: varchar('job_title', { length: 160 }).notNull(),
+    categorySlug: varchar('category_slug', { length: 40 }),
+    emirateSlug: varchar('emirate_slug', { length: 40 }),
+    experienceLevel: experienceLevelEnum('experience_level'),
+    salaryMonthly: integer('salary_monthly').notNull(),
+    yearsExperience: integer('years_experience'),
+    companyName: varchar('company_name', { length: 160 }),
+    isVerified: boolean('is_verified').default(false).notNull(),
+    ...timestamps,
+  },
+  (t) => [index('salary_category_idx').on(t.categorySlug), index('salary_title_idx').on(t.jobTitle)],
+);
+
+// ─── Community posts ─────────────────────────────────────
+export const communityPosts = pgTable(
+  'community_posts',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    authorId: uuid('author_id').references(() => users.id, { onDelete: 'set null' }),
+    parentId: uuid('parent_id'),
+    title: varchar('title', { length: 200 }),
+    body: text('body').notNull(),
+    categorySlug: varchar('category_slug', { length: 40 }),
+    tags: jsonb('tags').$type<string[]>().default([]).notNull(),
+    upvotes: integer('upvotes').default(0).notNull(),
+    replyCount: integer('reply_count').default(0).notNull(),
+    isAnswer: boolean('is_answer').default(false).notNull(),
+    isPinned: boolean('is_pinned').default(false).notNull(),
+    ...timestamps,
+  },
+  (t) => [index('community_parent_idx').on(t.parentId), index('community_category_idx').on(t.categorySlug)],
+);
+
+// ─── Notifications ───────────────────────────────────────
+export const notifications = pgTable(
+  'notifications',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    type: varchar('type', { length: 60 }).notNull(),
+    title: varchar('title', { length: 200 }).notNull(),
+    body: text('body'),
+    link: text('link'),
+    isRead: boolean('is_read').default(false).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index('notifications_user_idx').on(t.userId), index('notifications_read_idx').on(t.isRead)],
+);
+
+// ─── Audit logs ──────────────────────────────────────────
+export const auditLogs = pgTable(
+  'audit_logs',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    actorId: uuid('actor_id').references(() => users.id, { onDelete: 'set null' }),
+    action: varchar('action', { length: 80 }).notNull(),
+    entity: varchar('entity', { length: 60 }),
+    entityId: varchar('entity_id', { length: 80 }),
+    meta: jsonb('meta').$type<Record<string, unknown>>(),
+    ip: varchar('ip', { length: 64 }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index('audit_actor_idx').on(t.actorId), index('audit_action_idx').on(t.action)],
+);
+
+// ─── Site settings (key/value) ───────────────────────────
+export const siteSettings = pgTable('site_settings', {
+  key: varchar('key', { length: 80 }).primaryKey(),
+  value: jsonb('value').$type<unknown>(),
+  updatedAt: timestamp('updated_at', { withTimezone: true })
+    .defaultNow()
+    .notNull()
+    .$onUpdate(() => new Date()),
+});
+
+// ─── Company reviews ─────────────────────────────────────
+export const companyReviews = pgTable(
+  'company_reviews',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    companyId: uuid('company_id')
+      .notNull()
+      .references(() => companies.id, { onDelete: 'cascade' }),
+    authorId: uuid('author_id').references(() => users.id, { onDelete: 'set null' }),
+    rating: integer('rating').notNull(),
+    title: varchar('title', { length: 200 }),
+    pros: text('pros'),
+    cons: text('cons'),
+    jobTitle: varchar('job_title', { length: 160 }),
+    isApproved: boolean('is_approved').default(false).notNull(),
+    ...timestamps,
+  },
+  (t) => [index('reviews_company_idx').on(t.companyId)],
+);
+
+// ─── Relations ───────────────────────────────────────────
+export const usersRelations = relations(users, ({ one, many }) => ({
+  jobseekerProfile: one(jobseekerProfiles, {
+    fields: [users.id],
+    references: [jobseekerProfiles.userId],
+  }),
+  employerProfile: one(employerProfiles, {
+    fields: [users.id],
+    references: [employerProfiles.userId],
+  }),
+  jobs: many(jobs),
+  applications: many(applications),
+  savedJobs: many(savedJobs),
+  jobAlerts: many(jobAlerts),
+  notifications: many(notifications),
+}));
+
+export const companiesRelations = relations(companies, ({ many }) => ({
+  jobs: many(jobs),
+  reviews: many(companyReviews),
+}));
+
+export const jobsRelations = relations(jobs, ({ one, many }) => ({
+  employer: one(users, { fields: [jobs.employerId], references: [users.id] }),
+  company: one(companies, { fields: [jobs.companyId], references: [companies.id] }),
+  applications: many(applications),
+  savedBy: many(savedJobs),
+}));
+
+export const applicationsRelations = relations(applications, ({ one }) => ({
+  job: one(jobs, { fields: [applications.jobId], references: [jobs.id] }),
+  seeker: one(users, { fields: [applications.seekerId], references: [users.id] }),
+}));
+
+export const savedJobsRelations = relations(savedJobs, ({ one }) => ({
+  job: one(jobs, { fields: [savedJobs.jobId], references: [jobs.id] }),
+  user: one(users, { fields: [savedJobs.userId], references: [users.id] }),
+}));
+
+export const jobAlertsRelations = relations(jobAlerts, ({ one }) => ({
+  user: one(users, { fields: [jobAlerts.userId], references: [users.id] }),
+}));
+
+export const companyReviewsRelations = relations(companyReviews, ({ one }) => ({
+  company: one(companies, { fields: [companyReviews.companyId], references: [companies.id] }),
+  author: one(users, { fields: [companyReviews.authorId], references: [users.id] }),
+}));

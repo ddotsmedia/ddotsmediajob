@@ -1,0 +1,23 @@
+{
+  "name": "@ddots/email",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "email:dev": "email dev --dir src",
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@react-email/components": "^0.0.32",
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.2",
+    "react-email": "^3.0.6",
+    "typescript": "^5.7.3"
+  }
+}

@@ -1,0 +1,37 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# build
+.next/
+out/
+dist/
+.turbo/
+*.tsbuildinfo
+
+# env
+.env
+.env.local
+.env.*.local
+.env.production.template
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+logs/
+
+# os
+.DS_Store
+Thumbs.db
+
+# editor
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# misc
+coverage/
+.vercel
+.cache/
+drizzle/meta/_journal.json.bak

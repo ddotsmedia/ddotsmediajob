@@ -1,0 +1,56 @@
+export * from './constants';
+export * from './validators';
+
+/** Build a URL-friendly slug from arbitrary text. */
+export function slugify(input: string): string {
+  return input
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 80);
+}
+
+/** Format an AED salary range for display. */
+export function formatSalary(
+  min?: number | null,
+  max?: number | null,
+  period: string = 'monthly',
+  hidden = false,
+): string {
+  if (hidden || (min == null && max == null)) return 'Salary not disclosed';
+  const fmt = (n: number) => `AED ${n.toLocaleString('en-AE')}`;
+  const suffix = period === 'monthly' ? '/mo' : period === 'yearly' ? '/yr' : period === 'daily' ? '/day' : '/hr';
+  if (min != null && max != null) return `${fmt(min)} – ${fmt(max)}${suffix}`;
+  if (min != null) return `From ${fmt(min)}${suffix}`;
+  return `Up to ${fmt(max as number)}${suffix}`;
+}
+
+/** Relative "time ago" string. */
+export function timeAgo(date: Date | string): string {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  const secs = Math.floor((Date.now() - d.getTime()) / 1000);
+  const units: [number, string][] = [
+    [60, 'second'],
+    [60, 'minute'],
+    [24, 'hour'],
+    [7, 'day'],
+    [4.34, 'week'],
+    [12, 'month'],
+    [Number.POSITIVE_INFINITY, 'year'],
+  ];
+  let value = secs;
+  let unit = 'second';
+  for (const [step, name] of units) {
+    if (Math.abs(value) < step) {
+      unit = name;
+      break;
+    }
+    value = Math.floor(value / step);
+    unit = name;
+  }
+  if (value < 1) return 'just now';
+  return `${value} ${unit}${value === 1 ? '' : 's'} ago`;
+}

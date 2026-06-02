@@ -1,0 +1,102 @@
+@import 'tailwindcss';
+@plugin '@tailwindcss/typography';
+
+@theme {
+  /* ─── Brand teal (logo background) ───────────────────── */
+  --color-teal-50: #eef8f7;
+  --color-teal-100: #d2eeec;
+  --color-teal-200: #a6dddb;
+  --color-teal-300: #6fc4c2;
+  --color-teal-400: #43aaa9;
+  --color-teal-500: #339a9b;
+  --color-teal-600: #2a7d7e;
+  --color-teal-700: #266465;
+  --color-teal-800: #245253;
+  --color-teal-900: #204445;
+
+  /* ─── Dark "ink" = deep teal (hero / footer / dark UI) ── */
+  --color-navy-50: #eef6f5;
+  --color-navy-100: #dcebea;
+  --color-navy-200: #bcd9d7;
+  --color-navy-300: #8fbcbb;
+  --color-navy-700: #2c5150;
+  --color-navy-800: #173f3e;
+  --color-navy-900: #0d2e2d;
+  --color-navy-950: #061a19;
+
+  /* ─── Warm accents (the four dots) ───────────────────── */
+  --color-accent-50: #fdf1ea;
+  --color-accent-100: #fad9c6;
+  --color-accent-200: #f6b993;
+  --color-accent-300: #f19a63;
+  --color-accent-400: #ee8949;
+  --color-accent-500: #ea7a3c; /* orange dot */
+  --color-accent-600: #d4612a;
+  --color-accent-700: #b04c20;
+
+  --color-gold-400: #f6d75a;
+  --color-gold-500: #f4cf3f; /* yellow dots */
+  --color-gold-600: #e3b91f;
+  --color-lime-400: #c3d76e;
+  --color-lime-500: #b3cb4f; /* lime dot */
+  --color-lime-600: #97ad3a;
+
+  --color-brand: #339a9b;
+  --color-brand-foreground: #ffffff;
+
+  --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-sora), var(--font-dm-sans), sans-serif;
+
+  --radius: 0.75rem;
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #0d2e2d;
+  --muted: #eef6f5;
+  --muted-foreground: #5b7a79;
+  --border: #d8e7e5;
+  --ring: #339a9b;
+}
+
+* {
+  border-color: var(--border);
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, .font-display {
+  font-family: var(--font-display);
+}
+
+@keyframes shimmer {
+  100% { transform: translateX(100%); }
+}
+@keyframes gridfade {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+.animate-float { animation: float 6s ease-in-out infinite; }
+
+/* Brand 4-dot 2x2 logo mark — colours sampled from the DDOTS Media logo */
+.logo-dots {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 3px;
+  width: 22px;
+  height: 22px;
+}
+.logo-dots span { border-radius: 9999px; }
+.logo-dots span:nth-child(1) { background-color: #f4d23f; } /* yellow  */
+.logo-dots span:nth-child(2) { background-color: #ea7a3c; } /* orange  */
+.logo-dots span:nth-child(3) { background-color: #b3cb4f; } /* lime    */
+.logo-dots span:nth-child(4) { background-color: #f3ca3d; } /* gold    */

@@ -1,0 +1,24 @@
+{
+  "expo": {
+    "name": "DdotsMediaJobs",
+    "slug": "ddotsmediajobs",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "ddotsmediajobs",
+    "userInterfaceStyle": "light",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "backgroundColor": "#339a9b",
+      "resizeMode": "contain"
+    },
+    "primaryColor": "#339a9b",
+    "ios": { "supportsTablet": true, "bundleIdentifier": "com.ddotsmedia.jobs" },
+    "android": {
+      "package": "com.ddotsmedia.jobs",
+      "adaptiveIcon": { "backgroundColor": "#339a9b" }
+    },
+    "extra": {
+      "apiUrl": "https://ddotsmediajobs.com"
+    }
+  }
+}
