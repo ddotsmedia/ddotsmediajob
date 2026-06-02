@@ -49,9 +49,15 @@ if ! command -v pm2 >/dev/null; then
   warn "pm2 missing — installing globally"
   npm install -g pm2
 fi
-NODE_MAJOR=$(node -v | sed 's/^v\([0-9]*\).*/\1/')
-[ "${NODE_MAJOR:-0}" -ge 22 ] 2>/dev/null || die "Node 22+ required (have $(node -v))"
-ok "node $(node -v), pnpm $(pnpm -v 2>/dev/null || echo '?')"
+# Read Node major via a script FILE (never a bare flag): some hosts wrap node as
+# `exec node -- "$@"`, which turns `node -v`/`-p`/`-e` into a bogus module path.
+echo 'process.stdout.write(String(process.versions.node.split(".")[0]))' > /tmp/ddots-node-check.js
+NODE_MAJOR=$(node /tmp/ddots-node-check.js 2>/dev/null || echo '')
+rm -f /tmp/ddots-node-check.js
+if [ -n "$NODE_MAJOR" ] && [ "$NODE_MAJOR" -lt 22 ] 2>/dev/null; then
+  die "Node 22+ required (found major: $NODE_MAJOR)"
+fi
+ok "tooling ready (node major ${NODE_MAJOR:-unknown}, pnpm $(pnpm -v 2>/dev/null || echo '?'))"
 
 # ─── 2. Get the code ────────────────────────────────────────────────
 if [ ! -d "$APP_DIR/.git" ]; then

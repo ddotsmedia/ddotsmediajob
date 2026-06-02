@@ -52,21 +52,28 @@ apt-get update -y
 apt-get install -y curl git build-essential ca-certificates lsb-release
 
 # ─── Node 22 + pnpm ─────────────────────────────────────────────────
+# Read Node major via a script FILE (never a bare flag): some hosts wrap node as
+# `exec node -- "$@"`, which turns `node -v`/`-p`/`-e` into a bogus module path.
+node_major() {
+  command -v node >/dev/null || { echo 0; return; }
+  echo 'process.stdout.write(String(process.versions.node.split(".")[0]))' > /tmp/ddots-node-check.js
+  node /tmp/ddots-node-check.js 2>/dev/null || echo 0
+  rm -f /tmp/ddots-node-check.js
+}
 NODE_OK=0
-if have node; then
-  NODE_MAJOR=$(node -v 2>/dev/null | sed 's/^v\([0-9]*\).*/\1/')
-  [ "${NODE_MAJOR:-0}" -ge 22 ] 2>/dev/null && NODE_OK=1
-fi
+NODE_MAJOR=$(node_major)
+[ "${NODE_MAJOR:-0}" -ge 22 ] 2>/dev/null && NODE_OK=1
 if [ "$NODE_OK" = "1" ]; then
-  skip "Node $(node -v) already present"
+  skip "Node (major ${NODE_MAJOR}) already present"
 else
   log "Installing Node.js 22…"
   curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
   apt-get install -y nodejs
+  NODE_MAJOR=$(node_major)
 fi
 corepack enable >/dev/null 2>&1 || true
 corepack prepare pnpm@latest --activate >/dev/null 2>&1 || true
-ok "node $(node -v), pnpm $(pnpm -v 2>/dev/null || echo '?')"
+ok "node (major ${NODE_MAJOR:-?}), pnpm $(pnpm -v 2>/dev/null || echo '?')"
 
 # ─── PostgreSQL 16 ──────────────────────────────────────────────────
 if port_busy "$PG_PORT" && ! svc_active postgresql; then
