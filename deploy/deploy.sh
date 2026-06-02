@@ -49,9 +49,9 @@ if ! command -v pm2 >/dev/null; then
   warn "pm2 missing — installing globally"
   npm install -g pm2
 fi
-NODE_MAJOR=$(node -p 'process.versions.node.split(".")[0]')
-[ "$NODE_MAJOR" -ge 22 ] || die "Node 22+ required (have $(node -v))"
-ok "node $(node -v), pnpm $(pnpm -v)"
+NODE_MAJOR=$(node -v | sed 's/^v\([0-9]*\).*/\1/')
+[ "${NODE_MAJOR:-0}" -ge 22 ] 2>/dev/null || die "Node 22+ required (have $(node -v))"
+ok "node $(node -v), pnpm $(pnpm -v 2>/dev/null || echo '?')"
 
 # ─── 2. Get the code ────────────────────────────────────────────────
 if [ ! -d "$APP_DIR/.git" ]; then

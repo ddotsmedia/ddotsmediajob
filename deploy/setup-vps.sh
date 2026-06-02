@@ -54,8 +54,8 @@ apt-get install -y curl git build-essential ca-certificates lsb-release
 # ─── Node 22 + pnpm ─────────────────────────────────────────────────
 NODE_OK=0
 if have node; then
-  NODE_MAJOR=$(node -p 'process.versions.node.split(".")[0]' 2>/dev/null || echo 0)
-  [ "$NODE_MAJOR" -ge 22 ] && NODE_OK=1
+  NODE_MAJOR=$(node -v 2>/dev/null | sed 's/^v\([0-9]*\).*/\1/')
+  [ "${NODE_MAJOR:-0}" -ge 22 ] 2>/dev/null && NODE_OK=1
 fi
 if [ "$NODE_OK" = "1" ]; then
   skip "Node $(node -v) already present"
