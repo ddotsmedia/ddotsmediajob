@@ -54,12 +54,16 @@ export function SiteHeader() {
           ) : (
             <>
               <Button asChild variant="ghost" size="sm">
-                <Link href="/login">Sign in</Link>
-              </Button>
-              <Button asChild size="sm">
                 <Link href="/employer/post">
                   <Briefcase /> Post a Job
                 </Link>
+              </Button>
+              <span className="mx-1 h-5 w-px bg-navy-100" />
+              <Button asChild variant="outline" size="sm">
+                <Link href="/login">Log in</Link>
+              </Button>
+              <Button asChild variant="accent" size="sm">
+                <Link href="/register">Sign up</Link>
               </Button>
             </>
           )}
@@ -94,11 +98,14 @@ export function SiteHeader() {
               </>
             ) : (
               <>
-                <Button asChild variant="outline" size="sm">
-                  <Link href="/login">Sign in</Link>
+                <Button asChild variant="accent" size="sm">
+                  <Link href="/register" onClick={() => setOpen(false)}>Sign up</Link>
                 </Button>
-                <Button asChild size="sm">
-                  <Link href="/employer/post">Post a Job</Link>
+                <Button asChild variant="outline" size="sm">
+                  <Link href="/login" onClick={() => setOpen(false)}>Log in</Link>
+                </Button>
+                <Button asChild variant="ghost" size="sm">
+                  <Link href="/employer/post" onClick={() => setOpen(false)}>Post a Job</Link>
                 </Button>
               </>
             )}
