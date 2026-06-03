@@ -2,23 +2,30 @@ import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { jobs, jobseekerProfiles, eq } from '@ddots/db';
 import { formatSalary } from '@ddots/shared';
-import { router, protectedProcedure, employerProcedure } from '../trpc';
+import { router, protectedProcedure, employerProcedure, adminProcedure } from '../trpc';
 import {
   chat,
   structured,
   MATCH_TOOL,
   CV_TOOL,
+  JOB_DRAFT_TOOL,
   MODEL_FAST,
   MODEL_SMART,
   type ChatMessage,
   type MatchResult,
   type CvResult,
+  type JobDraft,
 } from '../lib/anthropic';
 import { applications, sql } from '@ddots/db';
 
 const messages = z
   .array(z.object({ role: z.enum(['user', 'assistant']), content: z.string().max(8000) }))
   .max(40);
+
+const JOB_EXTRACT_SYSTEM =
+  'You are a UAE recruitment expert. Extract or generate structured job data and call the job_draft function. ' +
+  'Know all 7 UAE emirates, common job categories, WPS salary norms (monthly AED), visa terminology, free zones, and standard UAE benefits. ' +
+  'Map locations to the correct emirate slug. If salary is unstated use 0. Set each confidence field to high/medium/low based on how certain the value is from the source.';
 
 async function loadProfileText(db: any, userId: string): Promise<string> {
   const p = await db.query.jobseekerProfiles.findFirst({ where: eq(jobseekerProfiles.userId, userId) });
@@ -147,6 +154,52 @@ export const aiRouter = router({
     );
     return { reply, model: complex ? 'sonnet' : 'haiku' };
   }),
+
+  // ── Admin job ingestion (Haiku) ──────────────────────────────────
+  extractJobFromText: adminProcedure
+    .input(z.object({ text: z.string().min(15).max(15000) }))
+    .mutation(async ({ input }): Promise<JobDraft> =>
+      structured<JobDraft>(JOB_EXTRACT_SYSTEM, `Extract a job posting from this text:\n\n${input.text}`, JOB_DRAFT_TOOL, {
+        model: MODEL_FAST,
+        maxTokens: 1800,
+      }),
+    ),
+
+  extractJobFromUrl: adminProcedure
+    .input(z.object({ url: z.string().url() }))
+    .mutation(async ({ input }): Promise<JobDraft> => {
+      let text = '';
+      try {
+        const res = await fetch(input.url, { headers: { 'user-agent': 'Mozilla/5.0 (compatible; DdotsBot/1.0)' }, signal: AbortSignal.timeout(12000) });
+        const html = await res.text();
+        text = html
+          .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+          .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/&[a-z]+;/gi, ' ')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 9000);
+      } catch {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Could not fetch that URL.' });
+      }
+      if (text.length < 40) throw new TRPCError({ code: 'BAD_REQUEST', message: 'No readable job content found at that URL.' });
+      return structured<JobDraft>(JOB_EXTRACT_SYSTEM, `Extract the job posting from this scraped page text:\n\n${text}`, JOB_DRAFT_TOOL, {
+        model: MODEL_FAST,
+        maxTokens: 1800,
+      });
+    }),
+
+  generateFromQuickForm: adminProcedure
+    .input(z.object({ title: z.string().min(2).max(160), emirate: z.string().max(40), whatsapp: z.string().max(30).optional() }))
+    .mutation(async ({ input }): Promise<JobDraft> =>
+      structured<JobDraft>(
+        JOB_EXTRACT_SYSTEM,
+        `Generate a complete, realistic UAE job posting for: title="${input.title}", emirate="${input.emirate}". ${input.whatsapp ? `Contact WhatsApp: ${input.whatsapp}.` : ''} Invent sensible responsibilities, requirements, benefits and a realistic AED salary range. Set confidence to "medium" since this is generated, not extracted.`,
+        JOB_DRAFT_TOOL,
+        { model: MODEL_FAST, maxTokens: 1800 },
+      ),
+    ),
 
   /** Cover letter generator (Haiku). */
   coverLetter: protectedProcedure

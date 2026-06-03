@@ -218,3 +218,74 @@ export type CvResult = {
   improvements: string[];
   formattingIssues: string[];
 };
+
+// ─── Admin job extraction (paste / url / quick-form) ────────────────
+export type JobDraft = {
+  title: string;
+  company: string;
+  emirate: string;
+  area: string;
+  categorySlug: string;
+  jobType: string;
+  salaryMin: number;
+  salaryMax: number;
+  visaProvided: boolean;
+  accommodation: boolean;
+  freshersWelcome: boolean;
+  remote: boolean;
+  urgent: boolean;
+  freeZone: boolean;
+  description: string;
+  requirements: string;
+  benefits: string[];
+  tags: string[];
+  contactWhatsapp: string;
+  deadline: string;
+  vacancies: number;
+  confidence: Record<string, 'high' | 'medium' | 'low'>;
+};
+
+export const JOB_DRAFT_TOOL: Anthropic.Tool = {
+  name: 'job_draft',
+  description: 'Extract or generate a structured UAE job posting.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      title: { type: 'string' },
+      company: { type: 'string', description: 'Hiring company name, or empty string if unknown' },
+      emirate: { type: 'string', enum: ['dubai', 'abu-dhabi', 'sharjah', 'ajman', 'ras-al-khaimah', 'fujairah', 'umm-al-quwain'] },
+      area: { type: 'string' },
+      categorySlug: { type: 'string', enum: ['it', 'healthcare', 'finance', 'sales', 'construction', 'hospitality', 'driving', 'education', 'admin', 'manufacturing', 'security', 'beauty'] },
+      jobType: { type: 'string', enum: ['full-time', 'part-time', 'contract', 'temporary', 'internship', 'freelance'] },
+      salaryMin: { type: 'integer', description: 'Monthly AED minimum (0 if unstated)' },
+      salaryMax: { type: 'integer', description: 'Monthly AED maximum (0 if unstated)' },
+      visaProvided: { type: 'boolean' },
+      accommodation: { type: 'boolean' },
+      freshersWelcome: { type: 'boolean' },
+      remote: { type: 'boolean' },
+      urgent: { type: 'boolean' },
+      freeZone: { type: 'boolean' },
+      description: { type: 'string', description: 'Full job description in clean markdown' },
+      requirements: { type: 'string' },
+      benefits: { type: 'array', items: { type: 'string' } },
+      tags: { type: 'array', items: { type: 'string' } },
+      contactWhatsapp: { type: 'string', description: 'Contact WhatsApp/phone if present, else empty' },
+      deadline: { type: 'string', description: 'ISO date or empty string' },
+      vacancies: { type: 'integer' },
+      confidence: {
+        type: 'object',
+        description: 'Per-field confidence',
+        properties: {
+          title: { type: 'string', enum: ['high', 'medium', 'low'] },
+          company: { type: 'string', enum: ['high', 'medium', 'low'] },
+          emirate: { type: 'string', enum: ['high', 'medium', 'low'] },
+          category: { type: 'string', enum: ['high', 'medium', 'low'] },
+          salary: { type: 'string', enum: ['high', 'medium', 'low'] },
+          jobType: { type: 'string', enum: ['high', 'medium', 'low'] },
+        },
+        required: ['title', 'company', 'emirate', 'category', 'salary', 'jobType'],
+      },
+    },
+    required: ['title', 'company', 'emirate', 'area', 'categorySlug', 'jobType', 'salaryMin', 'salaryMax', 'visaProvided', 'accommodation', 'freshersWelcome', 'remote', 'urgent', 'freeZone', 'description', 'requirements', 'benefits', 'tags', 'contactWhatsapp', 'deadline', 'vacancies', 'confidence'],
+  },
+};

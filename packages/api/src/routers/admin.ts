@@ -20,9 +20,90 @@ import {
   sql,
   ilike,
 } from '@ddots/db';
+import { slugify } from '@ddots/shared';
 import { router, adminProcedure } from '../trpc';
-import { audit, notify } from '../lib/helpers';
+import { audit, notify, uniqueJobSlug } from '../lib/helpers';
 import { enqueueEmail, enqueueSearchSync } from '../lib/queue';
+
+/** Shared shape for admin-created jobs (from any of the 6 ingestion methods). */
+const adminJobInput = z.object({
+  title: z.string().min(3).max(160),
+  description: z.string().min(10),
+  companyName: z.string().max(160).optional(),
+  categorySlug: z.string().max(40).default('admin'),
+  emirateSlug: z.string().max(40).default('dubai'),
+  location: z.string().max(160).optional(),
+  jobType: z.string().max(20).default('full-time'),
+  experienceLevel: z.string().max(20).default('1-3-years'),
+  salaryMin: z.number().int().nonnegative().nullable().optional(),
+  salaryMax: z.number().int().nonnegative().nullable().optional(),
+  salaryHidden: z.boolean().default(false),
+  visaProvided: z.boolean().default(false),
+  accommodationProvided: z.boolean().default(false),
+  isRemote: z.boolean().default(false),
+  isUrgent: z.boolean().default(false),
+  isFresher: z.boolean().default(false),
+  isFeatured: z.boolean().default(false),
+  freeZone: z.boolean().default(false),
+  isAnonymous: z.boolean().default(false),
+  skills: z.array(z.string().max(50)).max(40).default([]),
+  benefits: z.array(z.string().max(80)).max(20).default([]),
+  contactWhatsapp: z.string().max(30).optional(),
+  applyEmail: z.string().email().optional(),
+  status: z.enum(['active', 'draft']).default('active'),
+  source: z.enum(['paste', 'whatsapp', 'csv', 'quick', 'url', 'manual']).default('manual'),
+});
+type AdminJobInput = z.infer<typeof adminJobInput>;
+
+async function findOrCreateCompanyId(db: typeof import('@ddots/db').db, name?: string): Promise<string | null> {
+  if (!name || !name.trim()) return null;
+  const slug = slugify(name);
+  const existing = await db.query.companies.findFirst({ where: eq(companies.slug, slug) });
+  if (existing) return existing.id;
+  const [co] = await db.insert(companies).values({ slug, name: name.trim(), industry: 'General' }).returning();
+  return co?.id ?? null;
+}
+
+async function insertAdminJob(db: typeof import('@ddots/db').db, actorId: string, input: AdminJobInput) {
+  const companyId = await findOrCreateCompanyId(db, input.companyName);
+  const slug = await uniqueJobSlug(input.title);
+  const active = input.status === 'active';
+  const [job] = await db
+    .insert(jobs)
+    .values({
+      slug,
+      employerId: actorId,
+      companyId,
+      title: input.title,
+      description: input.description,
+      categorySlug: input.categorySlug,
+      emirateSlug: input.emirateSlug,
+      location: input.location ?? null,
+      jobType: input.jobType as never,
+      experienceLevel: input.experienceLevel as never,
+      salaryMin: input.salaryMin ?? null,
+      salaryMax: input.salaryMax ?? null,
+      salaryHidden: input.salaryHidden,
+      visaProvided: input.visaProvided,
+      accommodationProvided: input.accommodationProvided,
+      isRemote: input.isRemote,
+      isUrgent: input.isUrgent,
+      isFresher: input.isFresher,
+      isFeatured: input.isFeatured,
+      freeZone: input.freeZone,
+      isAnonymous: input.isAnonymous,
+      skills: input.skills,
+      benefits: input.benefits,
+      contactWhatsapp: input.contactWhatsapp ?? null,
+      applyEmail: input.applyEmail ?? null,
+      status: active ? 'active' : 'draft',
+      source: input.source,
+      aiGenerated: input.source !== 'manual',
+      publishedAt: active ? new Date() : null,
+    })
+    .returning();
+  return job;
+}
 
 export const adminRouter = router({
   /** Dashboard stats. */
@@ -348,4 +429,52 @@ export const adminRouter = router({
       await audit(ctx.session.user.id, 'admin.setting', 'setting', input.key);
       return { ok: true };
     }),
+
+  // ── Add Job (6 ingestion methods → one create) ─────────
+  createJob: adminProcedure.input(adminJobInput).mutation(async ({ ctx, input }) => {
+    const job = await insertAdminJob(ctx.db, ctx.session.user.id, input);
+    if (job!.status === 'active') await enqueueSearchSync({ type: 'upsert', jobId: job!.id });
+    await audit(ctx.session.user.id, 'admin.job.create', 'job', job!.id, { source: input.source, status: input.status });
+    return { id: job!.id, slug: job!.slug, status: job!.status };
+  }),
+
+  bulkCreateJobs: adminProcedure
+    .input(z.object({ jobs: z.array(adminJobInput).min(1).max(200) }))
+    .mutation(async ({ ctx, input }) => {
+      let created = 0;
+      const errors: { row: number; error: string }[] = [];
+      for (let i = 0; i < input.jobs.length; i++) {
+        try {
+          const job = await insertAdminJob(ctx.db, ctx.session.user.id, input.jobs[i]!);
+          if (job!.status === 'active') await enqueueSearchSync({ type: 'upsert', jobId: job!.id });
+          created++;
+        } catch (e) {
+          errors.push({ row: i + 1, error: e instanceof Error ? e.message : 'failed' });
+        }
+      }
+      await audit(ctx.session.user.id, 'admin.job.bulk', 'job', undefined, { created, failed: errors.length });
+      return { created, errors };
+    }),
+
+  draftJobs: adminProcedure.input(z.object({ source: z.string().optional() }).optional()).query(async ({ ctx, input }) => {
+    const conds = [eq(jobs.status, 'draft')];
+    if (input?.source) conds.push(eq(jobs.source, input.source));
+    return ctx.db.query.jobs.findMany({
+      where: and(...conds),
+      orderBy: [desc(jobs.createdAt)],
+      limit: 100,
+      with: { company: { columns: { name: true } } },
+    });
+  }),
+
+  publishDraft: adminProcedure.input(z.object({ id: z.string().uuid() })).mutation(async ({ ctx, input }) => {
+    const [job] = await ctx.db
+      .update(jobs)
+      .set({ status: 'active', publishedAt: new Date() })
+      .where(eq(jobs.id, input.id))
+      .returning();
+    await enqueueSearchSync({ type: 'upsert', jobId: input.id });
+    await audit(ctx.session.user.id, 'admin.job.publish', 'job', input.id);
+    return { ok: true, slug: job!.slug };
+  }),
 });

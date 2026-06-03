@@ -204,6 +204,8 @@ export const jobs = pgTable(
     applyEmail: varchar('apply_email', { length: 255 }),
     applyUrl: text('apply_url'),
     status: jobStatusEnum('status').default('pending').notNull(),
+    source: varchar('source', { length: 16 }).default('manual').notNull(), // paste|whatsapp|csv|quick|url|manual
+    contactWhatsapp: varchar('contact_whatsapp', { length: 30 }),
     rejectionReason: text('rejection_reason'),
     viewCount: integer('view_count').default(0).notNull(),
     applicationCount: integer('application_count').default(0).notNull(),
