@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { ArrowRight, Building2, Users, BriefcaseBusiness, CheckCircle2 } from 'lucide-react';
-import { CATEGORIES, EMIRATES } from '@ddots/shared';
+import { CATEGORIES, EMIRATES, SITE } from '@ddots/shared';
 import { getApi } from '@/trpc/server';
 import { JobSearchBar } from '@/components/job-search-bar';
 import { JobCard } from '@/components/job-card';
@@ -20,8 +20,32 @@ export default async function HomePage() {
     api.jobs.featured({ limit: 6 }).catch(() => [] as Awaited<ReturnType<typeof api.jobs.featured>>),
   ]);
 
+  const jsonLd = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Organization',
+      name: SITE.name,
+      url: SITE.url,
+      logo: `${SITE.url}/logo.png`,
+      description: SITE.description,
+      sameAs: ['https://www.facebook.com/ddotsmediajobs', 'https://www.linkedin.com/company/ddotsmedia'],
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      name: SITE.name,
+      url: SITE.url,
+      potentialAction: {
+        '@type': 'SearchAction',
+        target: { '@type': 'EntryPoint', urlTemplate: `${SITE.url}/jobs?q={search_term_string}` },
+        'query-input': 'required name=search_term_string',
+      },
+    },
+  ];
+
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       {/* ── Hero ───────────────────────────────────────── */}
       <section className="relative overflow-hidden bg-navy-900 text-white">
         <GridPattern />

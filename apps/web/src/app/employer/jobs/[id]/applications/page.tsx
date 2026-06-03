@@ -3,10 +3,11 @@
 import { use, useState } from 'react';
 import Link from 'next/link';
 import { toast } from 'sonner';
-import { Loader2, ArrowLeft, Mail, Download, GripVertical } from 'lucide-react';
+import { Loader2, ArrowLeft, Mail, Download, GripVertical, Sparkles } from 'lucide-react';
 import { timeAgo } from '@ddots/shared';
 import { trpc } from '@/trpc/react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/primitives';
 import { downloadCsv } from '@/lib/csv';
 import { cn } from '@/lib/utils';
 
@@ -34,6 +35,14 @@ export default function PipelinePage({ params }: { params: Promise<{ id: string 
       toast.error(e.message);
     },
     onSettled: () => utils.applications.forJob.invalidate({ jobId: id }),
+  });
+
+  const rank = trpc.ai.rankCandidates.useMutation({
+    onSuccess: (r) => {
+      utils.applications.forJob.invalidate({ jobId: id });
+      toast.success(`Ranked ${r.ranked.length} candidates`);
+    },
+    onError: (e) => toast.error(e.message),
   });
 
   if (apps.isLoading) return <Loader2 className="animate-spin text-teal-500" />;
@@ -68,7 +77,12 @@ export default function PipelinePage({ params }: { params: Promise<{ id: string 
           <h1 className="font-display text-2xl font-bold text-navy-900">Applications Pipeline</h1>
           <p className="text-navy-700/60">{apps.data?.length ?? 0} candidates · drag cards between stages.</p>
         </div>
-        <Button variant="outline" size="sm" onClick={exportCsv}><Download /> Export CSV</Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => rank.mutate({ jobId: id })} disabled={rank.isPending}>
+            {rank.isPending ? <Loader2 className="animate-spin" /> : <Sparkles />} AI Rank
+          </Button>
+          <Button variant="outline" size="sm" onClick={exportCsv}><Download /> Export CSV</Button>
+        </div>
       </div>
 
       <div className="mt-6 flex gap-4 overflow-x-auto pb-4">
@@ -96,11 +110,17 @@ export default function PipelinePage({ params }: { params: Promise<{ id: string 
                   <div className="flex items-start gap-1.5">
                     <GripVertical className="mt-0.5 h-4 w-4 shrink-0 text-navy-300" />
                     <div className="min-w-0">
-                      <p className="truncate font-semibold text-navy-900">{app.seeker?.name ?? 'Candidate'}</p>
-                      <a href={`mailto:${app.seeker?.email}`} className="flex items-center gap-1 text-xs text-teal-600 hover:underline" onClick={(e) => e.stopPropagation()}>
-                        <Mail className="h-3 w-3" /> <span className="truncate">{app.seeker?.email}</span>
+                      <div className="flex items-center gap-1.5">
+                        <p className="truncate font-semibold text-navy-900">{app.seeker?.name ?? app.guestName ?? 'Candidate'}</p>
+                        {typeof app.matchScore === 'number' && (
+                          <Badge variant={app.matchScore >= 70 ? 'success' : app.matchScore >= 40 ? 'gold' : 'muted'}>{app.matchScore}</Badge>
+                        )}
+                      </div>
+                      <a href={`mailto:${app.seeker?.email ?? app.guestEmail}`} className="flex items-center gap-1 text-xs text-teal-600 hover:underline" onClick={(e) => e.stopPropagation()}>
+                        <Mail className="h-3 w-3" /> <span className="truncate">{app.seeker?.email ?? app.guestEmail}</span>
                       </a>
-                      <p className="mt-1 text-xs text-navy-700/50">{timeAgo(app.createdAt)}</p>
+                      <p className="mt-1 text-xs text-navy-700/50">{timeAgo(app.createdAt)}{app.seekerId ? '' : ' · guest'}</p>
+                      {app.aiSummary && <p className="mt-1 line-clamp-2 text-xs font-medium text-teal-700">{app.aiSummary}</p>}
                       {app.coverLetter && <p className="mt-1 line-clamp-2 text-xs text-navy-700/70">{app.coverLetter}</p>}
                     </div>
                   </div>

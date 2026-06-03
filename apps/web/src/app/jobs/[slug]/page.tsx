@@ -13,6 +13,7 @@ import {
 import { getApi } from '@/trpc/server';
 import { JobActions } from '@/components/job-actions';
 import { MatchScoreCard } from '@/components/ai/match-score';
+import { SkillGap } from '@/components/ai/skill-gap';
 import { Badge, Card, CardContent } from '@/components/ui/primitives';
 
 type Props = { params: Promise<{ slug: string }> };
@@ -197,6 +198,8 @@ export default async function JobDetailPage({ params }: Props) {
             </Card>
 
             <MatchScoreCard jobId={job.id} />
+
+            <SkillGap jobId={job.id} />
 
             {job.company && (
               <Card>

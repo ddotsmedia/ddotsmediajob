@@ -225,19 +225,22 @@ export const applications = pgTable(
     jobId: uuid('job_id')
       .notNull()
       .references(() => jobs.id, { onDelete: 'cascade' }),
-    seekerId: uuid('seeker_id')
-      .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
+    seekerId: uuid('seeker_id').references(() => users.id, { onDelete: 'cascade' }),
+    guestName: varchar('guest_name', { length: 160 }),
+    guestEmail: varchar('guest_email', { length: 255 }),
+    guestPhone: varchar('guest_phone', { length: 30 }),
     status: applicationStatusEnum('status').default('applied').notNull(),
     coverLetter: text('cover_letter'),
     resumeUrl: text('resume_url'),
     phone: varchar('phone', { length: 30 }),
     matchScore: integer('match_score'),
+    aiSummary: text('ai_summary'),
+    fraudScore: integer('fraud_score'),
     employerNote: text('employer_note'),
     ...timestamps,
   },
   (t) => [
-    uniqueIndex('applications_job_seeker_idx').on(t.jobId, t.seekerId),
+    index('applications_job_idx').on(t.jobId),
     index('applications_seeker_idx').on(t.seekerId),
     index('applications_status_idx').on(t.status),
   ],

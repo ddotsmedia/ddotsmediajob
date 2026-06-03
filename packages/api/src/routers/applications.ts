@@ -2,9 +2,10 @@ import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { jobs, applications, eq, and, desc, sql } from '@ddots/db';
 import { applySchema, updateApplicationStatusSchema } from '@ddots/shared';
-import { router, protectedProcedure, employerProcedure } from '../trpc';
+import { router, publicProcedure, protectedProcedure, employerProcedure } from '../trpc';
 import { audit, notify } from '../lib/helpers';
 import { enqueueEmail } from '../lib/queue';
+import { presignUpload } from '../lib/r2';
 
 export const applicationsRouter = router({
   /** Jobseeker: submit an application to a job. */
@@ -52,6 +53,67 @@ export const applicationsRouter = router({
     await audit(ctx.session.user.id, 'application.create', 'application', app!.id);
     return app;
   }),
+
+  /** Guest: apply without an account (name + email + CV). */
+  guestApply: publicProcedure
+    .input(
+      z.object({
+        jobId: z.string().uuid(),
+        guestName: z.string().trim().min(2).max(160),
+        guestEmail: z.string().trim().toLowerCase().email(),
+        guestPhone: z.string().trim().max(30).optional(),
+        resumeUrl: z.string().url().optional(),
+        coverLetter: z.string().trim().max(5000).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const job = await ctx.db.query.jobs.findFirst({
+        where: eq(jobs.id, input.jobId),
+        with: { company: { columns: { name: true } } },
+      });
+      if (!job || job.status !== 'active') throw new TRPCError({ code: 'NOT_FOUND', message: 'Job not available.' });
+
+      const dup = await ctx.db.query.applications.findFirst({
+        where: and(eq(applications.jobId, input.jobId), eq(applications.guestEmail, input.guestEmail)),
+      });
+      if (dup) throw new TRPCError({ code: 'CONFLICT', message: 'You already applied with this email.' });
+
+      const [app] = await ctx.db
+        .insert(applications)
+        .values({
+          jobId: input.jobId,
+          seekerId: null,
+          guestName: input.guestName,
+          guestEmail: input.guestEmail,
+          guestPhone: input.guestPhone,
+          coverLetter: input.coverLetter,
+          resumeUrl: input.resumeUrl,
+        })
+        .returning();
+
+      await ctx.db.update(jobs).set({ applicationCount: sql`${jobs.applicationCount} + 1` }).where(eq(jobs.id, input.jobId));
+      await enqueueEmail({
+        type: 'apply-confirmation',
+        to: input.guestEmail,
+        name: input.guestName,
+        jobTitle: job.title,
+        companyName: job.company?.name ?? 'the employer',
+      });
+      await notify(job.employerId, 'application', `New application for ${job.title}`, {
+        body: `${input.guestName} applied (guest).`,
+        link: `/employer/jobs/${job.id}/applications`,
+      });
+      return { id: app!.id };
+    }),
+
+  /** Guest: presign a CV upload to R2 (no account required). */
+  presignGuestCv: publicProcedure
+    .input(z.object({ filename: z.string().max(200), contentType: z.string().max(100) }))
+    .mutation(async ({ input }) => {
+      const ext = input.filename.split('.').pop() ?? 'pdf';
+      const key = `guest-cv/${Date.now()}-${Math.round(Math.random() * 1e6)}.${ext}`;
+      return presignUpload(key, input.contentType);
+    }),
 
   /** Jobseeker: list own applications. */
   mine: protectedProcedure.query(async ({ ctx }) =>
@@ -101,10 +163,12 @@ export const applicationsRouter = router({
       .set({ status: input.status, employerNote: input.note })
       .where(eq(applications.id, input.applicationId))
       .returning();
-    await notify(app.seekerId, 'application-status', `Your application is now "${input.status}"`, {
-      body: app.job.title,
-      link: '/dashboard/applications',
-    });
+    if (app.seekerId) {
+      await notify(app.seekerId, 'application-status', `Your application is now "${input.status}"`, {
+        body: app.job.title,
+        link: '/dashboard/applications',
+      });
+    }
     await audit(ctx.session.user.id, 'application.status', 'application', input.applicationId, {
       status: input.status,
     });

@@ -7,6 +7,7 @@ import { formatSalary } from '@ddots/shared';
 import { trpc } from '@/trpc/react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/primitives';
+import { SocialShare } from '@/components/ai/social-share';
 
 const STATUS: Record<string, 'success' | 'default' | 'urgent' | 'muted'> = {
   active: 'success',
@@ -76,6 +77,7 @@ export default function ManageJobsPage() {
               <Button asChild variant="ghost" size="icon" title="Edit">
                 <Link href={`/employer/jobs/${job.id}/edit`}><Pencil /></Link>
               </Button>
+              {job.status === 'active' && <SocialShare jobId={job.id} />}
               {job.status === 'active' && (
                 <Button asChild variant="ghost" size="icon" title="View live">
                   <Link href={`/jobs/${job.slug}`} target="_blank"><ExternalLink /></Link>
