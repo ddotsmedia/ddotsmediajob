@@ -1,8 +1,9 @@
 import Link from 'next/link';
-import { FileText, Bookmark, Bell, Search } from 'lucide-react';
+import { FileText, Bookmark, Bell, Search, Sparkles } from 'lucide-react';
 import { auth } from '@ddots/auth';
 import { getApi } from '@/trpc/server';
 import { StatCard } from '@/components/dashboard/stat-card';
+import { JobCard } from '@/components/job-card';
 import { Button } from '@/components/ui/button';
 
 export const dynamic = 'force-dynamic';
@@ -10,11 +11,18 @@ export const dynamic = 'force-dynamic';
 export default async function DashboardOverview() {
   const session = await auth();
   const api = await getApi();
-  const [applications, saved, alerts] = await Promise.all([
+  const [applications, saved, alerts, profile, recommended] = await Promise.all([
     api.applications.mine(),
     api.jobseekers.savedJobs(),
     api.alerts.list(),
+    api.jobseekers.me(),
+    api.jobs.recommended({ limit: 4 }).catch(() => [] as Awaited<ReturnType<typeof api.jobs.recommended>>),
   ]);
+
+  const fields = profile
+    ? [profile.headline, profile.bio, profile.phone, profile.emirateSlug, profile.categorySlug, profile.experienceLevel, (profile.skills ?? []).length > 0, profile.resumeUrl]
+    : [];
+  const completion = fields.length ? Math.round((fields.filter(Boolean).length / fields.length) * 100) : 0;
 
   return (
     <div className="space-y-8">
@@ -23,11 +31,34 @@ export default async function DashboardOverview() {
         <p className="text-navy-700/60">Here's your job search at a glance.</p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-xl border bg-white p-5">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-navy-700/60">Profile complete</span>
+            <span className="font-display text-lg font-extrabold text-teal-600">{completion}%</span>
+          </div>
+          <div className="mt-2 h-2 overflow-hidden rounded-full bg-navy-100">
+            <div className="h-full rounded-full bg-teal-500" style={{ width: `${completion}%` }} />
+          </div>
+          {completion < 100 && (
+            <Link href="/dashboard/profile" className="mt-2 inline-block text-xs font-semibold text-teal-600 hover:underline">Complete profile →</Link>
+          )}
+        </div>
         <StatCard icon={FileText} label="Applications" value={applications.length} />
         <StatCard icon={Bookmark} label="Saved Jobs" value={saved.length} />
         <StatCard icon={Bell} label="Active Alerts" value={alerts.filter((a) => a.isActive).length} />
       </div>
+
+      {recommended.length > 0 && (
+        <div>
+          <h2 className="mb-3 flex items-center gap-2 font-display text-lg font-bold text-navy-900">
+            <Sparkles className="h-5 w-5 text-teal-500" /> Recommended for you
+          </h2>
+          <div className="grid gap-4 md:grid-cols-2">
+            {recommended.map((job) => <JobCard key={job.id} job={job} />)}
+          </div>
+        </div>
+      )}
 
       <div className="rounded-xl border bg-gradient-to-br from-teal-500 to-navy-900 p-8 text-white">
         <h2 className="font-display text-xl font-bold">Ready to find your next role?</h2>

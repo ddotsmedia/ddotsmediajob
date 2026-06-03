@@ -1,13 +1,17 @@
-import { BarChart3, Eye, FileText, TrendingUp } from 'lucide-react';
-import { getApi } from '@/trpc/server';
+'use client';
+
+import { BarChart3, Eye, FileText, TrendingUp, Loader2 } from 'lucide-react';
+import { trpc } from '@/trpc/react';
 import { StatCard } from '@/components/dashboard/stat-card';
+import { MiniBar, HBars } from '@/components/admin/mini-bar';
 import { Badge } from '@/components/ui/primitives';
 
-export const dynamic = 'force-dynamic';
+export default function EmployerAnalyticsPage() {
+  const analytics = trpc.employers.analytics.useQuery();
+  const series = trpc.employers.analyticsSeries.useQuery();
 
-export default async function EmployerAnalyticsPage() {
-  const api = await getApi();
-  const { perJob, totals } = await api.employers.analytics();
+  if (analytics.isLoading || !analytics.data) return <Loader2 className="animate-spin text-teal-500" />;
+  const { perJob, totals } = analytics.data;
 
   return (
     <div>
@@ -23,16 +27,21 @@ export default async function EmployerAnalyticsPage() {
         <StatCard icon={TrendingUp} label="Avg Conversion" value={`${totals.avgConversion}%`} />
       </div>
 
-      <div className="mt-6 overflow-hidden rounded-xl border bg-white">
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <div className="rounded-xl border bg-white p-6">
+          <h2 className="mb-1 font-display text-sm font-bold text-navy-900">Applications — last 14 days</h2>
+          <MiniBar data={(series.data ?? []).map((d) => ({ label: d.label, value: Number(d.value) }))} />
+        </div>
+        <div className="rounded-xl border bg-white p-6">
+          <h2 className="mb-3 font-display text-sm font-bold text-navy-900">Views by job</h2>
+          <HBars data={perJob.slice(0, 8).map((j) => ({ label: j.title, value: j.viewCount }))} />
+        </div>
+      </div>
+
+      <div className="mt-6 overflow-x-auto rounded-xl border bg-white">
         <table className="w-full text-sm">
           <thead className="border-b bg-navy-50 text-left text-navy-700">
-            <tr>
-              <th className="px-5 py-3 font-semibold">Job</th>
-              <th className="px-5 py-3 font-semibold">Status</th>
-              <th className="px-5 py-3 text-right font-semibold">Views</th>
-              <th className="px-5 py-3 text-right font-semibold">Applicants</th>
-              <th className="px-5 py-3 text-right font-semibold">Conversion</th>
-            </tr>
+            <tr><th className="px-5 py-3">Job</th><th className="px-5 py-3">Status</th><th className="px-5 py-3 text-right">Views</th><th className="px-5 py-3 text-right">Applicants</th><th className="px-5 py-3 text-right">Conversion</th></tr>
           </thead>
           <tbody>
             {perJob.map((j) => (

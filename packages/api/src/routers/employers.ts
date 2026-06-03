@@ -61,6 +61,22 @@ export const employersRouter = router({
       return presignUpload(key, input.contentType);
     }),
 
+  /** Applications-per-day for the employer's jobs over the last 14 days. */
+  analyticsSeries: employerProcedure.query(async ({ ctx }) => {
+    const rows = (await ctx.db.execute(sql`
+      SELECT to_char(d::date,'Mon DD') AS label, COALESCE(c.cnt,0)::int AS value
+      FROM generate_series(current_date - interval '13 days', current_date, interval '1 day') d
+      LEFT JOIN (
+        SELECT a.created_at::date dt, count(*) cnt
+        FROM applications a JOIN jobs j ON j.id = a.job_id
+        WHERE j.employer_id = ${ctx.session.user.id}
+        GROUP BY 1
+      ) c ON c.dt = d::date
+      ORDER BY d
+    `)) as unknown as { rows?: { label: string; value: number }[] } | { label: string; value: number }[];
+    return (Array.isArray(rows) ? rows : (rows.rows ?? [])) as { label: string; value: number }[];
+  }),
+
   /** Per-job analytics breakdown (views, applicants, conversion). */
   analytics: employerProcedure.query(async ({ ctx }) => {
     const rows = await ctx.db.query.jobs.findMany({

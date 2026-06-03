@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { toast } from 'sonner';
-import { Eye, Users, Loader2, ExternalLink } from 'lucide-react';
+import { Eye, Users, Loader2, ExternalLink, Pencil, RefreshCw } from 'lucide-react';
 import { formatSalary } from '@ddots/shared';
 import { trpc } from '@/trpc/react';
 import { Button } from '@/components/ui/button';
@@ -25,6 +25,13 @@ export default function ManageJobsPage() {
     onSuccess: () => {
       utils.jobs.mine.invalidate();
       toast.success('Job closed');
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const renew = trpc.jobs.renew.useMutation({
+    onSuccess: () => {
+      utils.jobs.mine.invalidate();
+      toast.success('Job renewed for 30 days');
     },
     onError: (e) => toast.error(e.message),
   });
@@ -62,13 +69,21 @@ export default function ManageJobsPage() {
                 <span className="inline-flex items-center gap-1"><Users className="h-3.5 w-3.5" /> {job.applicationCount} applicants</span>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <Button asChild variant="outline" size="sm">
-                <Link href={`/employer/jobs/${job.id}/applications`}>View Applicants</Link>
+                <Link href={`/employer/jobs/${job.id}/applications`}>Applicants</Link>
+              </Button>
+              <Button asChild variant="ghost" size="icon" title="Edit">
+                <Link href={`/employer/jobs/${job.id}/edit`}><Pencil /></Link>
               </Button>
               {job.status === 'active' && (
-                <Button asChild variant="ghost" size="sm">
+                <Button asChild variant="ghost" size="icon" title="View live">
                   <Link href={`/jobs/${job.slug}`} target="_blank"><ExternalLink /></Link>
+                </Button>
+              )}
+              {(job.status === 'closed' || job.status === 'expired') && (
+                <Button variant="ghost" size="sm" onClick={() => renew.mutate({ id: job.id })} disabled={renew.isPending} title="Renew">
+                  <RefreshCw /> Renew
                 </Button>
               )}
               {(job.status === 'active' || job.status === 'pending') && (

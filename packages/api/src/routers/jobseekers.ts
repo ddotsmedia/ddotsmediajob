@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { jobseekerProfiles, savedJobs, jobs, eq, and, desc } from '@ddots/db';
+import { jobseekerProfiles, savedJobs, jobs, users, eq, and, desc } from '@ddots/db';
 import { jobseekerProfileSchema } from '@ddots/shared';
 import { router, protectedProcedure } from '../trpc';
 import { presignUpload } from '../lib/r2';
@@ -60,4 +60,19 @@ export const jobseekersRouter = router({
       const key = `resumes/${ctx.session.user.id}/${Date.now()}.${ext}`;
       return presignUpload(key, input.contentType);
     }),
+
+  /** Presign a profile photo upload to R2. */
+  presignAvatar: protectedProcedure
+    .input(z.object({ filename: z.string().max(200), contentType: z.string().max(100) }))
+    .mutation(async ({ ctx, input }) => {
+      const ext = input.filename.split('.').pop() ?? 'jpg';
+      const key = `avatars/${ctx.session.user.id}/${Date.now()}.${ext}`;
+      return presignUpload(key, input.contentType);
+    }),
+
+  /** Save the profile photo URL onto the user. */
+  setAvatar: protectedProcedure.input(z.object({ url: z.string().url() })).mutation(async ({ ctx, input }) => {
+    await ctx.db.update(users).set({ image: input.url }).where(eq(users.id, ctx.session.user.id));
+    return { ok: true };
+  }),
 });

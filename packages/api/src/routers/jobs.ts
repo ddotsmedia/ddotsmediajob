@@ -5,6 +5,7 @@ import {
   companies,
   savedJobs,
   applications,
+  jobseekerProfiles,
   eq,
   and,
   or,
@@ -14,6 +15,7 @@ import {
   ilike,
   sql,
   count,
+  inArray,
 } from '@ddots/db';
 import { jobFilterSchema, jobInputSchema, jobFieldsSchema, aiQuickPostSchema } from '@ddots/shared';
 import { router, publicProcedure, employerProcedure, protectedProcedure } from '../trpc';
@@ -184,4 +186,60 @@ export const jobsRouter = router({
     await audit(ctx.session.user.id, 'job.close', 'job', input.id);
     return { ok: true };
   }),
+
+  /** Employer: load one of their own jobs for editing. */
+  byId: employerProcedure.input(z.object({ id: z.string().uuid() })).query(async ({ ctx, input }) => {
+    const job = await ctx.db.query.jobs.findFirst({ where: eq(jobs.id, input.id) });
+    if (!job) throw new TRPCError({ code: 'NOT_FOUND' });
+    if (job.employerId !== ctx.session.user.id && ctx.session.user.role !== 'admin') {
+      throw new TRPCError({ code: 'FORBIDDEN' });
+    }
+    return job;
+  }),
+
+  /** Employer: renew an expired/closed job for another 30 days. */
+  renew: employerProcedure.input(z.object({ id: z.string().uuid() })).mutation(async ({ ctx, input }) => {
+    const existing = await ctx.db.query.jobs.findFirst({ where: eq(jobs.id, input.id) });
+    if (!existing) throw new TRPCError({ code: 'NOT_FOUND' });
+    if (existing.employerId !== ctx.session.user.id && ctx.session.user.role !== 'admin') {
+      throw new TRPCError({ code: 'FORBIDDEN' });
+    }
+    const [updated] = await ctx.db
+      .update(jobs)
+      .set({ status: 'active', publishedAt: new Date(), expiresAt: new Date(Date.now() + 30 * 86_400_000) })
+      .where(eq(jobs.id, input.id))
+      .returning();
+    await enqueueSearchSync({ type: 'upsert', jobId: input.id });
+    await audit(ctx.session.user.id, 'job.renew', 'job', input.id);
+    return updated;
+  }),
+
+  /** Jobseeker: recommended jobs based on profile (category/emirate), excluding already-applied. */
+  recommended: protectedProcedure
+    .input(z.object({ limit: z.number().min(1).max(12).default(6) }))
+    .query(async ({ ctx, input }) => {
+      const profile = await ctx.db.query.jobseekerProfiles.findFirst({
+        where: eq(jobseekerProfiles.userId, ctx.session.user.id),
+      });
+      const applied = await ctx.db
+        .select({ jobId: applications.jobId })
+        .from(applications)
+        .where(eq(applications.seekerId, ctx.session.user.id));
+      const appliedIds = applied.map((a) => a.jobId);
+
+      const conds = [eq(jobs.status, 'active')];
+      if (profile?.categorySlug) conds.push(eq(jobs.categorySlug, profile.categorySlug));
+      if (appliedIds.length) conds.push(sql`${jobs.id} NOT IN (${sql.join(appliedIds.map((id) => sql`${id}`), sql`, `)})`);
+
+      const rows = await ctx.db.query.jobs.findMany({
+        where: and(...conds),
+        orderBy: [
+          profile?.emirateSlug ? sql`(${jobs.emirateSlug} = ${profile.emirateSlug}) desc` : desc(jobs.isFeatured),
+          desc(jobs.publishedAt),
+        ],
+        limit: input.limit,
+        with: { company: { columns: { name: true, logoUrl: true } } },
+      });
+      return rows;
+    }),
 });

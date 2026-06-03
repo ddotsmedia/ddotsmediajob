@@ -7,6 +7,7 @@ import { CATEGORIES, EMIRATES, EXPERIENCE_LEVELS, VISA_STATUS } from '@ddots/sha
 import { trpc } from '@/trpc/react';
 import { Button } from '@/components/ui/button';
 import { Input, Label, Select, Textarea } from '@/components/ui/primitives';
+import { AvatarUpload } from '@/components/avatar-upload';
 
 export default function ProfilePage() {
   const profile = trpc.jobseekers.me.useQuery();
@@ -45,6 +46,7 @@ export default function ProfilePage() {
       <p className="text-navy-700/60">Complete your profile to stand out to employers.</p>
 
       <form onSubmit={onSubmit} className="mt-6 space-y-5 rounded-xl border bg-white p-6">
+        <AvatarUpload />
         <Field label="Headline">
           <Input name="headline" defaultValue={p?.headline ?? ''} placeholder="e.g. Senior Accountant · 6 years" />
         </Field>
