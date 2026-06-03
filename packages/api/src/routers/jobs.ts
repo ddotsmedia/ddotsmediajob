@@ -39,6 +39,8 @@ export const jobsRouter = router({
     if (input.isRemote) conds.push(eq(jobs.isRemote, true));
     if (input.isFresher) conds.push(eq(jobs.isFresher, true));
     if (input.isUrgent) conds.push(eq(jobs.isUrgent, true));
+    if (input.freeZone) conds.push(eq(jobs.freeZone, true));
+    if (input.visaProvided) conds.push(eq(jobs.visaProvided, true));
 
     const where = and(...conds);
     const orderBy =

@@ -141,8 +141,8 @@ export default async function JobDetailPage({ params }: Props) {
                       {job.isFeatured && <Badge>Featured</Badge>}
                     </div>
                     <p className="mt-1 flex items-center gap-1 text-navy-700">
-                      {job.company?.name ?? 'Confidential'}
-                      {job.company?.isVerified && <BadgeCheck className="h-4 w-4 text-teal-500" />}
+                      {job.isAnonymous ? `Confidential Company · ${categoryBySlug(job.categorySlug)?.name ?? ''}` : (job.company?.name ?? 'Confidential')}
+                      {!job.isAnonymous && job.company?.isVerified && <BadgeCheck className="h-4 w-4 text-teal-500" />}
                     </p>
                     <p className="mt-1 text-xs text-navy-700/50">Posted {timeAgo(job.publishedAt ?? job.createdAt)}</p>
                   </div>
@@ -201,7 +201,7 @@ export default async function JobDetailPage({ params }: Props) {
 
             <SkillGap jobId={job.id} />
 
-            {job.company && (
+            {job.company && !job.isAnonymous && (
               <Card>
                 <CardContent className="p-5">
                   <h3 className="font-display font-bold text-navy-900">About {job.company.name}</h3>

@@ -6,7 +6,7 @@ export function SiteFooter() {
   const year = 2026;
   return (
     <footer className="border-t bg-navy-900 text-navy-100">
-      <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 md:grid-cols-2 lg:grid-cols-5">
+      <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 md:grid-cols-3 lg:grid-cols-6">
         <div className="lg:col-span-1">
           <Logo dark />
           <p className="mt-4 max-w-xs text-sm text-navy-100/70">{SITE.description}</p>
@@ -41,6 +41,15 @@ export function SiteFooter() {
           <FooterLink href="/employer">Employer Dashboard</FooterLink>
           <FooterLink href="/companies">Company Profiles</FooterLink>
           <FooterLink href="/blog">Hiring Blog</FooterLink>
+        </FooterCol>
+
+        <FooterCol title="UAE Tools">
+          <FooterLink href="/golden-visa-checker">Golden Visa Checker</FooterLink>
+          <FooterLink href="/wps-calculator">WPS & Gratuity Calculator</FooterLink>
+          <FooterLink href="/cost-of-living">Cost of Living</FooterLink>
+          <FooterLink href="/nafis-guide">Nafis & Emiratisation</FooterLink>
+          <FooterLink href="/visa-guide">Visa Guide 2026</FooterLink>
+          <FooterLink href="/jobs/freezone">Free Zone Jobs</FooterLink>
         </FooterCol>
       </div>
 

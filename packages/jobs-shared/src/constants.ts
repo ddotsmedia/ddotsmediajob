@@ -83,6 +83,32 @@ export type AlertFrequency = (typeof ALERT_FREQUENCY)[number];
 // ─── Salary guide categories ─────────────────────────────
 export const CURRENCY = 'AED';
 
+// ─── UAE free zones ──────────────────────────────────────
+export const FREE_ZONES = [
+  { slug: 'dmcc', name: 'DMCC', emirate: 'dubai' },
+  { slug: 'difc', name: 'DIFC', emirate: 'dubai' },
+  { slug: 'jafza', name: 'JAFZA', emirate: 'dubai' },
+  { slug: 'dafza', name: 'DAFZA', emirate: 'dubai' },
+  { slug: 'dubai-internet-city', name: 'Dubai Internet City', emirate: 'dubai' },
+  { slug: 'dubai-media-city', name: 'Dubai Media City', emirate: 'dubai' },
+  { slug: 'adgm', name: 'ADGM', emirate: 'abu-dhabi' },
+  { slug: 'kizad', name: 'KIZAD', emirate: 'abu-dhabi' },
+  { slug: 'masdar-city', name: 'Masdar City', emirate: 'abu-dhabi' },
+  { slug: 'shams', name: 'SHAMS', emirate: 'sharjah' },
+  { slug: 'saif-zone', name: 'SAIF Zone', emirate: 'sharjah' },
+  { slug: 'rakez', name: 'RAKEZ', emirate: 'ras-al-khaimah' },
+  { slug: 'ajman-free-zone', name: 'Ajman Free Zone', emirate: 'ajman' },
+  { slug: 'fujairah-free-zone', name: 'Fujairah Free Zone', emirate: 'fujairah' },
+] as const;
+export type FreeZoneSlug = (typeof FREE_ZONES)[number]['slug'];
+
+// Golden / Blue visa salary thresholds (AED monthly), UAE 2026.
+export const VISA_THRESHOLDS = {
+  goldenSalary: 30000,
+  blueSalary: 15000,
+  nafisMinSalary: 6000,
+} as const;
+
 export function emirateBySlug(slug: string) {
   return EMIRATES.find((e) => e.slug === slug);
 }

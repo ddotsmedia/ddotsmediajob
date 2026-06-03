@@ -14,12 +14,14 @@ type Draft = {
   title: string; description: string; categorySlug: string; emirateSlug: string;
   jobType: string; experienceLevel: string; salaryMin: number | null; salaryMax: number | null;
   skills: string[]; benefits: string[]; isRemote: boolean; isFresher: boolean; isUrgent: boolean;
+  freeZone: boolean; isAnonymous: boolean; visaProvided: boolean; accommodationProvided: boolean;
 };
 
 const EMPTY: Draft = {
   title: '', description: '', categorySlug: 'it', emirateSlug: 'dubai', jobType: 'full-time',
   experienceLevel: '1-3-years', salaryMin: null, salaryMax: null, skills: [], benefits: [],
   isRemote: false, isFresher: false, isUrgent: false,
+  freeZone: false, isAnonymous: false, visaProvided: false, accommodationProvided: false,
 };
 
 const STEPS = ['Basics', 'Description', 'Compensation', 'Review'] as const;
@@ -42,7 +44,8 @@ export function PostJobForm() {
 
   const canNext =
     step === 0 ? draft.title.trim().length >= 3 :
-    step === 1 ? draft.description.trim().length >= 30 : true;
+    step === 1 ? draft.description.trim().length >= 30 :
+    step === 2 ? draft.salaryMin != null && draft.salaryMax != null && draft.salaryMax >= draft.salaryMin : true;
 
   function publish() {
     create.mutate({ ...draft, salaryPeriod: 'monthly', salaryHidden: false, visaStatus: 'any' } as never);
@@ -106,13 +109,18 @@ export function PostJobForm() {
             </div>
             <Field label="Skills (comma-separated)"><Input value={draft.skills.join(', ')} onChange={(e) => set('skills', e.target.value.split(',').map((s) => s.trim()).filter(Boolean))} /></Field>
             <Field label="Benefits (comma-separated)"><Input value={draft.benefits.join(', ')} onChange={(e) => set('benefits', e.target.value.split(',').map((s) => s.trim()).filter(Boolean))} /></Field>
-            <div className="flex flex-wrap gap-6">
-              {([['isRemote', 'Remote'], ['isFresher', 'Fresher friendly'], ['isUrgent', 'Urgent hiring']] as const).map(([k, lbl]) => (
+            <div className="flex flex-wrap gap-x-6 gap-y-2">
+              {([
+                ['isRemote', 'Remote'], ['isFresher', 'Fresher friendly'], ['isUrgent', 'Urgent hiring'],
+                ['freeZone', 'Free zone'], ['visaProvided', 'Visa provided'],
+                ['accommodationProvided', 'Accommodation'], ['isAnonymous', 'Post anonymously'],
+              ] as const).map(([k, lbl]) => (
                 <label key={k} className="flex items-center gap-2 text-sm text-navy-700">
                   <input type="checkbox" checked={draft[k]} onChange={(e) => set(k, e.target.checked)} className="h-4 w-4 rounded text-teal-600" /> {lbl}
                 </label>
               ))}
             </div>
+            <p className="text-xs text-navy-700/50">Salary range is required — listings with salary get more applications.</p>
           </>
         )}
 

@@ -15,6 +15,13 @@
       "when": 1780447673912,
       "tag": "0001_fresh_morph",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1780461698509,
+      "tag": "0002_mushy_the_initiative",
+      "breakpoints": true
     }
   ]
 }

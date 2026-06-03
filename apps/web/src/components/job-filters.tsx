@@ -92,6 +92,8 @@ export function JobFilters() {
           ['isRemote', 'Remote only'],
           ['isFresher', 'Fresher friendly'],
           ['isUrgent', 'Urgent hiring'],
+          ['freeZone', 'Free zone'],
+          ['visaProvided', 'Visa provided'],
         ] as const).map(([key, label]) => (
           <label key={key} className="flex cursor-pointer items-center gap-2 text-sm text-navy-700">
             <input

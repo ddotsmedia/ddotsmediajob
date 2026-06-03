@@ -13,10 +13,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     '/companies',
     '/salary-guide',
     '/whatsapp-groups',
+    '/community',
     '/blog',
     '/login',
     '/register',
   ].map((path) => ({ url: `${base}${path}`, lastModified: new Date(), changeFrequency: 'daily', priority: path === '' ? 1 : 0.8 }));
+
+  const toolRoutes: MetadataRoute.Sitemap = [
+    '/golden-visa-checker',
+    '/wps-calculator',
+    '/cost-of-living',
+    '/nafis-guide',
+    '/visa-guide',
+    '/jobs/freezone',
+    '/jobs/remote',
+    '/jobs/visa-provided',
+  ].map((path) => ({ url: `${base}${path}`, changeFrequency: 'weekly', priority: 0.6 }));
 
   const categoryRoutes: MetadataRoute.Sitemap = CATEGORIES.map((c) => ({
     url: `${base}/category/${c.slug}`,
@@ -64,5 +76,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.5,
   }));
 
-  return [...staticRoutes, ...categoryRoutes, ...emirateRoutes, ...jobRoutes, ...blogRoutes, ...companyRoutes];
+  return [...staticRoutes, ...toolRoutes, ...categoryRoutes, ...emirateRoutes, ...jobRoutes, ...blogRoutes, ...companyRoutes];
 }

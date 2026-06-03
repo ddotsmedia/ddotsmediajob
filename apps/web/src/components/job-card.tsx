@@ -19,6 +19,10 @@ export type JobCardData = {
   isUrgent: boolean;
   isFresher: boolean;
   isFeatured: boolean;
+  freeZone?: boolean;
+  freeZoneName?: string | null;
+  isAnonymous?: boolean;
+  applicationCount?: number;
   publishedAt: Date | string | null;
   createdAt: Date | string;
   company?: { name: string | null; logoUrl?: string | null } | null;
@@ -49,7 +53,7 @@ export function JobCard({ job }: { job: JobCardData }) {
             <h3 className="font-display font-bold text-navy-900 group-hover:text-teal-600">{job.title}</h3>
             {job.isFeatured && <Badge>Featured</Badge>}
           </div>
-          <p className="text-sm text-navy-700/70">{job.company?.name ?? 'Confidential'}</p>
+          <p className="text-sm text-navy-700/70">{job.isAnonymous ? 'Confidential Company' : (job.company?.name ?? 'Confidential')}</p>
 
           <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-navy-700/80">
             <span className="inline-flex items-center gap-1">
@@ -66,6 +70,8 @@ export function JobCard({ job }: { job: JobCardData }) {
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {category && <Badge variant="muted">{category.name}</Badge>}
+            <Badge variant={job.salaryHidden ? 'muted' : 'success'}>{job.salaryHidden ? 'Apply to see salary' : 'Salary shown'}</Badge>
+            {job.freeZone && <Badge variant="default">{job.freeZoneName || 'Free Zone'}</Badge>}
             {job.isRemote && <Badge variant="success">Remote</Badge>}
             {job.isFresher && <Badge variant="outline">Fresher</Badge>}
             {job.isUrgent && (
@@ -73,7 +79,12 @@ export function JobCard({ job }: { job: JobCardData }) {
                 <Zap className="mr-1 h-3 w-3" /> Urgent
               </Badge>
             )}
-            <span className="ml-auto text-xs text-navy-700/50">{timeAgo(job.publishedAt ?? job.createdAt)}</span>
+            <span className="ml-auto text-xs text-navy-700/50">
+              {typeof job.applicationCount === 'number' && job.applicationCount > 0 && (
+                <span className="mr-2 font-medium text-navy-700/70">{job.applicationCount} applied</span>
+              )}
+              {timeAgo(job.publishedAt ?? job.createdAt)}
+            </span>
           </div>
         </div>
       </div>
