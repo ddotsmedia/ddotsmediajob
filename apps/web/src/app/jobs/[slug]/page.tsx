@@ -14,6 +14,7 @@ import { getApi } from '@/trpc/server';
 import { JobActions } from '@/components/job-actions';
 import { MatchScoreCard } from '@/components/ai/match-score';
 import { SkillGap } from '@/components/ai/skill-gap';
+import { ShareMenu } from '@/components/share-menu';
 import { Badge, Card, CardContent } from '@/components/ui/primitives';
 
 type Props = { params: Promise<{ slug: string }> };
@@ -193,6 +194,9 @@ export default async function JobDetailPage({ params }: Props) {
             <Card>
               <CardContent className="p-5">
                 <JobActions jobId={job.id} />
+                <div className="mt-3">
+                  <ShareMenu jobId={job.id} title={job.title} url={`${SITE.url}/jobs/${job.slug}`} variant="button" />
+                </div>
                 <p className="mt-3 text-center text-xs text-navy-700/50">{job.applicationCount} applicants · {job.viewCount} views</p>
               </CardContent>
             </Card>

@@ -399,6 +399,20 @@ export const auditLogs = pgTable(
   (t) => [index('audit_actor_idx').on(t.actorId), index('audit_action_idx').on(t.action)],
 );
 
+// ─── Short links (job sharing) ───────────────────────────
+export const shortLinks = pgTable(
+  'short_links',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    code: varchar('code', { length: 16 }).notNull(),
+    url: text('url').notNull(),
+    jobId: uuid('job_id').references(() => jobs.id, { onDelete: 'cascade' }),
+    clicks: integer('clicks').default(0).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex('short_links_code_idx').on(t.code), index('short_links_job_idx').on(t.jobId)],
+);
+
 // ─── Site settings (key/value) ───────────────────────────
 export const siteSettings = pgTable('site_settings', {
   key: varchar('key', { length: 80 }).primaryKey(),
