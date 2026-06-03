@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { db, jobs, users, companies, notifications, eq } from '@ddots/db';
 import { structured, JOB_DRAFT_TOOL, MODEL_FAST, type JobDraft } from '@ddots/api/lib/anthropic';
-import { slugify } from '@ddots/shared';
+import { verifyTwilioSignature, rateLimit, wrapUserContent } from '@ddots/api/lib/security';
+import { slugify, SITE } from '@ddots/shared';
 
 /**
  * Forward a WhatsApp job message (via Twilio) here → AI extracts it → creates a
@@ -24,16 +25,33 @@ export async function GET() {
 
 export async function POST(req: Request) {
   let body = '';
+  let from = 'unknown';
   try {
     const form = await req.formData();
     body = String(form.get('Body') ?? '');
+    from = String(form.get('From') ?? 'unknown');
+
+    // Verify Twilio signature when configured (rejects spoofed requests).
+    const authToken = process.env.TWILIO_AUTH_TOKEN;
+    if (authToken) {
+      const params: Record<string, string> = {};
+      form.forEach((v, k) => (params[k] = String(v)));
+      const url = `${SITE.url}${new URL(req.url).pathname}`;
+      if (!verifyTwilioSignature(authToken, req.headers.get('x-twilio-signature'), url, params)) {
+        return new NextResponse('Forbidden', { status: 403 });
+      }
+    }
   } catch {
     return twiml('Could not read your message.');
   }
+
+  // Per-phone rate limit (abuse + AI cost protection).
+  const rl = await rateLimit(`wa-import:${from}`, 50, 3600);
+  if (!rl.ok) return twiml('Too many imports this hour — please try again later.');
   if (body.trim().length < 15) return twiml('Please forward a full job posting to import it.');
 
   try {
-    const draft = await structured<JobDraft>(SYSTEM, `Extract the job posting from this message:\n\n${body}`, JOB_DRAFT_TOOL, {
+    const draft = await structured<JobDraft>(SYSTEM, `Extract the job posting from this message:\n\n${wrapUserContent(body)}`, JOB_DRAFT_TOOL, {
       model: MODEL_FAST,
       maxTokens: 1800,
     });

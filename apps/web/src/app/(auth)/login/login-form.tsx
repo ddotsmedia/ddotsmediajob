@@ -11,7 +11,9 @@ import { Input, Label } from '@/components/ui/primitives';
 export function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const callbackUrl = params.get('callbackUrl') ?? '/dashboard';
+  const raw = params.get('callbackUrl') ?? '/dashboard';
+  // Open-redirect guard: same-origin relative paths only.
+  const callbackUrl = raw.startsWith('/') && !raw.startsWith('//') ? raw : '/dashboard';
   const [loading, setLoading] = useState(false);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {

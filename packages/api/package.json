@@ -10,7 +10,8 @@
     "./lib/anthropic": "./src/lib/anthropic.ts",
     "./lib/queue": "./src/lib/queue.ts",
     "./lib/email": "./src/lib/email.ts",
-    "./lib/r2": "./src/lib/r2.ts"
+    "./lib/r2": "./src/lib/r2.ts",
+    "./lib/security": "./src/lib/security.ts"
   },
   "scripts": {
     "worker": "tsx watch src/worker.ts",
@@ -30,6 +31,7 @@
     "@trpc/server": "^11.0.0-rc.660",
     "bullmq": "^5.34.5",
     "ioredis": "^5.4.2",
+    "isomorphic-dompurify": "2.20.0",
     "resend": "^4.0.1",
     "superjson": "^2.2.2",
     "typesense": "^1.8.2",

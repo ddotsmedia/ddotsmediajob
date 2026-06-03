@@ -15,6 +15,7 @@ import {
 } from '@ddots/db';
 import { slugify } from '@ddots/shared';
 import { router, publicProcedure, adminProcedure, protectedProcedure } from '../trpc';
+import { sanitizeHtml } from '../lib/security';
 
 const blogInput = z.object({
   title: z.string().min(3).max(200),
@@ -57,6 +58,7 @@ export const contentRouter = router({
     .input(blogInput.extend({ id: z.string().uuid().optional() }))
     .mutation(async ({ ctx, input }) => {
       const { id, ...data } = input;
+      data.content = sanitizeHtml(data.content);
       const slug = slugify(input.title);
       if (id) {
         const [updated] = await ctx.db

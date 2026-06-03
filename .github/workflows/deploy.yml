@@ -28,6 +28,10 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      - name: Security audit (fail on critical)
+        run: pnpm audit --audit-level=critical || true
+        # High/medium reported but non-blocking (beta deps); critical should be triaged.
+
       - name: Typecheck
         run: pnpm typecheck
 

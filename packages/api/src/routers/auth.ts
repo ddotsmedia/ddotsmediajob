@@ -2,18 +2,21 @@ import { randomBytes } from 'node:crypto';
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { users, employerProfiles, jobseekerProfiles, verificationTokens, eq, and } from '@ddots/db';
-import { registerSchema } from '@ddots/shared';
+import { registerSchema, passwordSchema } from '@ddots/shared';
 import { hashPassword } from '@ddots/auth/password';
 import { router, publicProcedure, protectedProcedure } from '../trpc';
 import { enqueueEmail } from '../lib/queue';
 import { audit } from '../lib/helpers';
+import { enforceRateLimit } from '../lib/security';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://ddotsmediajobs.com';
 const token = () => randomBytes(32).toString('hex');
+const ipOf = (ctx: { headers?: Headers }) => ctx.headers?.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
 
 export const authRouter = router({
   /** Register a jobseeker or employer with email + password. */
   register: publicProcedure.input(registerSchema).mutation(async ({ ctx, input }) => {
+    await enforceRateLimit(`register:${ipOf(ctx)}`, 10, 900);
     const existing = await ctx.db.query.users.findFirst({ where: eq(users.email, input.email) });
     if (existing) throw new TRPCError({ code: 'CONFLICT', message: 'An account with this email already exists.' });
 
@@ -52,6 +55,7 @@ export const authRouter = router({
   requestPasswordReset: publicProcedure
     .input(z.object({ email: z.string().email().toLowerCase() }))
     .mutation(async ({ ctx, input }) => {
+      await enforceRateLimit(`pwreset:${ipOf(ctx)}`, 3, 3600);
       const user = await ctx.db.query.users.findFirst({ where: eq(users.email, input.email) });
       if (user) {
         const t = token();
@@ -75,7 +79,7 @@ export const authRouter = router({
 
   /** Complete a password reset with the emailed token. */
   resetPassword: publicProcedure
-    .input(z.object({ token: z.string().min(10), password: z.string().min(8).max(100) }))
+    .input(z.object({ token: z.string().min(10), password: passwordSchema }))
     .mutation(async ({ ctx, input }) => {
       const vt = await ctx.db.query.verificationTokens.findFirst({
         where: eq(verificationTokens.token, input.token),

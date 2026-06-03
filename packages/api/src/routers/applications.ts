@@ -6,10 +6,14 @@ import { router, publicProcedure, protectedProcedure, employerProcedure } from '
 import { audit, notify } from '../lib/helpers';
 import { enqueueEmail } from '../lib/queue';
 import { presignUpload } from '../lib/r2';
+import { enforceRateLimit } from '../lib/security';
+
+const ipOf = (ctx: { headers?: Headers }) => ctx.headers?.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
 
 export const applicationsRouter = router({
   /** Jobseeker: submit an application to a job. */
   submit: protectedProcedure.input(applySchema).mutation(async ({ ctx, input }) => {
+    await enforceRateLimit(`apply:${ctx.session.user.id}`, 20, 3600);
     const job = await ctx.db.query.jobs.findFirst({
       where: eq(jobs.id, input.jobId),
       with: { company: { columns: { name: true } } },
@@ -67,6 +71,7 @@ export const applicationsRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      await enforceRateLimit(`guestapply:${ipOf(ctx)}`, 20, 3600);
       const job = await ctx.db.query.jobs.findFirst({
         where: eq(jobs.id, input.jobId),
         with: { company: { columns: { name: true } } },

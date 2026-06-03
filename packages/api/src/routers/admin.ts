@@ -24,6 +24,7 @@ import { slugify } from '@ddots/shared';
 import { router, adminProcedure } from '../trpc';
 import { audit, notify, uniqueJobSlug } from '../lib/helpers';
 import { enqueueEmail, enqueueSearchSync } from '../lib/queue';
+import { sanitizeHtml } from '../lib/security';
 
 /** Shared shape for admin-created jobs (from any of the 6 ingestion methods). */
 const adminJobInput = z.object({
@@ -75,7 +76,7 @@ async function insertAdminJob(db: typeof import('@ddots/db').db, actorId: string
       employerId: actorId,
       companyId,
       title: input.title,
-      description: input.description,
+      description: input.description.includes('<') ? sanitizeHtml(input.description) : input.description,
       categorySlug: input.categorySlug,
       emirateSlug: input.emirateSlug,
       location: input.location ?? null,

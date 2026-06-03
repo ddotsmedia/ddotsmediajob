@@ -17,6 +17,16 @@ import {
   type JobDraft,
 } from '../lib/anthropic';
 import { applications, sql } from '@ddots/db';
+import { enforceRateLimit, isJailbreakAttempt, wrapUserContent, ssrfSafeFetchText } from '../lib/security';
+
+/** Rate-limit AI usage per user + reject prompt-injection attempts. */
+async function guardAi(ctx: { session: { user: { id: string; role: string } } }, text?: string): Promise<void> {
+  const isAdmin = ctx.session.user.role === 'admin';
+  await enforceRateLimit(`ai:${ctx.session.user.id}`, isAdmin ? 200 : 50, 3600);
+  if (text && isJailbreakAttempt(text)) {
+    throw new TRPCError({ code: 'BAD_REQUEST', message: 'This request was blocked.' });
+  }
+}
 
 const messages = z
   .array(z.object({ role: z.enum(['user', 'assistant']), content: z.string().max(8000) }))
@@ -82,6 +92,7 @@ export const aiRouter = router({
   careerAdvisor: protectedProcedure
     .input(z.object({ messages }))
     .mutation(async ({ ctx, input }) => {
+      await guardAi(ctx, input.messages.at(-1)?.content);
       const profile = await loadProfileText(ctx.db, ctx.session.user.id);
       const reply = await chat(
         `You are a friendly, practical career advisor for jobseekers in the UAE. Give concrete, localized advice (visa, emirates, salary norms in AED). Keep replies under 220 words. Candidate profile for context:\n${profile}`,
@@ -144,7 +155,8 @@ export const aiRouter = router({
     }),
 
   /** Employer HR chatbot — Haiku for short FAQs, Sonnet for complex policy questions. */
-  hrChatbot: employerProcedure.input(z.object({ messages })).mutation(async ({ input }) => {
+  hrChatbot: employerProcedure.input(z.object({ messages })).mutation(async ({ ctx, input }) => {
+    await guardAi(ctx, input.messages.at(-1)?.content);
     const last = input.messages.at(-1)?.content ?? '';
     const complex = last.length > 200 || /polic|legal|gratuity|terminat|labou?r law|visa cancel/i.test(last);
     const reply = await chat(
@@ -157,49 +169,47 @@ export const aiRouter = router({
 
   // ── Admin job ingestion (Haiku) ──────────────────────────────────
   extractJobFromText: adminProcedure
-    .input(z.object({ text: z.string().min(15).max(15000) }))
-    .mutation(async ({ input }): Promise<JobDraft> =>
-      structured<JobDraft>(JOB_EXTRACT_SYSTEM, `Extract a job posting from this text:\n\n${input.text}`, JOB_DRAFT_TOOL, {
+    .input(z.object({ text: z.string().min(15).max(15000) }).strict())
+    .mutation(async ({ ctx, input }): Promise<JobDraft> => {
+      await guardAi(ctx, input.text);
+      return structured<JobDraft>(JOB_EXTRACT_SYSTEM, `Extract a job posting from this text:\n\n${wrapUserContent(input.text)}`, JOB_DRAFT_TOOL, {
         model: MODEL_FAST,
         maxTokens: 1800,
-      }),
-    ),
+      });
+    }),
 
   extractJobFromUrl: adminProcedure
-    .input(z.object({ url: z.string().url() }))
-    .mutation(async ({ input }): Promise<JobDraft> => {
-      let text = '';
-      try {
-        const res = await fetch(input.url, { headers: { 'user-agent': 'Mozilla/5.0 (compatible; DdotsBot/1.0)' }, signal: AbortSignal.timeout(12000) });
-        const html = await res.text();
-        text = html
-          .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-          .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-          .replace(/<[^>]+>/g, ' ')
-          .replace(/&[a-z]+;/gi, ' ')
-          .replace(/\s+/g, ' ')
-          .trim()
-          .slice(0, 9000);
-      } catch {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Could not fetch that URL.' });
-      }
+    .input(z.object({ url: z.string().url() }).strict())
+    .mutation(async ({ ctx, input }): Promise<JobDraft> => {
+      await guardAi(ctx);
+      // SSRF-safe fetch: https-only, no private IPs, no redirects, 5s/1MB cap.
+      const html = await ssrfSafeFetchText(input.url);
+      const text = html
+        .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+        .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/&[a-z]+;/gi, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 9000);
       if (text.length < 40) throw new TRPCError({ code: 'BAD_REQUEST', message: 'No readable job content found at that URL.' });
-      return structured<JobDraft>(JOB_EXTRACT_SYSTEM, `Extract the job posting from this scraped page text:\n\n${text}`, JOB_DRAFT_TOOL, {
+      return structured<JobDraft>(JOB_EXTRACT_SYSTEM, `Extract the job posting from this scraped page text:\n\n${wrapUserContent(text)}`, JOB_DRAFT_TOOL, {
         model: MODEL_FAST,
         maxTokens: 1800,
       });
     }),
 
   generateFromQuickForm: adminProcedure
-    .input(z.object({ title: z.string().min(2).max(160), emirate: z.string().max(40), whatsapp: z.string().max(30).optional() }))
-    .mutation(async ({ input }): Promise<JobDraft> =>
-      structured<JobDraft>(
+    .input(z.object({ title: z.string().min(2).max(160), emirate: z.string().max(40), whatsapp: z.string().max(30).optional() }).strict())
+    .mutation(async ({ ctx, input }): Promise<JobDraft> => {
+      await guardAi(ctx, input.title);
+      return structured<JobDraft>(
         JOB_EXTRACT_SYSTEM,
         `Generate a complete, realistic UAE job posting for: title="${input.title}", emirate="${input.emirate}". ${input.whatsapp ? `Contact WhatsApp: ${input.whatsapp}.` : ''} Invent sensible responsibilities, requirements, benefits and a realistic AED salary range. Set confidence to "medium" since this is generated, not extracted.`,
         JOB_DRAFT_TOOL,
         { model: MODEL_FAST, maxTokens: 1800 },
-      ),
-    ),
+      );
+    }),
 
   /** Cover letter generator (Haiku). */
   coverLetter: protectedProcedure
