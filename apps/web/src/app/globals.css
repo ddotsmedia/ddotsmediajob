@@ -100,3 +100,18 @@ h1, h2, h3, h4, .font-display {
 .logo-dots span:nth-child(2) { background-color: #ea7a3c; } /* orange  */
 .logo-dots span:nth-child(3) { background-color: #b3cb4f; } /* lime    */
 .logo-dots span:nth-child(4) { background-color: #f3ca3d; } /* gold    */
+
+/* CV builder — print only the CV sheet when exporting to PDF */
+@media print {
+  body * { visibility: hidden !important; }
+  #cv-print, #cv-print * { visibility: visible !important; }
+  #cv-print {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    box-shadow: none !important;
+    border: none !important;
+  }
+  @page { margin: 16mm; }
+}

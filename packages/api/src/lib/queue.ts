@@ -28,6 +28,8 @@ export type EmailJob =
   | { type: 'welcome'; to: string; name: string; role: 'jobseeker' | 'employer' }
   | { type: 'apply-confirmation'; to: string; name: string; jobTitle: string; companyName: string }
   | { type: 'job-approved'; to: string; name: string; jobTitle: string; jobUrl: string }
+  | { type: 'password-reset'; to: string; name: string; resetUrl: string }
+  | { type: 'verify-email'; to: string; name: string; verifyUrl: string }
   | {
       type: 'job-alert';
       to: string;

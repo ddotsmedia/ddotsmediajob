@@ -13,6 +13,7 @@ import { communityRouter } from './routers/community';
 import { reviewsRouter } from './routers/reviews';
 import { candidatesRouter } from './routers/candidates';
 import { billingRouter } from './routers/billing';
+import { notificationsRouter } from './routers/notifications';
 
 export const appRouter = router({
   auth: authRouter,
@@ -29,6 +30,7 @@ export const appRouter = router({
   reviews: reviewsRouter,
   candidates: candidatesRouter,
   billing: billingRouter,
+  notifications: notificationsRouter,
 });
 
 export type AppRouter = typeof appRouter;

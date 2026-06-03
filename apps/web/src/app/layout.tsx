@@ -4,6 +4,7 @@ import { SITE } from '@ddots/shared';
 import { Providers } from './providers';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
+import { MobileBottomNav } from '@/components/mobile-bottom-nav';
 import './globals.css';
 
 const sora = Sora({ subsets: ['latin'], variable: '--font-sora', display: 'swap' });
@@ -43,8 +44,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen flex flex-col">
         <Providers>
           <SiteHeader />
-          <main className="flex-1">{children}</main>
+          <main className="flex-1 pb-16 md:pb-0">{children}</main>
           <SiteFooter />
+          <MobileBottomNav />
         </Providers>
       </body>
     </html>

@@ -1,10 +1,15 @@
+import { randomBytes } from 'node:crypto';
+import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
-import { users, employerProfiles, jobseekerProfiles, eq } from '@ddots/db';
+import { users, employerProfiles, jobseekerProfiles, verificationTokens, eq, and } from '@ddots/db';
 import { registerSchema } from '@ddots/shared';
 import { hashPassword } from '@ddots/auth/password';
-import { router, publicProcedure } from '../trpc';
+import { router, publicProcedure, protectedProcedure } from '../trpc';
 import { enqueueEmail } from '../lib/queue';
 import { audit } from '../lib/helpers';
+
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://ddotsmediajobs.com';
+const token = () => randomBytes(32).toString('hex');
 
 export const authRouter = router({
   /** Register a jobseeker or employer with email + password. */
@@ -24,8 +29,102 @@ export const authRouter = router({
       await ctx.db.insert(jobseekerProfiles).values({ userId: user!.id });
     }
 
+    // Welcome + email verification link.
     await enqueueEmail({ type: 'welcome', to: input.email, name: input.name, role: input.role });
+    const t = token();
+    await ctx.db.insert(verificationTokens).values({
+      identifier: `verify:${input.email}`,
+      token: t,
+      expires: new Date(Date.now() + 24 * 3600_000),
+    });
+    await enqueueEmail({
+      type: 'verify-email',
+      to: input.email,
+      name: input.name,
+      verifyUrl: `${APP_URL}/verify-email?token=${t}`,
+    });
+
     await audit(user!.id, 'user.register', 'user', user!.id, { role: input.role });
     return { id: user!.id, email: user!.email };
+  }),
+
+  /** Request a password-reset link. Always returns ok (no account enumeration). */
+  requestPasswordReset: publicProcedure
+    .input(z.object({ email: z.string().email().toLowerCase() }))
+    .mutation(async ({ ctx, input }) => {
+      const user = await ctx.db.query.users.findFirst({ where: eq(users.email, input.email) });
+      if (user) {
+        const t = token();
+        await ctx.db
+          .delete(verificationTokens)
+          .where(eq(verificationTokens.identifier, `reset:${input.email}`));
+        await ctx.db.insert(verificationTokens).values({
+          identifier: `reset:${input.email}`,
+          token: t,
+          expires: new Date(Date.now() + 3600_000),
+        });
+        await enqueueEmail({
+          type: 'password-reset',
+          to: input.email,
+          name: user.name ?? 'there',
+          resetUrl: `${APP_URL}/reset-password?token=${t}`,
+        });
+      }
+      return { ok: true };
+    }),
+
+  /** Complete a password reset with the emailed token. */
+  resetPassword: publicProcedure
+    .input(z.object({ token: z.string().min(10), password: z.string().min(8).max(100) }))
+    .mutation(async ({ ctx, input }) => {
+      const vt = await ctx.db.query.verificationTokens.findFirst({
+        where: eq(verificationTokens.token, input.token),
+      });
+      if (!vt || !vt.identifier.startsWith('reset:') || vt.expires < new Date()) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'This reset link is invalid or has expired.' });
+      }
+      const email = vt.identifier.slice('reset:'.length);
+      const passwordHash = await hashPassword(input.password);
+      await ctx.db.update(users).set({ passwordHash }).where(eq(users.email, email));
+      await ctx.db
+        .delete(verificationTokens)
+        .where(and(eq(verificationTokens.identifier, vt.identifier), eq(verificationTokens.token, vt.token)));
+      return { ok: true };
+    }),
+
+  /** Verify an email address from the emailed token. */
+  verifyEmail: publicProcedure.input(z.object({ token: z.string().min(10) })).mutation(async ({ ctx, input }) => {
+    const vt = await ctx.db.query.verificationTokens.findFirst({
+      where: eq(verificationTokens.token, input.token),
+    });
+    if (!vt || !vt.identifier.startsWith('verify:') || vt.expires < new Date()) {
+      throw new TRPCError({ code: 'BAD_REQUEST', message: 'This verification link is invalid or has expired.' });
+    }
+    const email = vt.identifier.slice('verify:'.length);
+    await ctx.db.update(users).set({ emailVerified: new Date() }).where(eq(users.email, email));
+    await ctx.db
+      .delete(verificationTokens)
+      .where(and(eq(verificationTokens.identifier, vt.identifier), eq(verificationTokens.token, vt.token)));
+    return { ok: true };
+  }),
+
+  /** Resend the verification email for the logged-in user. */
+  resendVerification: protectedProcedure.mutation(async ({ ctx }) => {
+    const email = ctx.session.user.email;
+    if (!email) throw new TRPCError({ code: 'BAD_REQUEST' });
+    const t = token();
+    await ctx.db.delete(verificationTokens).where(eq(verificationTokens.identifier, `verify:${email}`));
+    await ctx.db.insert(verificationTokens).values({
+      identifier: `verify:${email}`,
+      token: t,
+      expires: new Date(Date.now() + 24 * 3600_000),
+    });
+    await enqueueEmail({
+      type: 'verify-email',
+      to: email,
+      name: ctx.session.user.name ?? 'there',
+      verifyUrl: `${APP_URL}/verify-email?token=${t}`,
+    });
+    return { ok: true };
   }),
 });

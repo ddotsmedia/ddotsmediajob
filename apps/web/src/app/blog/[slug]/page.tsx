@@ -50,7 +50,14 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
       {post.category && <Badge className="mt-4 block w-fit">{post.category}</Badge>}
       <h1 className="mt-3 font-display text-3xl font-extrabold text-navy-900 md:text-4xl">{post.title}</h1>
       <p className="mt-2 text-sm text-navy-700/50">{post.publishedAt ? timeAgo(post.publishedAt) : 'Draft'} · {post.viewCount} views</p>
-      <div className="prose prose-slate mt-8 max-w-none whitespace-pre-wrap prose-headings:font-display">{post.content}</div>
+      {/<[a-z][\s\S]*>/i.test(post.content) ? (
+        <div
+          className="prose prose-slate mt-8 max-w-none prose-headings:font-display"
+          dangerouslySetInnerHTML={{ __html: post.content }}
+        />
+      ) : (
+        <div className="prose prose-slate mt-8 max-w-none whitespace-pre-wrap prose-headings:font-display">{post.content}</div>
+      )}
     </article>
   );
 }

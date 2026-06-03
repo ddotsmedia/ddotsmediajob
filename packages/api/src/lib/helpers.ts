@@ -1,5 +1,19 @@
-import { db, jobs, auditLogs, eq } from '@ddots/db';
+import { db, jobs, auditLogs, notifications, eq } from '@ddots/db';
 import { slugify } from '@ddots/shared';
+
+/** Create an in-app notification for a user (best-effort). */
+export async function notify(
+  userId: string,
+  type: string,
+  title: string,
+  opts?: { body?: string; link?: string },
+): Promise<void> {
+  try {
+    await db.insert(notifications).values({ userId, type, title, body: opts?.body, link: opts?.link });
+  } catch (err) {
+    console.error('[notify] failed', err);
+  }
+}
 
 /** Generate a slug unique within the jobs table by appending a short suffix. */
 export async function uniqueJobSlug(title: string): Promise<string> {

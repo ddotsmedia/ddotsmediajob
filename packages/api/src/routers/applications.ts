@@ -3,7 +3,7 @@ import { TRPCError } from '@trpc/server';
 import { jobs, applications, eq, and, desc, sql } from '@ddots/db';
 import { applySchema, updateApplicationStatusSchema } from '@ddots/shared';
 import { router, protectedProcedure, employerProcedure } from '../trpc';
-import { audit } from '../lib/helpers';
+import { audit, notify } from '../lib/helpers';
 import { enqueueEmail } from '../lib/queue';
 
 export const applicationsRouter = router({
@@ -45,6 +45,10 @@ export const applicationsRouter = router({
         companyName: job.company?.name ?? 'the employer',
       });
     }
+    await notify(job.employerId, 'application', `New application for ${job.title}`, {
+      body: `${ctx.session.user.name ?? 'A candidate'} applied.`,
+      link: `/employer/jobs/${job.id}/applications`,
+    });
     await audit(ctx.session.user.id, 'application.create', 'application', app!.id);
     return app;
   }),
@@ -86,7 +90,7 @@ export const applicationsRouter = router({
   updateStatus: employerProcedure.input(updateApplicationStatusSchema).mutation(async ({ ctx, input }) => {
     const app = await ctx.db.query.applications.findFirst({
       where: eq(applications.id, input.applicationId),
-      with: { job: { columns: { employerId: true } } },
+      with: { job: { columns: { employerId: true, title: true, slug: true } } },
     });
     if (!app) throw new TRPCError({ code: 'NOT_FOUND' });
     if (app.job.employerId !== ctx.session.user.id && ctx.session.user.role !== 'admin') {
@@ -97,6 +101,10 @@ export const applicationsRouter = router({
       .set({ status: input.status, employerNote: input.note })
       .where(eq(applications.id, input.applicationId))
       .returning();
+    await notify(app.seekerId, 'application-status', `Your application is now "${input.status}"`, {
+      body: app.job.title,
+      link: '/dashboard/applications',
+    });
     await audit(ctx.session.user.id, 'application.status', 'application', input.applicationId, {
       status: input.status,
     });

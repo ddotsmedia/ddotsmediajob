@@ -21,7 +21,7 @@ import {
   ilike,
 } from '@ddots/db';
 import { router, adminProcedure } from '../trpc';
-import { audit } from '../lib/helpers';
+import { audit, notify } from '../lib/helpers';
 import { enqueueEmail, enqueueSearchSync } from '../lib/queue';
 
 export const adminRouter = router({
@@ -75,6 +75,9 @@ export const adminRouter = router({
         jobUrl: `${process.env.NEXT_PUBLIC_APP_URL}/jobs/${job.slug}`,
       });
     }
+    await notify(job.employerId, 'job-approved', `Your job "${job.title}" is live`, {
+      link: `/jobs/${job.slug}`,
+    });
     await audit(ctx.session.user.id, 'job.approve', 'job', input.id);
     return { ok: true };
   }),

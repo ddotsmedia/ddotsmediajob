@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { Users, Loader2, FileText, MapPin } from 'lucide-react';
+import { Users, Loader2, FileText, MapPin, Download } from 'lucide-react';
 import { CATEGORIES, EMIRATES, EXPERIENCE_LEVELS, emirateBySlug } from '@ddots/shared';
 import { trpc } from '@/trpc/react';
 import { Input, Label, Select, Badge } from '@/components/ui/primitives';
 import { Button } from '@/components/ui/button';
+import { downloadCsv } from '@/lib/csv';
 
 export default function CandidateSearchPage() {
   const [filters, setFilters] = useState({ q: '', category: '', emirate: '', experienceLevel: '' });
@@ -27,7 +28,28 @@ export default function CandidateSearchPage() {
         <Users className="h-5 w-5 text-teal-500" />
         <h1 className="font-display text-2xl font-bold text-navy-900">Candidate Search</h1>
       </div>
-      <p className="text-navy-700/60">Browse jobseekers who are open to work.</p>
+      <div className="flex items-center justify-between">
+        <p className="text-navy-700/60">Browse jobseekers who are open to work.</p>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() =>
+            downloadCsv(
+              'candidates.csv',
+              (results.data ?? []).map((c) => ({
+                name: c.name ?? '',
+                headline: c.headline ?? '',
+                category: c.categorySlug ?? '',
+                emirate: c.emirateSlug ?? '',
+                experience: c.experienceLevel ?? '',
+                skills: (c.skills ?? []).join('; '),
+              })),
+            )
+          }
+        >
+          <Download /> Export CSV
+        </Button>
+      </div>
 
       <div className="mt-6 grid gap-3 rounded-xl border bg-white p-5 sm:grid-cols-2 lg:grid-cols-5 lg:items-end">
         <div className="space-y-1.5 lg:col-span-2"><Label>Keyword / skill</Label><Input value={filters.q} onChange={(e) => setFilters({ ...filters, q: e.target.value })} /></div>

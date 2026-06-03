@@ -5,6 +5,8 @@ import {
   ApplyConfirmationEmail,
   JobApprovedEmail,
   JobAlertEmail,
+  PasswordResetEmail,
+  VerifyEmail,
 } from '@ddots/email';
 import type { EmailJob } from './queue';
 
@@ -43,6 +45,16 @@ async function renderEmail(job: EmailJob): Promise<{ subject: string; html: stri
       return {
         subject: `${job.jobs.length} new jobs match your alert`,
         html: await render(JobAlertEmail({ name: job.name, jobs: job.jobs })),
+      };
+    case 'password-reset':
+      return {
+        subject: 'Reset your DdotsMediaJobs password',
+        html: await render(PasswordResetEmail({ name: job.name, resetUrl: job.resetUrl })),
+      };
+    case 'verify-email':
+      return {
+        subject: 'Verify your email — DdotsMediaJobs',
+        html: await render(VerifyEmail({ name: job.name, verifyUrl: job.verifyUrl })),
       };
   }
 }

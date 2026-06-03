@@ -6,6 +6,7 @@ import { useSession, signOut } from 'next-auth/react';
 import { Menu, X, LayoutDashboard, LogOut, Briefcase } from 'lucide-react';
 import { Logo } from './logo';
 import { Button } from './ui/button';
+import { NotificationBell } from './notification-bell';
 import { cn } from '@/lib/utils';
 
 const NAV = [
@@ -40,6 +41,7 @@ export function SiteHeader() {
         <div className="hidden items-center gap-3 md:flex">
           {session ? (
             <>
+              <NotificationBell />
               <Button asChild variant="ghost" size="sm">
                 <Link href={dashHref}>
                   <LayoutDashboard /> Dashboard

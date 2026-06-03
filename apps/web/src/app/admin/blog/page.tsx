@@ -5,17 +5,20 @@ import { toast } from 'sonner';
 import { Loader2, Plus } from 'lucide-react';
 import { trpc } from '@/trpc/react';
 import { Button } from '@/components/ui/button';
-import { Input, Label, Textarea, Badge } from '@/components/ui/primitives';
+import { Input, Label, Badge } from '@/components/ui/primitives';
+import { TiptapEditor } from '@/components/tiptap-editor';
 
 export default function AdminBlogPage() {
   const utils = trpc.useUtils();
   const posts = trpc.content.blogList.useQuery({ page: 1 });
   const [open, setOpen] = useState(false);
+  const [content, setContent] = useState('<p></p>');
 
   const upsert = trpc.content.blogUpsert.useMutation({
     onSuccess: () => {
       utils.content.blogList.invalidate();
       setOpen(false);
+      setContent('<p></p>');
       toast.success('Post saved');
     },
     onError: (e) => toast.error(e.message),
@@ -24,10 +27,11 @@ export default function AdminBlogPage() {
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
+    if (content.replace(/<[^>]*>/g, '').trim().length < 10) return toast.error('Content is too short');
     upsert.mutate({
       title: String(f.get('title')),
       excerpt: String(f.get('excerpt')) || undefined,
-      content: String(f.get('content')),
+      content,
       category: String(f.get('category')) || undefined,
       tags: String(f.get('tags')).split(',').map((s) => s.trim()).filter(Boolean),
       isPublished: f.get('publish') === 'on',
@@ -49,7 +53,7 @@ export default function AdminBlogPage() {
             <div className="space-y-1.5"><Label>Category</Label><Input name="category" placeholder="Career Advice" /></div>
             <div className="space-y-1.5"><Label>Tags (comma-separated)</Label><Input name="tags" /></div>
           </div>
-          <div className="space-y-1.5"><Label>Content (Markdown)</Label><Textarea name="content" className="min-h-[260px]" required /></div>
+          <div className="space-y-1.5"><Label>Content</Label><TiptapEditor value={content} onChange={setContent} /></div>
           <label className="flex items-center gap-2 text-sm text-navy-700">
             <input type="checkbox" name="publish" className="h-4 w-4 rounded text-teal-600" /> Publish immediately
           </label>
