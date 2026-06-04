@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 
 export const revalidate = 300; // ISR — refresh stats/featured every 5 min
 
-const EMPTY_STATS = { byCategory: {} as Record<string, number>, byEmirate: {} as Record<string, number>, totalActive: 0 };
+const EMPTY_STATS = { byCategory: {} as Record<string, number>, byEmirate: {} as Record<string, number>, totalActive: 0, totalSeekers: 0 };
 
 export default async function HomePage() {
   const api = await getApi();
@@ -82,7 +82,7 @@ export default async function HomePage() {
           <Stat icon={BriefcaseBusiness} value={stats.totalActive} suffix="+" label="Active Jobs" />
           <Stat icon={Building2} value={stats.byCategory ? Object.keys(stats.byCategory).length : 12} label="Industries" />
           <Stat icon={MapPinCount} value={7} label="Emirates Covered" />
-          <Stat icon={Users} value={50000} suffix="+" label="Jobseekers" />
+          <Stat icon={Users} value={stats.totalSeekers} suffix="+" label="Jobseekers" />
         </div>
       </section>
 

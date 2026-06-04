@@ -6,6 +6,7 @@ import {
   savedJobs,
   applications,
   jobseekerProfiles,
+  users,
   eq,
   and,
   or,
@@ -98,7 +99,7 @@ export const jobsRouter = router({
 
   /** Per-category / per-emirate counts for landing pages. */
   stats: publicProcedure.query(async ({ ctx }) => {
-    const [byCategory, byEmirate, totals] = await Promise.all([
+    const [byCategory, byEmirate, totals, seekers] = await Promise.all([
       ctx.db
         .select({ slug: jobs.categorySlug, value: count() })
         .from(jobs)
@@ -110,11 +111,13 @@ export const jobsRouter = router({
         .where(eq(jobs.status, 'active'))
         .groupBy(jobs.emirateSlug),
       ctx.db.select({ value: count() }).from(jobs).where(eq(jobs.status, 'active')),
+      ctx.db.select({ value: count() }).from(users).where(eq(users.role, 'jobseeker')),
     ]);
     return {
       byCategory: Object.fromEntries(byCategory.map((r) => [r.slug, r.value])),
       byEmirate: Object.fromEntries(byEmirate.map((r) => [r.slug, r.value])),
       totalActive: totals[0]?.value ?? 0,
+      totalSeekers: seekers[0]?.value ?? 0,
     };
   }),
 
