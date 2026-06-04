@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Loader2, Send, Save, MessageCircle, Trash2 } from 'lucide-react';
+import { Loader2, Send, Save, MessageCircle, Trash2, Sparkles, Languages, WandSparkles, TrendingUp } from 'lucide-react';
 import { CATEGORIES, EMIRATES, JOB_TYPES, formatSalary } from '@ddots/shared';
 import { trpc } from '@/trpc/react';
 import { Button } from '@/components/ui/button';
@@ -26,6 +26,7 @@ const blank = {
   visaProvided: false, accommodationProvided: false, isFresher: false, isRemote: false, isUrgent: false,
   freeZone: false, isAnonymous: false, isFeatured: false, contactWhatsapp: '', skills: '', benefits: '',
   description: '<p></p>',
+  titleAr: '', descriptionAr: '', requirementsAr: '', benefitsAr: [] as string[],
 };
 
 function Conf({ level }: { level?: string }) {
@@ -39,6 +40,27 @@ export function AdminJobReviewForm({ draft, source = 'manual', onReset }: { draf
   const [f, setF] = useState({ ...blank });
   const conf = draft?.confidence ?? {};
   const create = trpc.admin.createJob.useMutation();
+  const [perf, setPerf] = useState<{ estApplies7days: string; estViews7days: string; timeToFirstApply: string; salaryWarning: string | null } | null>(null);
+
+  const suggestTitle = trpc.ai.autoCompleteJobTitle.useMutation({
+    onSuccess: (d) => { if (d.suggestion) set('title', d.suggestion); toast.success('Title suggested'); },
+    onError: (e) => toast.error(e.message),
+  });
+  const continueDesc = trpc.ai.continueJobDescription.useMutation({
+    onSuccess: (d) => { set('description', `${f.description}<p>${d.continuation.replace(/\n+/g, '</p><p>')}</p>`); toast.success('Description extended'); },
+    onError: (e) => toast.error(e.message),
+  });
+  const translate = trpc.ai.translateJobToArabic.useMutation({
+    onSuccess: (d) => {
+      setF((s) => ({ ...s, titleAr: d.titleAr, descriptionAr: d.descriptionAr, requirementsAr: d.requirementsAr ?? '', benefitsAr: d.benefitsAr }));
+      toast.success('Translated to Arabic');
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const predict = trpc.ai.predictJobPerformance.useMutation({
+    onSuccess: (d) => setPerf(d),
+    onError: (e) => toast.error(e.message),
+  });
 
   useEffect(() => {
     if (!draft) return;
@@ -69,6 +91,8 @@ export function AdminJobReviewForm({ draft, source = 'manual', onReset }: { draf
       freeZone: f.freeZone, isAnonymous: f.isAnonymous, contactWhatsapp: f.contactWhatsapp || undefined,
       skills: f.skills.split(',').map((s) => s.trim()).filter(Boolean),
       benefits: f.benefits.split(',').map((s) => s.trim()).filter(Boolean),
+      titleAr: f.titleAr || undefined, descriptionAr: f.descriptionAr || undefined,
+      requirementsAr: f.requirementsAr || undefined, benefitsAr: f.benefitsAr.length ? f.benefitsAr : undefined,
       status, source: source as never,
     };
   }
@@ -122,6 +146,40 @@ export function AdminJobReviewForm({ draft, source = 'manual', onReset }: { draf
             <input type="checkbox" checked={f[k]} onChange={(e) => set(k, e.target.checked)} className="h-4 w-4 rounded text-teal-600" /> {lbl}
           </label>
         ))}
+      </div>
+
+      <div className="space-y-3 rounded-lg border border-teal-100 bg-teal-50/40 p-4">
+        <div className="flex items-center gap-2 text-sm font-semibold text-teal-800"><Sparkles className="h-4 w-4" /> AI assist</div>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" disabled={suggestTitle.isPending || f.title.trim().length < 3} onClick={() => suggestTitle.mutate({ partial: f.title.trim() })}>
+            {suggestTitle.isPending ? <Loader2 className="animate-spin" /> : <WandSparkles />} Suggest title
+          </Button>
+          <Button variant="outline" size="sm" disabled={continueDesc.isPending || plain().length < 50} onClick={() => continueDesc.mutate({ existing: plain(), style: 'professional' })}>
+            {continueDesc.isPending ? <Loader2 className="animate-spin" /> : <WandSparkles />} Continue description
+          </Button>
+          <Button variant="outline" size="sm" disabled={translate.isPending || f.title.trim().length < 3 || plain().length < 10} onClick={() => translate.mutate({ title: f.title, description: plain(), requirements: undefined, benefits: f.benefits.split(',').map((s) => s.trim()).filter(Boolean) })}>
+            {translate.isPending ? <Loader2 className="animate-spin" /> : <Languages />} Translate to Arabic
+          </Button>
+          <Button variant="outline" size="sm" disabled={predict.isPending} onClick={() => predict.mutate({ categorySlug: f.categorySlug, emirateSlug: f.emirateSlug, salaryMin: f.salaryMin ? Number(f.salaryMin) : undefined, featured: f.isFeatured, urgent: f.isUrgent, waBlast: false })}>
+            {predict.isPending ? <Loader2 className="animate-spin" /> : <TrendingUp />} Predict performance
+          </Button>
+        </div>
+        {perf && (
+          <div className="flex flex-wrap gap-2 text-xs">
+            <Badge>~{perf.estApplies7days} applies / 7d</Badge>
+            <Badge>~{perf.estViews7days} views / 7d</Badge>
+            <Badge>1st apply {perf.timeToFirstApply}</Badge>
+            {perf.salaryWarning && <Badge className="bg-accent-100 text-accent-700">{perf.salaryWarning}</Badge>}
+          </div>
+        )}
+        {f.titleAr && (
+          <div dir="rtl" className="space-y-1 rounded-md border bg-white p-3 text-right text-sm">
+            <p className="font-semibold text-navy-800">{f.titleAr}</p>
+            <p className="whitespace-pre-wrap text-navy-600">{f.descriptionAr}</p>
+            {f.benefitsAr.length > 0 && <p className="text-xs text-navy-500">{f.benefitsAr.join(' · ')}</p>}
+            <button type="button" dir="ltr" onClick={() => setF((s) => ({ ...s, titleAr: '', descriptionAr: '', requirementsAr: '', benefitsAr: [] }))} className="text-xs text-accent-600 hover:underline">Clear Arabic</button>
+          </div>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-2 border-t pt-4">
