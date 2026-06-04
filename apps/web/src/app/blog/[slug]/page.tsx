@@ -25,7 +25,12 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return {
     title: post.title,
     description: post.excerpt ?? post.content.slice(0, 155),
-    openGraph: { title: post.title, description: post.excerpt ?? undefined, type: 'article' },
+    openGraph: {
+      title: post.title,
+      description: post.excerpt ?? undefined,
+      type: 'article',
+      images: [`/api/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent('DdotsMediaJobs Blog')}&tag=${encodeURIComponent('Blog')}`],
+    },
     alternates: { canonical: `${SITE.url}/blog/${post.slug}` },
   };
 }
