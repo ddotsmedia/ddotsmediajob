@@ -22,6 +22,7 @@ export type JobCardData = {
   freeZone?: boolean;
   freeZoneName?: string | null;
   isAnonymous?: boolean;
+  source?: string | null;
   applicationCount?: number;
   publishedAt: Date | string | null;
   createdAt: Date | string;
@@ -70,6 +71,11 @@ export function JobCard({ job }: { job: JobCardData }) {
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {category && <Badge variant="muted">{category.name}</Badge>}
+            {job.source === 'community' ? (
+              <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-700">Community Referral</Badge>
+            ) : (
+              <Badge variant="outline" className="border-teal-200 bg-teal-50 text-teal-700">Direct Employer</Badge>
+            )}
             <Badge variant={job.salaryHidden ? 'muted' : 'success'}>{job.salaryHidden ? 'Apply to see salary' : 'Salary shown'}</Badge>
             {job.freeZone && <Badge variant="default">{job.freeZoneName || 'Free Zone'}</Badge>}
             {job.isRemote && <Badge variant="success">Remote</Badge>}

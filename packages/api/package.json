@@ -9,6 +9,7 @@
     "./lib/typesense": "./src/lib/typesense.ts",
     "./lib/anthropic": "./src/lib/anthropic.ts",
     "./lib/queue": "./src/lib/queue.ts",
+    "./lib/helpers": "./src/lib/helpers.ts",
     "./lib/email": "./src/lib/email.ts",
     "./lib/r2": "./src/lib/r2.ts",
     "./lib/security": "./src/lib/security.ts"

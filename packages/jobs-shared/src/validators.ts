@@ -64,6 +64,24 @@ export const jobFieldsSchema = z.object({
   expiresAt: z.coerce.date().optional(),
 });
 
+// Community referral post — simplified form for jobseekers/users sharing a job they know of.
+export const communityPostSchema = z.object({
+  title: nonEmpty(160),
+  categorySlug: z.enum(CATEGORY_SLUGS as [string, ...string[]]),
+  emirateSlug: z.enum(EMIRATE_SLUGS as [string, ...string[]]),
+  description: z.string().trim().min(30).max(8000),
+  salaryMin: z.number().int().nonnegative().nullable().optional(),
+  salaryMax: z.number().int().nonnegative().nullable().optional(),
+  contactWhatsapp: z.string().trim().max(30).optional(),
+  contactEmail: z.string().trim().toLowerCase().email().optional(),
+  relation: z.enum(['work_there', 'friend_referred', 'other']),
+  isAnonymous: z.boolean().default(false),
+}).refine((d) => d.salaryMin == null || d.salaryMax == null || d.salaryMax >= d.salaryMin, {
+  message: 'Maximum salary must be greater than or equal to minimum',
+  path: ['salaryMax'],
+});
+export type CommunityPostInput = z.infer<typeof communityPostSchema>;
+
 export const jobInputSchema = jobFieldsSchema.refine(
   (d) => d.salaryMin == null || d.salaryMax == null || d.salaryMax >= d.salaryMin,
   {

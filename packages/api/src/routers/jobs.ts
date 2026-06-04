@@ -17,7 +17,7 @@ import {
   count,
   inArray,
 } from '@ddots/db';
-import { jobFilterSchema, jobInputSchema, jobFieldsSchema, aiQuickPostSchema } from '@ddots/shared';
+import { jobFilterSchema, jobInputSchema, jobFieldsSchema, aiQuickPostSchema, communityPostSchema } from '@ddots/shared';
 import { router, publicProcedure, employerProcedure, protectedProcedure } from '../trpc';
 import { uniqueJobSlug, audit } from '../lib/helpers';
 import { enqueueSearchSync } from '../lib/queue';
@@ -26,7 +26,8 @@ import { generateJobFromPrompt } from '../lib/anthropic';
 export const jobsRouter = router({
   /** Public paginated, filtered job listing. */
   list: publicProcedure.input(jobFilterSchema).query(async ({ ctx, input }) => {
-    const conds = [eq(jobs.status, 'active')];
+    // Active and not past expiry (lazy-expire guard — never show stale listings even if cron lags).
+    const conds = [eq(jobs.status, 'active'), or(sql`${jobs.expiresAt} IS NULL`, gte(jobs.expiresAt, sql`now()`))!];
     if (input.q) {
       conds.push(or(ilike(jobs.title, `%${input.q}%`), ilike(jobs.description, `%${input.q}%`))!);
     }
@@ -215,6 +216,55 @@ export const jobsRouter = router({
     await audit(ctx.session.user.id, 'job.renew', 'job', input.id);
     return updated;
   }),
+
+  /** Any logged-in user: post a community referral job. Limit 2 per rolling 30 days; expires in 15 days. */
+  createCommunity: protectedProcedure.input(communityPostSchema).mutation(async ({ ctx, input }) => {
+    const since = new Date(Date.now() - 30 * 86_400_000);
+    const [{ value: recent } = { value: 0 }] = await ctx.db
+      .select({ value: count() })
+      .from(jobs)
+      .where(and(eq(jobs.employerId, ctx.session.user.id), eq(jobs.source, 'community'), gte(jobs.createdAt, since)));
+    if (recent >= 2) {
+      throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'Community post limit reached (2 per 30 days). Try again later.' });
+    }
+
+    const slug = await uniqueJobSlug(input.title);
+    const [job] = await ctx.db
+      .insert(jobs)
+      .values({
+        slug,
+        employerId: ctx.session.user.id,
+        companyId: null,
+        title: input.title,
+        description: input.description,
+        categorySlug: input.categorySlug,
+        emirateSlug: input.emirateSlug,
+        jobType: 'full-time',
+        experienceLevel: '1-3-years',
+        salaryMin: input.salaryMin ?? null,
+        salaryMax: input.salaryMax ?? null,
+        salaryHidden: input.salaryMin == null && input.salaryMax == null,
+        isAnonymous: input.isAnonymous,
+        contactWhatsapp: input.contactWhatsapp ?? null,
+        applyEmail: input.contactEmail ?? null,
+        relation: input.relation,
+        source: 'community',
+        status: 'pending', // community posts always reviewed before going live
+        expiresAt: new Date(Date.now() + 15 * 86_400_000),
+      })
+      .returning();
+
+    await audit(ctx.session.user.id, 'job.create.community', 'job', job!.id);
+    return job;
+  }),
+
+  /** Any logged-in user: list their own community referral posts. */
+  myCommunity: protectedProcedure.query(async ({ ctx }) =>
+    ctx.db.query.jobs.findMany({
+      where: and(eq(jobs.employerId, ctx.session.user.id), eq(jobs.source, 'community')),
+      orderBy: [desc(jobs.createdAt)],
+    }),
+  ),
 
   /** Jobseeker: recommended jobs based on profile (category/emirate), excluding already-applied. */
   recommended: protectedProcedure

@@ -1,4 +1,4 @@
-import { db, jobs, auditLogs, notifications, eq } from '@ddots/db';
+import { db, jobs, auditLogs, notifications, eq, and, lt, sql } from '@ddots/db';
 import { slugify } from '@ddots/shared';
 
 /** Create an in-app notification for a user (best-effort). */
@@ -25,6 +25,25 @@ export async function uniqueJobSlug(title: string): Promise<string> {
     if (!existing) return candidate;
   }
   return `${base}-${Date.now().toString(36)}`.slice(0, 120);
+}
+
+/** Flip active jobs whose expiry has passed to `expired` and notify their owners. Idempotent. */
+export async function expireStaleJobs(): Promise<number> {
+  const stale = await db
+    .update(jobs)
+    .set({ status: 'expired' })
+    .where(and(eq(jobs.status, 'active'), sql`${jobs.expiresAt} IS NOT NULL`, lt(jobs.expiresAt, sql`now()`)))
+    .returning({ id: jobs.id, title: jobs.title, employerId: jobs.employerId });
+
+  for (const j of stale) {
+    if (j.employerId) {
+      await notify(j.employerId, 'job.expired', 'Your job posting expired', {
+        body: `“${j.title}” has reached its expiry date and is no longer listed. Renew it to relist.`,
+        link: '/employer/jobs',
+      });
+    }
+  }
+  return stale.length;
 }
 
 export async function audit(
