@@ -1,0 +1,10 @@
+[Unit]
+Description=Poll origin/main every 2 min and deploy if behind
+
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=2min
+AccuracySec=20s
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,9 @@
+[Unit]
+Description=DdotsMediaJobs auto-deploy (poll origin/main, deploy if behind)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/ddots-autodeploy.sh
+TimeoutStartSec=1200
