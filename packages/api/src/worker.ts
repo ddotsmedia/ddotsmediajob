@@ -17,6 +17,7 @@ import {
 } from '@ddots/db';
 import { formatSalary } from '@ddots/shared';
 import { QUEUE, bullConnection, enqueueEmail, jobAlertsQueue, type EmailJob, type SearchSyncJob, type AlertScanJob } from './lib/queue';
+import { expireStaleJobs } from './lib/helpers';
 import { sendEmailJob } from './lib/email';
 import { ensureJobsCollection, upsertJobDocument, deleteJobDocument, jobToDocument } from './lib/typesense';
 
@@ -101,6 +102,18 @@ new Worker<AlertScanJob>(
   },
   { connection, concurrency: 1 },
 ).on('failed', (job, err) => console.error(`[alerts] ${job?.id} failed:`, err.message));
+
+// ── Auto-expire stale jobs (in-process hourly tick) ──────
+async function expireTick() {
+  try {
+    const n = await expireStaleJobs();
+    if (n > 0) console.log(`[expire] expired ${n} stale job(s)`);
+  } catch (err) {
+    console.error('[expire] tick failed:', err);
+  }
+}
+void expireTick(); // run once on startup
+setInterval(() => void expireTick(), 60 * 60 * 1000); // hourly
 
 // ── Schedule repeatable alert scans ──────────────────────
 async function scheduleAlertScans() {
