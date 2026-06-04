@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
-import { jobs, jobseekerProfiles, eq } from '@ddots/db';
+import { jobs, jobseekerProfiles, eq, and, gte, ne, isNotNull } from '@ddots/db';
 import { formatSalary } from '@ddots/shared';
 import { router, protectedProcedure, employerProcedure, adminProcedure } from '../trpc';
 import {
@@ -341,4 +341,260 @@ export const aiRouter = router({
         .sort((a, b) => b.score - a.score),
     };
   }),
+
+  // Auto-Complete: Job Title Suggestions
+  autoCompleteJobTitle: protectedProcedure
+    .input(z.object({
+      partial: z.string().min(3).max(100),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      await guardAi(ctx);
+      const text = await chat(
+        'You are a UAE recruitment expert. Suggest professional job titles.',
+        [{ role: 'user', content: `Complete this job title with a professional suggestion. Return ONLY the completed title (3-4 words max), no quotes:\n${wrapUserContent(input.partial)}` }],
+        { model: MODEL_FAST, maxTokens: 50 },
+      );
+      return { suggestion: text.trim() };
+    }),
+
+  // Auto-Complete: Job Description Continuation
+  continueJobDescription: protectedProcedure
+    .input(z.object({
+      existing: z.string().min(50).max(3000),
+      style: z.enum(['professional', 'casual', 'detailed']).default('professional'),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      await guardAi(ctx);
+      const text = await chat(
+        'You are a UAE recruitment expert writing job descriptions.',
+        [{ role: 'user', content: `Continue writing this job description in ${input.style} tone. Generate 2-3 additional paragraphs that naturally follow:\n\n${wrapUserContent(input.existing)}\n\n---\n[Continue from here]` }],
+        { model: MODEL_FAST, maxTokens: 800 },
+      );
+      return { continuation: text };
+    }),
+
+  // Translate Job to Arabic
+  translateJobToArabic: protectedProcedure
+    .input(z.object({
+      title: z.string().max(160),
+      description: z.string().max(10000),
+      requirements: z.string().max(2000).optional(),
+      benefits: z.array(z.string()),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      await guardAi(ctx);
+      const result = await structured<{
+        titleAr: string;
+        descriptionAr: string;
+        requirementsAr?: string;
+        benefitsAr: string[];
+      }>(
+        'You are a professional translator specializing in UAE job postings. Translate to formal Arabic maintaining professional tone.',
+        `Translate this job posting to Arabic:\n\nTitle: ${wrapUserContent(input.title)}\n\nDescription: ${wrapUserContent(input.description)}\n\nRequirements: ${wrapUserContent(input.requirements || '')}\n\nBenefits: ${input.benefits.map(b => wrapUserContent(b)).join('; ')}`,
+        {
+          name: 'arabic_translation',
+          description: 'Arabic translation of job posting fields.',
+          input_schema: {
+            type: 'object',
+            properties: {
+              titleAr: { type: 'string' },
+              descriptionAr: { type: 'string' },
+              requirementsAr: { type: 'string' },
+              benefitsAr: { type: 'array', items: { type: 'string' } },
+            },
+            required: ['titleAr', 'descriptionAr', 'benefitsAr'],
+          },
+        },
+        { model: MODEL_FAST, maxTokens: 3000 },
+      );
+      return result;
+    }),
+
+  // Extract Job from Image (Vision)
+  extractJobFromImage: adminProcedure
+    .input(z.object({
+      imageBase64: z.string().max(5_000_000),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      await guardAi(ctx);
+      // For now, return placeholder until Claude Vision API is available
+      // Client should handle this gracefully
+      return {
+        title: '',
+        description: 'Image processing not yet available. Please use text extraction instead.',
+        categorySlug: '',
+        emirateSlug: '',
+        jobType: 'full-time',
+        confidence: {},
+      };
+    }),
+
+  // Smart Expiry Suggestion
+  smartExpirySuggestion: protectedProcedure
+    .input(z.object({
+      categorySlug: z.string().max(40),
+      emirateSlug: z.string().max(40),
+      isUrgent: z.boolean().default(false),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // Query similar jobs to get average expiry period
+      const similarJobs = await ctx.db.query.jobs.findMany({
+        where: and(
+          eq(jobs.categorySlug, input.categorySlug),
+          eq(jobs.emirateSlug, input.emirateSlug),
+          eq(jobs.status, 'active'),
+          isNotNull(jobs.publishedAt),
+          isNotNull(jobs.expiresAt),
+        ),
+        columns: { publishedAt: true, expiresAt: true },
+        limit: 50,
+      });
+
+      let avgDaysToExpiry = 21; // default
+      if (similarJobs.length > 5) {
+        const totalDays = similarJobs.reduce((sum, j) => {
+          if (j.publishedAt && j.expiresAt) {
+            return sum + Math.round((j.expiresAt.getTime() - j.publishedAt.getTime()) / (24 * 3600 * 1000));
+          }
+          return sum;
+        }, 0);
+        avgDaysToExpiry = Math.round(totalDays / similarJobs.length);
+      }
+
+      const suggested = input.isUrgent ? 14 : Math.max(avgDaysToExpiry || 21, 14);
+      const suggestedDate = new Date(Date.now() + suggested * 24 * 3600 * 1000);
+
+      return {
+        suggestedDays: suggested,
+        suggestedDate: suggestedDate.toISOString().split('T')[0],
+        reasoning: input.isUrgent
+          ? 'Urgent roles typically fill in 2–3 weeks'
+          : `Similar roles in this category typically fill in ${suggested} days`,
+      };
+    }),
+
+  // Duplicate Job Detector
+  checkDuplicate: protectedProcedure
+    .input(z.object({
+      title: z.string().max(160),
+      employerId: z.string().uuid(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // Check if user is accessing their own jobs or is admin
+      if (input.employerId !== ctx.session.user.id && ctx.session.user.role !== 'admin') {
+        throw new TRPCError({ code: 'FORBIDDEN' });
+      }
+
+      // Find similar job titles posted recently
+      const matches = await ctx.db.query.jobs.findMany({
+        where: and(
+          eq(jobs.employerId, input.employerId),
+          ne(jobs.status, 'rejected'),
+          gte(jobs.createdAt, new Date(Date.now() - 60 * 24 * 3600 * 1000)),
+        ),
+        columns: { id: true, title: true, createdAt: true, applicationCount: true },
+        limit: 5,
+      });
+
+      // Simple string similarity check
+      const titleLower = input.title.toLowerCase();
+      const similar = matches.find(m => {
+        const titleWords = new Set(titleLower.split(/\s+/));
+        const mWords = new Set(m.title.toLowerCase().split(/\s+/));
+        const common = [...titleWords].filter(w => mWords.has(w)).length;
+        return common >= titleWords.size * 0.7;
+      });
+
+      if (!similar) {
+        return { duplicate: false };
+      }
+
+      return {
+        duplicate: true,
+        job: {
+          id: similar.id,
+          title: similar.title,
+          applicants: similar.applicationCount,
+          postedAgo: `${Math.round((Date.now() - similar.createdAt.getTime()) / (24 * 3600 * 1000))} days ago`,
+        },
+      };
+    }),
+
+  // Predict Job Performance
+  predictJobPerformance: protectedProcedure
+    .input(z.object({
+      categorySlug: z.string().max(40),
+      emirateSlug: z.string().max(40),
+      salaryMin: z.number().optional(),
+      featured: z.boolean().default(false),
+      urgent: z.boolean().default(false),
+      waBlast: z.boolean().default(false),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // Query similar jobs
+      const similarJobs = await ctx.db.query.jobs.findMany({
+        where: and(
+          eq(jobs.categorySlug, input.categorySlug),
+          eq(jobs.emirateSlug, input.emirateSlug),
+          eq(jobs.status, 'active'),
+          gte(jobs.createdAt, new Date(Date.now() - 90 * 24 * 3600 * 1000)),
+        ),
+        columns: { applicationCount: true, viewCount: true },
+        limit: 50,
+      });
+
+      if (similarJobs.length < 3) {
+        return {
+          estApplies7days: '8–12',
+          estViews7days: '120–200',
+          timeToFirstApply: '~6h',
+          salaryWarning: null,
+        };
+      }
+
+      const avgApps = Math.round(similarJobs.reduce((s, j) => s + j.applicationCount, 0) / similarJobs.length);
+      const avgViews = Math.round(similarJobs.reduce((s, j) => s + j.viewCount, 0) / similarJobs.length);
+
+      let apps = avgApps;
+      let views = avgViews;
+      if (input.featured) { apps = Math.round(apps * 2); views = Math.round(views * 2); }
+      if (input.urgent) { apps = Math.round(apps * 1.5); views = Math.round(views * 1.5); }
+      if (input.waBlast) { apps = Math.round(apps * 3); views = Math.round(views * 2); }
+
+      return {
+        estApplies7days: `${Math.max(apps - 5, 1)}–${Math.max(apps + 5, 1)}`,
+        estViews7days: `${Math.max(views - 30, 1)}–${Math.max(views + 30, 1)}`,
+        timeToFirstApply: avgApps > 50 ? '~30min' : avgApps > 20 ? '~2h' : '~4h',
+        salaryWarning: input.salaryMin && input.salaryMin < 5000 ? 'Below-market salary may reduce applications by ~40%' : null,
+      };
+    }),
+
+  // Boost Recommender
+  recommendBoosts: protectedProcedure
+    .input(z.object({
+      categorySlug: z.string().max(40),
+      emirateSlug: z.string().max(40),
+      deadline: z.date(),
+      vacancies: z.number().default(1),
+      salaryMin: z.number().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const daysUntilDeadline = Math.ceil((input.deadline.getTime() - Date.now()) / (24 * 3600 * 1000));
+      const waCategories = ['driver', 'nurse', 'hospitality', 'construction', 'cleaner', 'chef', 'accountant', 'sales'];
+
+      return {
+        featured: {
+          recommended: true,
+          reason: 'Featured listings typically get 2–3x more visibility',
+        },
+        urgent: {
+          recommended: daysUntilDeadline < 14 || input.vacancies > 3,
+          reason: daysUntilDeadline < 14 ? 'Tight deadline—urgency badge helps' : 'Multiple vacancies—show urgency',
+        },
+        waBlast: {
+          recommended: waCategories.some(c => input.categorySlug.toLowerCase().includes(c)),
+          reason: 'High WhatsApp engagement for this category',
+        },
+      };
+    }),
 });

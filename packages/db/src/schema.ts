@@ -210,6 +210,10 @@ export const jobs = pgTable(
     viewCount: integer('view_count').default(0).notNull(),
     applicationCount: integer('application_count').default(0).notNull(),
     aiGenerated: boolean('ai_generated').default(false).notNull(),
+    titleAr: varchar('title_ar', { length: 160 }).default(''),
+    descriptionAr: text('description_ar').default(''),
+    requirementsAr: text('requirements_ar').default(''),
+    benefitsAr: jsonb('benefits_ar').$type<string[]>().default([]),
     publishedAt: timestamp('published_at', { withTimezone: true }),
     expiresAt: timestamp('expires_at', { withTimezone: true }),
     ...timestamps,
@@ -221,6 +225,35 @@ export const jobs = pgTable(
     index('jobs_emirate_idx').on(t.emirateSlug),
     index('jobs_employer_idx').on(t.employerId),
     index('jobs_published_idx').on(t.publishedAt),
+  ],
+);
+
+// ─── Job templates ───────────────────────────────────────
+export const jobTemplates = pgTable(
+  'job_templates',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    name: varchar('name', { length: 160 }).notNull(),
+    employerId: uuid('employer_id').references(() => users.id, { onDelete: 'cascade' }),
+    isGlobal: boolean('is_global').default(false).notNull(),
+    categorySlug: varchar('category_slug', { length: 40 }).notNull(),
+    jobType: jobTypeEnum('job_type').notNull(),
+    emirateSlug: varchar('emirate_slug', { length: 40 }),
+    salaryMin: integer('salary_min'),
+    salaryMax: integer('salary_max'),
+    description: text('description').notNull(),
+    requirements: text('requirements'),
+    benefits: jsonb('benefits').$type<string[]>().default([]).notNull(),
+    tags: jsonb('tags').$type<string[]>().default([]).notNull(),
+    visaProvided: boolean('visa_provided').default(false).notNull(),
+    accommodationProvided: boolean('accommodation_provided').default(false).notNull(),
+    freshersWelcome: boolean('freshers_welcome').default(false).notNull(),
+    ...timestamps,
+  },
+  (t) => [
+    index('templates_employer_idx').on(t.employerId),
+    index('templates_global_idx').on(t.isGlobal),
+    index('templates_category_idx').on(t.categorySlug),
   ],
 );
 
@@ -460,6 +493,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   savedJobs: many(savedJobs),
   jobAlerts: many(jobAlerts),
   notifications: many(notifications),
+  jobTemplates: many(jobTemplates),
 }));
 
 export const companiesRelations = relations(companies, ({ many }) => ({
@@ -491,4 +525,8 @@ export const jobAlertsRelations = relations(jobAlerts, ({ one }) => ({
 export const companyReviewsRelations = relations(companyReviews, ({ one }) => ({
   company: one(companies, { fields: [companyReviews.companyId], references: [companies.id] }),
   author: one(users, { fields: [companyReviews.authorId], references: [users.id] }),
+}));
+
+export const jobTemplatesRelations = relations(jobTemplates, ({ one }) => ({
+  employer: one(users, { fields: [jobTemplates.employerId], references: [users.id] }),
 }));
