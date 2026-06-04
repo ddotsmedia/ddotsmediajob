@@ -86,7 +86,7 @@ export function AdminJobReviewForm({ draft, source = 'manual', onReset }: { draf
       title: f.title, description: f.description, companyName: f.companyName || undefined,
       categorySlug: f.categorySlug, emirateSlug: f.emirateSlug, location: f.location || undefined,
       jobType: f.jobType, salaryMin: f.salaryMin ? Number(f.salaryMin) : null, salaryMax: f.salaryMax ? Number(f.salaryMax) : null,
-      salaryHidden: f.salaryHidden, visaProvided: f.visaProvided, accommodationProvided: f.accommodationProvided,
+      salaryHidden: f.salaryHidden || (!f.salaryMin && !f.salaryMax), visaProvided: f.visaProvided, accommodationProvided: f.accommodationProvided,
       isFresher: f.isFresher, isRemote: f.isRemote, isUrgent: f.isUrgent, isFeatured: f.isFeatured,
       freeZone: f.freeZone, isAnonymous: f.isAnonymous, contactWhatsapp: f.contactWhatsapp || undefined,
       skills: f.skills.split(',').map((s) => s.trim()).filter(Boolean),
@@ -104,8 +104,6 @@ export function AdminJobReviewForm({ draft, source = 'manual', onReset }: { draf
   function submit(status: 'active' | 'draft', blast = false) {
     if (f.title.trim().length < 3) return toast.error('Title required');
     if (plain().length < 10) return toast.error('Description required');
-    if (status === 'active' && !f.salaryHidden && (!f.salaryMin || !f.salaryMax))
-      return toast.error('Salary range required to publish (or tick “hide salary”)');
     create.mutate(payload(status) as never, {
       onSuccess: (r: { slug: string }) => {
         if (blast) {

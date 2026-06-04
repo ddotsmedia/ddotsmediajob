@@ -45,10 +45,11 @@ export function PostJobForm() {
   const canNext =
     step === 0 ? draft.title.trim().length >= 3 :
     step === 1 ? draft.description.trim().length >= 30 :
-    step === 2 ? draft.salaryMin != null && draft.salaryMax != null && draft.salaryMax >= draft.salaryMin : true;
+    step === 2 ? draft.salaryMin == null || draft.salaryMax == null || draft.salaryMax >= draft.salaryMin : true;
 
   function publish() {
-    create.mutate({ ...draft, salaryPeriod: 'monthly', salaryHidden: false, visaStatus: 'any' } as never);
+    const salaryHidden = draft.salaryMin == null && draft.salaryMax == null;
+    create.mutate({ ...draft, salaryPeriod: 'monthly', salaryHidden, visaStatus: 'any' } as never);
   }
 
   return (
@@ -120,7 +121,7 @@ export function PostJobForm() {
                 </label>
               ))}
             </div>
-            <p className="text-xs text-navy-700/50">Salary range is required — listings with salary get more applications.</p>
+            <p className="text-xs text-navy-700/50">Salary is optional, but listings with a salary get more applications. Leave blank to show “Apply to see salary”.</p>
           </>
         )}
 

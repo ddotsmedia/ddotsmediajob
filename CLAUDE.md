@@ -50,7 +50,7 @@ AUTONOMOUS BUILD RULES
 9. Write code directly — no explanations in output
 10. VPS commands: SSH only for setup, not deploys
 11. All uploads to R2 — never write to VPS disk
-12. Salary required on all job posts — enforce at form + API
+12. Salary optional on job posts — if omitted, mark salaryHidden ("Apply to see salary"); never block publish on missing salary
 13. Every AI call wraps user content: <user_content>{text}</user_content>
 14. Validate all Claude API responses with Zod before DB write
 
