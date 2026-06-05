@@ -13,6 +13,8 @@ import {
   blogPosts,
   employerProfiles,
   auditLogs,
+  whatsappAdmins,
+  whatsappBotLogs,
   eq,
   and,
   desc,
@@ -21,6 +23,7 @@ import {
   ilike,
 } from '@ddots/db';
 import { slugify } from '@ddots/shared';
+import { createJobFromWhatsApp, type ParsedJob } from '../lib/whatsapp';
 import { router, adminProcedure } from '../trpc';
 import { audit, notify, uniqueJobSlug } from '../lib/helpers';
 import { enqueueEmail, enqueueSearchSync } from '../lib/queue';
@@ -486,4 +489,74 @@ export const adminRouter = router({
     await audit(ctx.session.user.id, 'admin.job.publish', 'job', input.id);
     return { ok: true, slug: job!.slug };
   }),
+
+  // ── WhatsApp bot management ─────────────────────────────
+  waBotNumbers: adminProcedure.query(async ({ ctx }) =>
+    ctx.db.query.whatsappAdmins.findMany({ orderBy: [desc(whatsappAdmins.createdAt)] }),
+  ),
+
+  waBotAddNumber: adminProcedure
+    .input(z.object({ phone: z.string().trim().regex(/^\+\d{8,15}$/, 'Use international format e.g. +971501234567'), name: z.string().max(100).optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const [row] = await ctx.db
+        .insert(whatsappAdmins)
+        .values({ phone: input.phone, name: input.name })
+        .onConflictDoUpdate({ target: whatsappAdmins.phone, set: { isActive: true, name: input.name } })
+        .returning();
+      await audit(ctx.session.user.id, 'admin.wabot.addNumber', 'whatsapp_admin', row!.id, { phone: input.phone });
+      return row;
+    }),
+
+  waBotToggleNumber: adminProcedure
+    .input(z.object({ id: z.string().uuid(), isActive: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db.update(whatsappAdmins).set({ isActive: input.isActive }).where(eq(whatsappAdmins.id, input.id));
+      return { ok: true };
+    }),
+
+  waBotDeleteNumber: adminProcedure.input(z.object({ id: z.string().uuid() })).mutation(async ({ ctx, input }) => {
+    await ctx.db.delete(whatsappAdmins).where(eq(whatsappAdmins.id, input.id));
+    await audit(ctx.session.user.id, 'admin.wabot.delNumber', 'whatsapp_admin', input.id);
+    return { ok: true };
+  }),
+
+  waBotLogs: adminProcedure.query(async ({ ctx }) =>
+    ctx.db.query.whatsappBotLogs.findMany({ orderBy: [desc(whatsappBotLogs.createdAt)], limit: 50 }),
+  ),
+
+  // Bulk create jobs from CSV-parsed rows (admin web). Returns per-row result.
+  waBotBulkCreate: adminProcedure
+    .input(z.object({ jobs: z.array(z.record(z.string(), z.unknown())).min(1).max(200) }))
+    .mutation(async ({ ctx, input }) => {
+      const results: { slug?: string; error?: string; title: string }[] = [];
+      let posted = 0;
+      for (const raw of input.jobs) {
+        const title = String(raw.title ?? '').trim();
+        try {
+          if (title.length < 3) throw new Error('Missing title');
+          const draft: ParsedJob = {
+            title,
+            company: (raw.company as string) || null,
+            category: (raw.category as string) || null,
+            emirate: (raw.emirate as string) || null,
+            salary_min: raw.salary_min != null && raw.salary_min !== '' ? Number(raw.salary_min) : null,
+            salary_max: raw.salary_max != null && raw.salary_max !== '' ? Number(raw.salary_max) : null,
+            job_type: (raw.job_type as string) || null,
+            visa_provided: /^(1|true|yes)$/i.test(String(raw.visa_provided ?? '')),
+            accommodation: /^(1|true|yes)$/i.test(String(raw.accommodation ?? '')),
+            contact_whatsapp: (raw.contact_whatsapp as string) || null,
+            contact_email: (raw.contact_email as string) || null,
+            description: (raw.description as string) || null,
+            urgent: /^(1|true|yes)$/i.test(String(raw.urgent ?? '')),
+          };
+          const { slug } = await createJobFromWhatsApp(draft, `admin:${ctx.session.user.id}`, 'admin_web');
+          posted++;
+          results.push({ slug, title });
+        } catch (err) {
+          results.push({ error: err instanceof Error ? err.message : 'failed', title: title || '(no title)' });
+        }
+      }
+      await audit(ctx.session.user.id, 'admin.wabot.bulkCreate', 'job', undefined, { posted, total: input.jobs.length });
+      return { posted, failed: input.jobs.length - posted, results };
+    }),
 });

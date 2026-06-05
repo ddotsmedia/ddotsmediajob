@@ -41,6 +41,7 @@ async function findOrCreateCompany(name: string | null): Promise<string | null> 
 export async function createJobFromWhatsApp(
   draft: ParsedJob,
   postedByPhone: string,
+  source: 'whatsapp_bot' | 'quick_post' | 'admin_web' = 'whatsapp_bot',
 ): Promise<{ id: string; slug: string }> {
   const admin = await db.query.users.findFirst({ where: eq(users.role, 'admin') });
   if (!admin) throw new Error('No admin account configured');
@@ -69,7 +70,7 @@ export async function createJobFromWhatsApp(
       contactWhatsapp: draft.contact_whatsapp ?? null,
       applyEmail: draft.contact_email ?? null,
       status: 'active',
-      source: 'whatsapp_bot',
+      source,
       aiGenerated: true,
       publishedAt: new Date(),
       expiresAt: new Date(Date.now() + 30 * 86_400_000),

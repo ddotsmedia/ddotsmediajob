@@ -27,6 +27,7 @@ const NAV: NavItem[] = [
   { href: '/admin/companies', label: 'Companies', icon: Building2 },
   { href: '/admin/reviews', label: 'Reviews', icon: Star },
   { href: '/admin/whatsapp', label: 'WhatsApp Groups', icon: MessageCircle },
+  { href: '/admin/whatsapp-bot', label: 'WhatsApp Bot', icon: MessageCircle },
   { href: '/admin/salary', label: 'Salary Reports', icon: Banknote },
   { href: '/admin/community', label: 'Community', icon: MessagesSquare },
   { href: '/admin/users', label: 'Users', icon: Users },
