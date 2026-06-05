@@ -13,6 +13,7 @@
     "start": "turbo run start",
     "lint": "turbo run lint --filter=@ddots/web",
     "typecheck": "turbo run typecheck",
+    "check:privacy": "node scripts/check-public-email.mjs",
     "db:generate": "pnpm --filter @ddots/db db:generate",
     "db:migrate": "pnpm --filter @ddots/db db:migrate",
     "db:push": "pnpm --filter @ddots/db db:push",

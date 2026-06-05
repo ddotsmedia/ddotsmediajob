@@ -17,6 +17,7 @@ set -a; . ./.env; set +a
 export PORT
 
 echo "▶ install"; pnpm install --frozen-lockfile
+echo "▶ privacy guard"; node scripts/check-public-email.mjs
 echo "▶ migrate"; pnpm db:migrate
 echo "▶ build";   pnpm build
 

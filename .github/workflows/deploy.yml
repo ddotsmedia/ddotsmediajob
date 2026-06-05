@@ -38,6 +38,9 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      - name: Privacy guard (no public email exposure)
+        run: pnpm check:privacy
+
       - name: Build
         run: pnpm build
         env:
