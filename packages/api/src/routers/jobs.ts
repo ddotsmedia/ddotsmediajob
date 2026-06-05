@@ -97,6 +97,25 @@ export const jobsRouter = router({
       }),
   ),
 
+  /** Active walk-in interviews still open (walk_in_last_date >= today, or no last date). */
+  walkIns: publicProcedure
+    .input(z.object({ limit: z.number().min(1).max(100).default(50), emirate: z.string().optional(), category: z.string().optional() }))
+    .query(async ({ ctx, input }) => {
+      const conds = [
+        eq(jobs.status, 'active'),
+        eq(jobs.walkIn, true),
+        or(sql`${jobs.walkInLastDate} IS NULL`, gte(jobs.walkInLastDate, sql`CURRENT_DATE`))!,
+      ];
+      if (input.emirate) conds.push(eq(jobs.emirateSlug, input.emirate));
+      if (input.category) conds.push(eq(jobs.categorySlug, input.category));
+      return ctx.db.query.jobs.findMany({
+        where: and(...conds),
+        orderBy: [desc(jobs.isFeatured), asc(jobs.walkInDate)],
+        limit: input.limit,
+        with: { company: { columns: { name: true, logoUrl: true } } },
+      });
+    }),
+
   /** Per-category / per-emirate counts for landing pages. */
   stats: publicProcedure.query(async ({ ctx }) => {
     const [byCategory, byEmirate, totals, seekers] = await Promise.all([

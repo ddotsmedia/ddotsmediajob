@@ -1,12 +1,14 @@
 import { relations, sql } from 'drizzle-orm';
 import {
   boolean,
+  date,
   integer,
   jsonb,
   pgEnum,
   pgTable,
   primaryKey,
   real,
+  serial,
   text,
   timestamp,
   uniqueIndex,
@@ -210,7 +212,18 @@ export const jobs = pgTable(
     rejectionReason: text('rejection_reason'),
     viewCount: integer('view_count').default(0).notNull(),
     applicationCount: integer('application_count').default(0).notNull(),
+    whatsappApplyCount: integer('whatsapp_apply_count').default(0).notNull(),
+    cvApplyCount: integer('cv_apply_count').default(0).notNull(),
     aiGenerated: boolean('ai_generated').default(false).notNull(),
+    // Walk-in interviews
+    walkIn: boolean('walk_in').default(false).notNull(),
+    walkInDate: date('walk_in_date'),
+    walkInTime: varchar('walk_in_time', { length: 50 }),
+    walkInVenue: text('walk_in_venue'),
+    walkInLastDate: date('walk_in_last_date'),
+    applyWhatsapp: varchar('apply_whatsapp', { length: 30 }),
+    gccCountry: varchar('gcc_country', { length: 50 }).default('uae'),
+    sourceCountry: varchar('source_country', { length: 50 }),
     titleAr: varchar('title_ar', { length: 160 }).default(''),
     descriptionAr: text('description_ar').default(''),
     requirementsAr: text('requirements_ar').default(''),
@@ -393,6 +406,39 @@ export const whatsappBotLogs = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [index('wa_bot_logs_phone_idx').on(t.phone), index('wa_bot_logs_created_idx').on(t.createdAt)],
+);
+
+// ─── Career tips (GoCareer-style) ────────────────────────
+export const careerTips = pgTable('career_tips', {
+  id: serial('id').primaryKey(),
+  category: varchar('category', { length: 50 }), // resume|interview|job_search|salary|visa
+  title: varchar('title', { length: 200 }).notNull(),
+  body: text('body').notNull(),
+  icon: varchar('icon', { length: 10 }),
+  isActive: boolean('active').default(true).notNull(),
+  sortOrder: integer('sort_order').default(0).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+// ─── GCC countries (expansion) ───────────────────────────
+export const gccCountries = pgTable('gcc_countries', {
+  id: serial('id').primaryKey(),
+  slug: varchar('slug', { length: 50 }).unique(), // uae|saudi-arabia|qatar|kuwait|oman|bahrain
+  name: varchar('name', { length: 100 }),
+  flag: varchar('flag', { length: 10 }),
+  currency: varchar('currency', { length: 10 }),
+  isActive: boolean('active').default(true).notNull(),
+});
+
+export const gccWaitlist = pgTable(
+  'gcc_waitlist',
+  {
+    id: serial('id').primaryKey(),
+    email: varchar('email', { length: 255 }).notNull(),
+    country: varchar('country', { length: 50 }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index('gcc_waitlist_country_idx').on(t.country)],
 );
 
 // ─── Salary reports (crowd-sourced) ──────────────────────

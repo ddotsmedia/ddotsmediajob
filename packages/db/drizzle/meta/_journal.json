@@ -57,6 +57,13 @@
       "when": 1780632565230,
       "tag": "0007_third_scrambler",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1780659375853,
+      "tag": "0008_clear_jackal",
+      "breakpoints": true
     }
   ]
 }

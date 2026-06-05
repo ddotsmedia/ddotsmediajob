@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { MapPin, Briefcase, Clock, Banknote, Zap } from 'lucide-react';
 import { formatSalary, timeAgo, emirateBySlug, categoryBySlug } from '@ddots/shared';
 import { Badge } from './ui/primitives';
+import { WhatsappApplyButton } from './whatsapp-apply-button';
 import { cn } from '@/lib/utils';
 
 export type JobCardData = {
@@ -23,6 +24,9 @@ export type JobCardData = {
   freeZoneName?: string | null;
   isAnonymous?: boolean;
   source?: string | null;
+  walkIn?: boolean;
+  applyWhatsapp?: string | null;
+  contactWhatsapp?: string | null;
   applicationCount?: number;
   publishedAt: Date | string | null;
   createdAt: Date | string;
@@ -33,11 +37,11 @@ export function JobCard({ job }: { job: JobCardData }) {
   const emirate = emirateBySlug(job.emirateSlug);
   const category = categoryBySlug(job.categorySlug);
   return (
-    <Link
-      href={`/jobs/${job.slug}`}
+    <div
       className={cn(
-        'group relative block rounded-xl border bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-teal-300 hover:shadow-md',
+        'group relative rounded-xl border bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-teal-300 hover:shadow-md',
         job.isFeatured && 'ring-1 ring-teal-200',
+        job.walkIn && 'border-l-4 border-l-orange-400',
       )}
     >
       <div className="flex items-start gap-4">
@@ -51,7 +55,9 @@ export function JobCard({ job }: { job: JobCardData }) {
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
-            <h3 className="font-display font-bold text-navy-900 group-hover:text-teal-600">{job.title}</h3>
+            <h3 className="font-display font-bold text-navy-900 group-hover:text-teal-600">
+              <Link href={`/jobs/${job.slug}`} className="after:absolute after:inset-0">{job.title}</Link>
+            </h3>
             {job.isFeatured && <Badge>Featured</Badge>}
           </div>
           <p className="text-sm text-navy-700/70">{job.isAnonymous ? 'Confidential Company' : (job.company?.name ?? 'Confidential')}</p>
@@ -85,6 +91,7 @@ export function JobCard({ job }: { job: JobCardData }) {
                 <Zap className="mr-1 h-3 w-3" /> Urgent
               </Badge>
             )}
+            {job.walkIn && <Badge variant="outline" className="border-orange-300 bg-orange-50 text-orange-700">🚶 Walk-in</Badge>}
             <span className="ml-auto text-xs text-navy-700/50">
               {typeof job.applicationCount === 'number' && job.applicationCount > 0 && (
                 <span className="mr-2 font-medium text-navy-700/70">{job.applicationCount} applied</span>
@@ -94,6 +101,23 @@ export function JobCard({ job }: { job: JobCardData }) {
           </div>
         </div>
       </div>
-    </Link>
+
+      <div className="relative z-10 mt-4 flex items-center gap-2">
+        <WhatsappApplyButton
+          slug={job.slug}
+          title={job.title}
+          company={job.isAnonymous ? null : job.company?.name}
+          applyWhatsapp={job.applyWhatsapp}
+          contactWhatsapp={job.contactWhatsapp}
+          className="flex-1"
+        />
+        <Link
+          href={`/jobs/${job.slug}`}
+          className="relative z-10 rounded-lg border border-teal-300 px-3 py-2 text-sm font-semibold text-teal-700 hover:bg-teal-50"
+        >
+          View
+        </Link>
+      </div>
+    </div>
   );
 }
