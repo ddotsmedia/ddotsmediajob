@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { Loader2, Search } from 'lucide-react';
+import { Loader2, Search, Trash2 } from 'lucide-react';
 import { USER_ROLES } from '@ddots/shared';
 import { trpc } from '@/trpc/react';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,13 @@ export default function AdminUsersPage() {
       utils.admin.users.invalidate();
       toast.success('Updated');
     },
+  });
+  const del = trpc.admin.deleteUser.useMutation({
+    onSuccess: () => {
+      utils.admin.users.invalidate();
+      toast.success('User deleted');
+    },
+    onError: (e) => toast.error(e.message),
   });
 
   return (
@@ -70,6 +77,17 @@ export default function AdminUsersPage() {
                     <Button variant="ghost" size="sm" onClick={() => setBan.mutate({ userId: u.id, banned: !u.isBanned })}>
                       {u.isBanned ? 'Unban' : 'Ban'}
                     </Button>
+                    {u.role !== 'admin' && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          if (window.confirm(`Permanently delete ${u.email}? This removes their jobs, applications and profile. This cannot be undone.`)) del.mutate({ userId: u.id });
+                        }}
+                      >
+                        <Trash2 className="text-red-500" />
+                      </Button>
+                    )}
                   </td>
                 </tr>
               ))}

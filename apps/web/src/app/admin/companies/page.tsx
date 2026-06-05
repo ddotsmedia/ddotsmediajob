@@ -1,7 +1,7 @@
 'use client';
 
 import { toast } from 'sonner';
-import { Loader2, BadgeCheck, Star } from 'lucide-react';
+import { Loader2, BadgeCheck, Star, Trash2 } from 'lucide-react';
 import { emirateBySlug } from '@ddots/shared';
 import { trpc } from '@/trpc/react';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,10 @@ export default function AdminCompaniesPage() {
   const companies = trpc.admin.allCompanies.useQuery();
   const setVerified = trpc.admin.setCompanyVerified.useMutation({
     onSuccess: () => { utils.admin.allCompanies.invalidate(); toast.success('Updated'); },
+  });
+  const del = trpc.admin.deleteCompany.useMutation({
+    onSuccess: () => { utils.admin.allCompanies.invalidate(); toast.success('Company deleted'); },
+    onError: (e) => toast.error(e.message),
   });
 
   return (
@@ -33,6 +37,13 @@ export default function AdminCompaniesPage() {
                   <td className="px-4 py-3 text-right">
                     <Button variant="ghost" size="sm" onClick={() => setVerified.mutate({ id: c.id, verified: !c.isVerified })}>
                       {c.isVerified ? 'Unverify' : 'Verify'}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => { if (window.confirm(`Delete ${c.name}? Their jobs stay but lose the company link. This cannot be undone.`)) del.mutate({ id: c.id }); }}
+                    >
+                      <Trash2 className="text-red-500" />
                     </Button>
                   </td>
                 </tr>

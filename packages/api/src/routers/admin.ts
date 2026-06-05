@@ -218,6 +218,20 @@ export const adminRouter = router({
       return { ok: true };
     }),
 
+  /** Permanently delete a user (cascades to their jobs/applications/profiles). Blocks self + admins. */
+  deleteUser: adminProcedure.input(z.object({ userId: z.string().uuid() })).mutation(async ({ ctx, input }) => {
+    if (input.userId === ctx.session.user.id) throw new TRPCError({ code: 'BAD_REQUEST', message: 'You cannot delete your own account.' });
+    const target = await ctx.db.query.users.findFirst({ where: eq(users.id, input.userId), columns: { id: true, role: true } });
+    if (!target) throw new TRPCError({ code: 'NOT_FOUND' });
+    if (target.role === 'admin') throw new TRPCError({ code: 'BAD_REQUEST', message: 'Demote the admin before deleting.' });
+    // Remove their jobs from Typesense before the DB cascade drops them.
+    const theirJobs = await ctx.db.select({ id: jobs.id }).from(jobs).where(eq(jobs.employerId, input.userId));
+    await ctx.db.delete(users).where(eq(users.id, input.userId));
+    for (const j of theirJobs) await enqueueSearchSync({ type: 'delete', jobId: j.id }).catch(() => {});
+    await audit(ctx.session.user.id, 'admin.user.delete', 'user', input.userId);
+    return { ok: true };
+  }),
+
   auditLog: adminProcedure.query(async ({ ctx }) =>
     ctx.db.query.auditLogs.findMany({ orderBy: [desc(auditLogs.createdAt)], limit: 100 }),
   ),
@@ -344,6 +358,13 @@ export const adminRouter = router({
       await ctx.db.update(companies).set({ isVerified: input.verified }).where(eq(companies.id, input.id));
       return { ok: true };
     }),
+
+  /** Delete a company. Jobs/profiles keep working (company_id set null); reviews cascade. */
+  deleteCompany: adminProcedure.input(z.object({ id: z.string().uuid() })).mutation(async ({ ctx, input }) => {
+    await ctx.db.delete(companies).where(eq(companies.id, input.id));
+    await audit(ctx.session.user.id, 'admin.company.delete', 'company', input.id);
+    return { ok: true };
+  }),
 
   // ── Review moderation ──────────────────────────────────
   pendingReviews: adminProcedure.query(async ({ ctx }) =>
