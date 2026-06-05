@@ -12,7 +12,8 @@
     "./lib/helpers": "./src/lib/helpers.ts",
     "./lib/email": "./src/lib/email.ts",
     "./lib/r2": "./src/lib/r2.ts",
-    "./lib/security": "./src/lib/security.ts"
+    "./lib/security": "./src/lib/security.ts",
+    "./lib/whatsapp": "./src/lib/whatsapp/index.ts"
   },
   "scripts": {
     "worker": "tsx watch src/worker.ts",

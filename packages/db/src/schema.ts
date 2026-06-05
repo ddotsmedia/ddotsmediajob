@@ -204,7 +204,7 @@ export const jobs = pgTable(
     applyEmail: varchar('apply_email', { length: 255 }),
     applyUrl: text('apply_url'),
     status: jobStatusEnum('status').default('pending').notNull(),
-    source: varchar('source', { length: 16 }).default('manual').notNull(), // paste|whatsapp|csv|quick|url|manual|community
+    source: varchar('source', { length: 16 }).default('manual').notNull(), // paste|whatsapp|csv|quick|url|manual|community|whatsapp_bot|quick_post|admin_web
     relation: varchar('relation', { length: 20 }), // community referral: work_there|friend_referred|other
     contactWhatsapp: varchar('contact_whatsapp', { length: 30 }),
     rejectionReason: text('rejection_reason'),
@@ -360,6 +360,39 @@ export const whatsappGroups = pgTable(
     ...timestamps,
   },
   (t) => [index('wa_category_idx').on(t.categorySlug), index('wa_emirate_idx').on(t.emirateSlug)],
+);
+
+// ─── WhatsApp posting bot (Twilio) ───────────────────────
+export const whatsappAdmins = pgTable('whatsapp_admins', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  phone: varchar('phone', { length: 30 }).notNull().unique(), // e.g. +971501234567
+  name: varchar('name', { length: 100 }),
+  isActive: boolean('is_active').default(true).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const whatsappBotSessions = pgTable('whatsapp_bot_sessions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  phone: varchar('phone', { length: 30 }).notNull().unique(),
+  state: varchar('state', { length: 50 }).default('idle').notNull(), // idle | awaiting_confirm
+  draft: jsonb('draft').$type<Record<string, unknown>>().default({}).notNull(),
+  pendingField: varchar('pending_field', { length: 50 }),
+  lastActivity: timestamp('last_activity', { withTimezone: true }).defaultNow().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const whatsappBotLogs = pgTable(
+  'whatsapp_bot_logs',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    phone: varchar('phone', { length: 30 }),
+    direction: varchar('direction', { length: 10 }), // in | out
+    message: text('message'),
+    parsedData: jsonb('parsed_data').$type<Record<string, unknown>>(),
+    jobId: uuid('job_id').references(() => jobs.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index('wa_bot_logs_phone_idx').on(t.phone), index('wa_bot_logs_created_idx').on(t.createdAt)],
 );
 
 // ─── Salary reports (crowd-sourced) ──────────────────────
