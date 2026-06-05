@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
-import { Menu, X, LayoutDashboard, LogOut, Briefcase } from 'lucide-react';
+import { Menu, X, LayoutDashboard, LogOut, Briefcase, MessageCircle } from 'lucide-react';
 import { Logo } from './logo';
 import { Button } from './ui/button';
 import { NotificationBell } from './notification-bell';
@@ -29,6 +29,13 @@ export function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-50 border-b bg-white/90 backdrop-blur">
+      <div className="bg-[#25D366] text-white">
+        <div className="mx-auto flex max-w-7xl items-center justify-center gap-2 px-4 py-1.5 text-xs font-medium sm:justify-end">
+          <a href="https://wa.me/971509379212" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 hover:underline">
+            <MessageCircle className="h-3.5 w-3.5" /> WhatsApp us: +971 50 937 9212
+          </a>
+        </div>
+      </div>
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
         <div className="flex items-center gap-8">
           <Logo />
