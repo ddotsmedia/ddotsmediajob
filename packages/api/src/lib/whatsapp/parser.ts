@@ -1,4 +1,4 @@
-import { structured, MODEL_FAST } from '../anthropic';
+import { structured, structuredFromImage, MODEL_FAST, MODEL_SMART } from '../anthropic';
 import { wrapUserContent } from '../security';
 
 export type ParsedJob = {
@@ -57,6 +57,43 @@ const PARSE_TOOL = {
     required: ['title', 'urgent'],
   },
 };
+
+function normalize(result: ParsedJob | null): ParsedJob | null {
+  if (!result || !result.title || !result.title.trim()) return null;
+  return {
+    title: result.title.trim(),
+    company: result.company ?? null,
+    category: result.category ?? null,
+    emirate: result.emirate ?? null,
+    salary_min: result.salary_min ?? null,
+    salary_max: result.salary_max ?? null,
+    job_type: result.job_type ?? null,
+    visa_provided: result.visa_provided ?? null,
+    accommodation: result.accommodation ?? null,
+    contact_whatsapp: result.contact_whatsapp ?? null,
+    contact_email: result.contact_email ?? null,
+    description: result.description ?? null,
+    urgent: !!result.urgent,
+  };
+}
+
+/** Parse a job poster image/PDF into structured fields via Claude Vision. */
+export async function parseJobFromImage(imageBase64: string, mediaType: string): Promise<ParsedJob | null> {
+  try {
+    const result = await structuredFromImage<ParsedJob>(
+      SYSTEM,
+      'Read this UAE job poster and extract the job posting. Capture title, company, salary, contact number/email, emirate, visa & accommodation. If a field is absent, use null.',
+      imageBase64,
+      mediaType,
+      PARSE_TOOL as never,
+      { model: MODEL_SMART, maxTokens: 1400 },
+    );
+    return normalize(result);
+  } catch (err) {
+    console.error('[wa parser:image]', err);
+    return null;
+  }
+}
 
 /** Parse a free-text WhatsApp job message into structured fields. Returns null if no job title found. */
 export async function parseJobMessage(text: string): Promise<ParsedJob | null> {

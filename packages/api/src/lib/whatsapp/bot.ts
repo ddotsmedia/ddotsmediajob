@@ -1,6 +1,6 @@
 import { db, jobs, whatsappBotSessions, whatsappBotLogs, eq, and, desc, count } from '@ddots/db';
 import { SITE, EMIRATE_SLUGS } from '@ddots/shared';
-import { parseJobMessage, type ParsedJob } from './parser';
+import { parseJobMessage, parseJobFromImage, type ParsedJob } from './parser';
 import { createJobFromWhatsApp } from './createJob';
 import { HELP_MESSAGE, ERROR_MESSAGE, confirmationMessage, successMessage } from './messages';
 
@@ -154,4 +154,25 @@ export async function handleBotMessage(phone: string, message: string): Promise<
   if (!parsed) return HELP_MESSAGE;
   await setSession(phone, 'awaiting_confirm', parsed as unknown as Record<string, unknown>);
   return confirmationMessage(parsed);
+}
+
+const POSTER_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']);
+
+/** Handle a poster image/PDF sent over WhatsApp: download → Vision extract → confirm. */
+export async function handlePosterMessage(phone: string, imageUrl: string | undefined, mimeType: string): Promise<string> {
+  if (!imageUrl) return '⚠️ Could not read that image. Please resend the poster.';
+  const media = POSTER_MIME.has(mimeType) ? mimeType : 'image/jpeg';
+  try {
+    // Whapi media links require the API token to download.
+    const res = await fetch(imageUrl, { headers: { Authorization: `Bearer ${process.env.WHAPI_TOKEN}` } });
+    if (!res.ok) return '⚠️ Could not download the poster. Please try again.';
+    const base64 = Buffer.from(await res.arrayBuffer()).toString('base64');
+    const parsed = await parseJobFromImage(base64, media);
+    if (!parsed) return "⚠️ Couldn't find a job in that poster. Send the job details as text instead.";
+    await setSession(phone, 'awaiting_confirm', parsed as unknown as Record<string, unknown>);
+    return `📸 Read your poster:\n\n${confirmationMessage(parsed)}`;
+  } catch (err) {
+    console.error('[wa bot] poster failed', err);
+    return ERROR_MESSAGE;
+  }
 }

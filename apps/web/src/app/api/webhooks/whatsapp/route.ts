@@ -1,77 +1,84 @@
 import { NextResponse } from 'next/server';
 import { db, whatsappAdmins, whatsappBotLogs, eq, and } from '@ddots/db';
-import { verifyTwilioSignature, rateLimit } from '@ddots/api/lib/security';
-import { handleBotMessage, UNAUTHORIZED_MESSAGE } from '@ddots/api/lib/whatsapp';
-import { SITE } from '@ddots/shared';
+import { rateLimit } from '@ddots/api/lib/security';
+import { handleBotMessage, handlePosterMessage, sendWhatsApp, UNAUTHORIZED_MESSAGE } from '@ddots/api/lib/whatsapp';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-function twiml(message: string): NextResponse {
-  const esc = message.replace(/[<>&'"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' }[c]!));
-  return new NextResponse(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${esc}</Message></Response>`, {
-    status: 200,
-    headers: { 'content-type': 'text/xml' },
-  });
-}
-
-const empty = () =>
-  new NextResponse('<?xml version="1.0" encoding="UTF-8"?><Response></Response>', {
-    status: 200,
-    headers: { 'content-type': 'text/xml' },
-  });
+type WhapiMessage = {
+  from?: string;
+  from_me?: boolean;
+  type?: string;
+  text?: { body?: string };
+  image?: { link?: string; mime_type?: string };
+  document?: { link?: string; mime_type?: string };
+};
 
 export async function GET(): Promise<NextResponse> {
   return new NextResponse('ok', { status: 200 });
 }
 
-/** Twilio WhatsApp inbound webhook → admin job-posting bot. Always returns 200 (TwiML) to avoid Twilio retries. */
+/**
+ * Whapi.Cloud inbound webhook → admin job-posting bot.
+ * Whapi posts JSON; replies are sent via the Whapi API (not in the response).
+ * Always returns 200 to avoid Whapi retry loops.
+ */
 export async function POST(req: Request): Promise<NextResponse> {
-  let from = 'unknown';
-  let body = '';
-  try {
-    const form = await req.formData();
-    const params: Record<string, string> = {};
-    form.forEach((v, k) => (params[k] = String(v)));
-    from = String(form.get('From') ?? '').replace('whatsapp:', '').trim();
-    body = String(form.get('Body') ?? '').trim();
-
-    // Verify Twilio signature when configured (reject spoofed requests).
-    const authToken = process.env.TWILIO_AUTH_TOKEN;
-    if (authToken) {
-      const url = `${SITE.url}${new URL(req.url).pathname}`;
-      if (!verifyTwilioSignature(authToken, req.headers.get('x-twilio-signature'), url, params)) {
-        return new NextResponse('Forbidden', { status: 403 });
-      }
-    }
-  } catch {
-    return empty();
+  // Verify the channel token (Whapi sends it as a header or ?token= query).
+  const expected = process.env.WHAPI_TOKEN;
+  if (expected) {
+    const provided = req.headers.get('x-whapi-token') ?? new URL(req.url).searchParams.get('token');
+    if (provided !== expected) return new NextResponse('Forbidden', { status: 403 });
   }
 
-  if (!from) return empty();
-
   try {
-    // Whitelist: only active admins may use the bot.
-    const admin = await db.query.whatsappAdmins.findFirst({
-      where: and(eq(whatsappAdmins.phone, from), eq(whatsappAdmins.isActive, true)),
-    });
-    if (!admin) {
-      await db.insert(whatsappBotLogs).values({ phone: from, direction: 'in', message: body }).catch(() => {});
-      return twiml(UNAUTHORIZED_MESSAGE);
+    const body = (await req.json()) as { messages?: WhapiMessage[] };
+    const messages = body.messages ?? [];
+
+    for (const msg of messages) {
+      if (msg.from_me) continue; // skip our own outgoing messages
+      if (!msg.from) continue;
+      const from = '+' + msg.from.replace('@s.whatsapp.net', '').replace('@c.us', '');
+
+      const inboundPreview = msg.type === 'text' ? (msg.text?.body ?? '') : `[${msg.type ?? 'media'}]`;
+      await db.insert(whatsappBotLogs).values({ phone: from, direction: 'in', message: inboundPreview }).catch(() => {});
+
+      // Whitelist gate.
+      const admin = await db.query.whatsappAdmins.findFirst({
+        where: and(eq(whatsappAdmins.phone, from), eq(whatsappAdmins.isActive, true)),
+      });
+      if (!admin) {
+        await sendWhatsApp(from, UNAUTHORIZED_MESSAGE);
+        continue;
+      }
+
+      // Abuse + AI-cost protection.
+      const rl = await rateLimit(`wa-bot:${from}`, 60, 3600);
+      if (!rl.ok) {
+        await sendWhatsApp(from, 'Too many messages this hour — please try again later.');
+        continue;
+      }
+
+      let reply: string;
+      if (msg.type === 'text') {
+        reply = await handleBotMessage(from, (msg.text?.body ?? '').trim());
+      } else if (msg.type === 'image') {
+        reply = await handlePosterMessage(from, msg.image?.link, msg.image?.mime_type ?? 'image/jpeg');
+      } else if (msg.type === 'document' && (msg.document?.mime_type ?? '').includes('pdf')) {
+        reply = await handlePosterMessage(from, msg.document?.link, 'application/pdf');
+      } else {
+        reply = '⚠️ Only text messages and job posters (image/PDF) are supported.';
+      }
+
+      await sendWhatsApp(from, reply);
+      await db.insert(whatsappBotLogs).values({ phone: from, direction: 'out', message: reply }).catch(() => {});
     }
 
-    // Abuse + AI cost protection.
-    const rl = await rateLimit(`wa-bot:${from}`, 60, 3600);
-    if (!rl.ok) return twiml('Too many messages this hour — please try again later.');
-
-    await db.insert(whatsappBotLogs).values({ phone: from, direction: 'in', message: body }).catch(() => {});
-
-    const reply = await handleBotMessage(from, body);
-
-    await db.insert(whatsappBotLogs).values({ phone: from, direction: 'out', message: reply }).catch(() => {});
-    return twiml(reply);
+    return new NextResponse('OK', { status: 200 });
   } catch (err) {
-    console.error('[wa webhook]', err);
-    return twiml('⚠️ Something went wrong. Please try again.');
+    console.error('[whapi webhook]', err);
+    // Always 200 — Whapi retries on non-200.
+    return new NextResponse('OK', { status: 200 });
   }
 }

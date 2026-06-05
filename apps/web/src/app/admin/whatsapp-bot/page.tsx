@@ -33,9 +33,19 @@ function BotStatus() {
   return (
     <section className="rounded-xl border bg-white p-5">
       <h2 className="font-display font-bold text-navy-900">Bot Status</h2>
-      <p className="mt-1 text-sm text-green-700">Bot Active ✅</p>
-      <p className="mt-2 text-sm text-navy-700/70">Webhook URL (set in Twilio Console → WhatsApp Senders):</p>
+      <p className="mt-1 text-sm text-green-700">Provider: Whapi.Cloud · Bot Active ✅</p>
+      <p className="mt-2 text-sm text-navy-700/70">Webhook URL:</p>
       <code className="mt-1 block break-all rounded bg-navy-50 px-3 py-2 text-xs text-navy-900">{WEBHOOK_URL}</code>
+      <div className="mt-3 rounded-lg bg-navy-50 p-3 text-xs text-navy-700/80">
+        <p className="font-semibold text-navy-900">Whapi setup (if not done):</p>
+        <ol className="mt-1 list-decimal space-y-0.5 pl-4">
+          <li>whapi.cloud → Dashboard → your channel</li>
+          <li>Settings → Webhooks</li>
+          <li>Set URL to the address above</li>
+          <li>Enable: messages.inbound, messages.media</li>
+          <li>Save — webhook is live immediately</li>
+        </ol>
+      </div>
     </section>
   );
 }

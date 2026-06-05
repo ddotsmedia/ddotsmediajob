@@ -1,31 +1,48 @@
 /**
- * Programmatic WhatsApp send via the Twilio REST API (no SDK dependency).
- * The webhook replies inline with TwiML; use this only for out-of-band/async sends.
+ * WhatsApp send via Whapi.Cloud REST API (no SDK).
+ * Env: WHAPI_TOKEN, WHAPI_API_URL (e.g. https://gate.whapi.cloud).
  */
-export async function sendWhatsApp(to: string, message: string): Promise<{ ok: boolean; sid?: string; error?: string }> {
-  const sid = process.env.TWILIO_ACCOUNT_SID;
-  const token = process.env.TWILIO_AUTH_TOKEN;
-  const from = process.env.TWILIO_WHATSAPP_FROM;
-  if (!sid || !token || !from) return { ok: false, error: 'Twilio env not configured' };
+const API = () => process.env.WHAPI_API_URL ?? 'https://gate.whapi.cloud';
 
-  const body = new URLSearchParams({
-    From: from, // e.g. "whatsapp:+14155238886"
-    To: to.startsWith('whatsapp:') ? to : `whatsapp:${to}`,
-    Body: message,
-  });
+function chatId(to: string): string {
+  const normalized = to.replace(/^\+/, '').replace(/[\s-]/g, '');
+  return `${normalized}@s.whatsapp.net`;
+}
 
+/** Send a text message. Returns ok/error (never throws) so callers stay non-blocking. */
+export async function sendWhatsApp(to: string, message: string): Promise<{ ok: boolean; error?: string }> {
+  const token = process.env.WHAPI_TOKEN;
+  if (!token) return { ok: false, error: 'WHAPI_TOKEN not configured' };
   try {
-    const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
+    const res = await fetch(`${API()}/messages/text`, {
       method: 'POST',
-      headers: {
-        Authorization: `Basic ${Buffer.from(`${sid}:${token}`).toString('base64')}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body,
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ to: chatId(to), body: message }),
     });
-    if (!res.ok) return { ok: false, error: `Twilio ${res.status}` };
-    const json = (await res.json()) as { sid?: string };
-    return { ok: true, sid: json.sid };
+    if (!res.ok) {
+      const error = await res.text();
+      console.error('[Whapi] send failed', res.status, error);
+      return { ok: false, error: `Whapi ${res.status}` };
+    }
+    return { ok: true };
+  } catch (err) {
+    console.error('[Whapi] send error', err);
+    return { ok: false, error: err instanceof Error ? err.message : 'send failed' };
+  }
+}
+
+/** Send an image by URL with optional caption. */
+export async function sendWhatsAppImage(to: string, imageUrl: string, caption?: string): Promise<{ ok: boolean; error?: string }> {
+  const token = process.env.WHAPI_TOKEN;
+  if (!token) return { ok: false, error: 'WHAPI_TOKEN not configured' };
+  try {
+    const res = await fetch(`${API()}/messages/image`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ to: chatId(to), media: imageUrl, caption: caption ?? '' }),
+    });
+    if (!res.ok) return { ok: false, error: `Whapi ${res.status}` };
+    return { ok: true };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'send failed' };
   }
