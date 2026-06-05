@@ -6,6 +6,7 @@ import { router, protectedProcedure, employerProcedure, adminProcedure } from '.
 import {
   chat,
   structured,
+  structuredFromImage,
   MATCH_TOOL,
   CV_TOOL,
   JOB_DRAFT_TOOL,
@@ -410,23 +411,22 @@ export const aiRouter = router({
       return result;
     }),
 
-  // Extract Job from Image (Vision)
+  // Extract Job from a poster image / PDF (Claude Vision)
   extractJobFromImage: adminProcedure
     .input(z.object({
-      imageBase64: z.string().max(5_000_000),
+      imageBase64: z.string().min(100).max(8_000_000),
+      mediaType: z.enum(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']),
     }))
     .mutation(async ({ ctx, input }) => {
       await guardAi(ctx);
-      // For now, return placeholder until Claude Vision API is available
-      // Client should handle this gracefully
-      return {
-        title: '',
-        description: 'Image processing not yet available. Please use text extraction instead.',
-        categorySlug: '',
-        emirateSlug: '',
-        jobType: 'full-time',
-        confidence: {},
-      };
+      return structuredFromImage<JobDraft>(
+        JOB_EXTRACT_SYSTEM,
+        'Read this UAE job poster and extract the job posting. Capture salary, contact number/email, location/emirate, visa & accommodation, and requirements exactly as shown. If a field is absent, omit it.',
+        input.imageBase64,
+        input.mediaType,
+        JOB_DRAFT_TOOL,
+        { model: MODEL_SMART, maxTokens: 1800 },
+      );
     }),
 
   // Smart Expiry Suggestion

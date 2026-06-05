@@ -59,7 +59,7 @@ const adminJobInput = z.object({
   requirementsAr: z.string().max(2000).optional(),
   benefitsAr: z.array(z.string().max(120)).max(20).optional(),
   status: z.enum(['active', 'draft']).default('active'),
-  source: z.enum(['paste', 'whatsapp', 'csv', 'quick', 'url', 'manual']).default('manual'),
+  source: z.enum(['paste', 'whatsapp', 'csv', 'quick', 'url', 'manual', 'poster']).default('manual'),
 });
 type AdminJobInput = z.infer<typeof adminJobInput>;
 

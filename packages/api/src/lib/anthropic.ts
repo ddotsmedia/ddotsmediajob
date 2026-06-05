@@ -113,6 +113,61 @@ export async function structured<T>(
   return toolUse.input as T;
 }
 
+/**
+ * Vision variant of structured(): extracts a tool-call from an image (or PDF) + instruction.
+ * Supports image/jpeg|png|webp on both providers; application/pdf requires the Anthropic provider.
+ */
+export async function structuredFromImage<T>(
+  system: string,
+  instruction: string,
+  imageBase64: string,
+  mediaType: string,
+  tool: Anthropic.Tool,
+  opts: { model?: string; maxTokens?: number } = {},
+): Promise<T> {
+  const isPdf = mediaType === 'application/pdf';
+
+  if (useGemini) {
+    if (isPdf) throw new Error('PDF extraction requires the Anthropic provider. Upload a JPG or PNG instead.');
+    const res = await getGemini().chat.completions.create({
+      model: opts.model ?? MODEL_SMART,
+      max_tokens: opts.maxTokens ?? 1500,
+      messages: [
+        { role: 'system', content: system },
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: instruction },
+            { type: 'image_url', image_url: { url: `data:${mediaType};base64,${imageBase64}` } },
+          ],
+        },
+      ],
+      tools: [{ type: 'function', function: { name: tool.name, description: tool.description, parameters: tool.input_schema as Record<string, unknown> } }],
+      tool_choice: { type: 'function', function: { name: tool.name } },
+    });
+    const call = res.choices[0]?.message?.tool_calls?.[0];
+    if (!call) throw new Error(`AI did not return ${tool.name}.`);
+    return JSON.parse(call.function.arguments) as T;
+  }
+
+  const fileBlock = isPdf
+    ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: imageBase64 } }
+    : { type: 'image', source: { type: 'base64', media_type: mediaType, data: imageBase64 } };
+  const content = [fileBlock, { type: 'text', text: instruction }] as unknown as Anthropic.MessageParam['content'];
+
+  const res = await getAnthropic().messages.create({
+    model: opts.model ?? MODEL_SMART,
+    max_tokens: opts.maxTokens ?? 1500,
+    system,
+    tools: [tool],
+    tool_choice: { type: 'tool', name: tool.name },
+    messages: [{ role: 'user', content }],
+  });
+  const toolUse = res.content.find((c): c is Anthropic.ToolUseBlock => c.type === 'tool_use');
+  if (!toolUse) throw new Error(`AI did not return ${tool.name}.`);
+  return toolUse.input as T;
+}
+
 // ─── Structured job posting (AI Quick Post) ─────────────────────────
 export type GeneratedJob = {
   title: string;

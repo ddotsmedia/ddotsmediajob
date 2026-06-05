@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import Papa from 'papaparse';
-import { ClipboardPaste, MessageCircle, Table2, Zap, Link2, FilePen, Loader2, Sparkles, Upload, Download, Check, X } from 'lucide-react';
+import { ClipboardPaste, MessageCircle, Table2, Zap, Link2, FilePen, Loader2, Sparkles, Upload, Download, Check, X, ImagePlus } from 'lucide-react';
 import { EMIRATES } from '@ddots/shared';
 import { trpc } from '@/trpc/react';
 import { AdminJobReviewForm, type DraftInit } from '@/components/admin/job-review-form';
@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 
 const TABS = [
   { key: 'paste', label: 'Quick Paste', icon: ClipboardPaste },
+  { key: 'poster', label: 'Poster Image', icon: ImagePlus },
   { key: 'whatsapp', label: 'WhatsApp', icon: MessageCircle },
   { key: 'csv', label: 'CSV Bulk', icon: Table2 },
   { key: 'quick', label: 'Quick Form', icon: Zap },
@@ -41,6 +42,7 @@ export default function AddJobPage() {
 
       <div className="mt-6">
         {tab === 'paste' && <PasteTab />}
+        {tab === 'poster' && <PosterTab />}
         {tab === 'whatsapp' && <WhatsAppTab />}
         {tab === 'csv' && <CsvTab />}
         {tab === 'quick' && <QuickTab />}
@@ -65,6 +67,53 @@ function PasteTab() {
         </Button>
       </div>
       {draft && <AdminJobReviewForm draft={draft} source="paste" onReset={() => { setDraft(null); setText(''); }} />}
+    </div>
+  );
+}
+
+const POSTER_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'] as const;
+
+function PosterTab() {
+  const [preview, setPreview] = useState<{ url: string; name: string; isPdf: boolean } | null>(null);
+  const [draft, setDraft] = useState<DraftInit | null>(null);
+  const extract = trpc.ai.extractJobFromImage.useMutation({ onSuccess: (d) => setDraft(d as DraftInit), onError: (e) => toast.error(e.message) });
+
+  function onFile(file: File) {
+    if (!(POSTER_TYPES as readonly string[]).includes(file.type)) return toast.error('Upload a JPG, PNG, WebP or PDF poster.');
+    if (file.size > 8 * 1024 * 1024) return toast.error('File must be under 8MB.');
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = String(reader.result);
+      const base64 = dataUrl.split(',')[1] ?? '';
+      setPreview({ url: dataUrl, name: file.name, isPdf: file.type === 'application/pdf' });
+      setDraft(null);
+      extract.mutate({ imageBase64: base64, mediaType: file.type as (typeof POSTER_TYPES)[number] });
+    };
+    reader.readAsDataURL(file);
+  }
+
+  return (
+    <div>
+      <div className="rounded-xl border bg-white p-5">
+        <Label>Upload a job poster (JPG, PNG, WebP or PDF) — Claude Vision reads it and fills the form</Label>
+        <label className="mt-3 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-navy-200 p-8 text-center text-sm text-navy-700/70 hover:bg-navy-50">
+          {extract.isPending ? <Loader2 className="h-6 w-6 animate-spin text-teal-500" /> : <ImagePlus className="h-6 w-6 text-teal-600" />}
+          {extract.isPending ? 'Reading poster…' : 'Click to choose a poster image or PDF'}
+          <input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" className="hidden" onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])} />
+        </label>
+        {preview && (
+          <div className="mt-4 flex items-center gap-3">
+            {preview.isPdf ? (
+              <div className="flex h-20 w-16 items-center justify-center rounded border bg-navy-50 text-xs text-navy-600">PDF</div>
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={preview.url} alt="poster" className="h-24 w-auto rounded border object-contain" />
+            )}
+            <span className="text-sm text-navy-700/70">{preview.name}</span>
+          </div>
+        )}
+      </div>
+      {draft && <AdminJobReviewForm draft={draft} source="poster" onReset={() => { setDraft(null); setPreview(null); }} />}
     </div>
   );
 }
