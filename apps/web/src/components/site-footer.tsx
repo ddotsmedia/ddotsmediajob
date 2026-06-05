@@ -40,6 +40,7 @@ export function SiteFooter() {
 
         <FooterCol title="For Employers">
           <FooterLink href="/employer/post">Post a Job</FooterLink>
+          <FooterLink href="/talent">Browse Talent</FooterLink>
           <FooterLink href="/employer">Employer Dashboard</FooterLink>
           <FooterLink href="/companies">Company Profiles</FooterLink>
           <FooterLink href="/blog">Hiring Blog</FooterLink>

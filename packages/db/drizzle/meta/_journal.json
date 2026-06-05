@@ -64,6 +64,13 @@
       "when": 1780659375853,
       "tag": "0008_clear_jackal",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1780673054911,
+      "tag": "0009_charming_black_bolt",
+      "breakpoints": true
     }
   ]
 }

@@ -155,6 +155,7 @@ export const jobseekerProfiles = pgTable('jobseeker_profiles', {
   userId: uuid('user_id')
     .primaryKey()
     .references(() => users.id, { onDelete: 'cascade' }),
+  username: varchar('username', { length: 50 }).unique(), // public URL /talent/{username}
   headline: varchar('headline', { length: 160 }),
   bio: text('bio'),
   phone: varchar('phone', { length: 30 }),
@@ -162,13 +163,28 @@ export const jobseekerProfiles = pgTable('jobseeker_profiles', {
   categorySlug: varchar('category_slug', { length: 40 }),
   experienceLevel: experienceLevelEnum('experience_level'),
   visaStatus: visaStatusEnum('visa_status'),
+  nationality: varchar('nationality', { length: 100 }),
+  languages: jsonb('languages').$type<string[]>().default([]).notNull(),
   skills: jsonb('skills').$type<string[]>().default([]).notNull(),
   resumeUrl: text('resume_url'),
   resumeData: jsonb('resume_data').$type<Record<string, unknown>>(),
   openToWork: boolean('open_to_work').default(true).notNull(),
+  // Talent profile / availability
+  availabilityStatus: varchar('availability_status', { length: 20 }).default('actively_looking').notNull(), // actively_looking|open_to_work|not_looking
+  visibility: varchar('visibility', { length: 20 }).default('employers_only').notNull(), // public|employers_only|hidden
+  openToRelocate: boolean('open_to_relocate').default(false).notNull(),
+  preferredEmirates: jsonb('preferred_emirates').$type<string[]>().default([]).notNull(),
+  preferredJobTypes: jsonb('preferred_job_types').$type<string[]>().default([]).notNull(),
+  preferredCategories: jsonb('preferred_categories').$type<string[]>().default([]).notNull(),
+  yearsExperience: integer('years_experience').default(0).notNull(),
+  expectedSalaryMin: integer('expected_salary_min'),
+  expectedSalaryMax: integer('expected_salary_max'),
+  showSalary: boolean('show_salary').default(false).notNull(),
+  showWhatsapp: boolean('show_whatsapp').default(false).notNull(),
+  lastActive: timestamp('last_active', { withTimezone: true }).defaultNow().notNull(),
   profileViews: integer('profile_views').default(0).notNull(),
   ...timestamps,
-});
+}, (t) => [index('jobseeker_username_idx').on(t.username), index('jobseeker_visibility_idx').on(t.visibility)]);
 
 // ─── Jobs ────────────────────────────────────────────────
 export const jobs = pgTable(
@@ -559,6 +575,10 @@ export const companyReviews = pgTable(
 );
 
 // ─── Relations ───────────────────────────────────────────
+export const jobseekerProfilesRelations = relations(jobseekerProfiles, ({ one }) => ({
+  user: one(users, { fields: [jobseekerProfiles.userId], references: [users.id] }),
+}));
+
 export const usersRelations = relations(users, ({ one, many }) => ({
   jobseekerProfile: one(jobseekerProfiles, {
     fields: [users.id],
