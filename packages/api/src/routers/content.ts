@@ -6,6 +6,7 @@ import {
   salaryReports,
   companies,
   jobs,
+  siteSettings,
   eq,
   and,
   desc,
@@ -163,4 +164,12 @@ export const contentRouter = router({
         .returning();
       return row;
     }),
+
+  /** Public page-visibility flags for nav/pages (default visible when unset). */
+  pageVisibility: publicProcedure.query(async ({ ctx }) => {
+    const KEYS = ['salary_guide_visible', 'whatsapp_groups_visible', 'community_visible', 'blog_visible', 'tools_visible'] as const;
+    const rows = await ctx.db.query.siteSettings.findMany();
+    const map = new Map(rows.map((r) => [r.key, r.value]));
+    return Object.fromEntries(KEYS.map((k) => [k, map.get(k) !== false])) as Record<(typeof KEYS)[number], boolean>;
+  }),
 });

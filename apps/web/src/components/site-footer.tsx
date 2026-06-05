@@ -34,8 +34,8 @@ export function SiteFooter() {
           <FooterLink href="/dashboard/alerts">Job Alerts</FooterLink>
           <FooterLink href="/career-advisor">AI Career Advisor</FooterLink>
           <FooterLink href="/interview-prep">AI Interview Prep</FooterLink>
-          <FooterLink href="/salary-guide">Salary Guide</FooterLink>
           <FooterLink href="/whatsapp-groups">WhatsApp Groups</FooterLink>
+          <FooterLink href="/salary-guide">Salary Guide</FooterLink>
         </FooterCol>
 
         <FooterCol title="For Employers">

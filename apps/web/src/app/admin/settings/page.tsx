@@ -73,6 +73,41 @@ export default function AdminSettingsPage() {
           </div>
         </div>
       </div>
+
+      <div className="mt-6 rounded-xl border bg-white p-6">
+        <h2 className="font-display text-lg font-bold text-navy-900">Page Visibility</h2>
+        <p className="text-sm text-navy-700/60">Show or hide pages from the public navigation.</p>
+        <div className="mt-4 divide-y">
+          {[
+            { key: 'salary_guide_visible', label: 'Salary Guide', desc: 'Show salary guide page and nav link to visitors' },
+            { key: 'whatsapp_groups_visible', label: 'WhatsApp Groups', desc: 'Show WhatsApp groups page and nav link' },
+            { key: 'community_visible', label: 'Community Q&A', desc: 'Show community forum page and nav link' },
+            { key: 'blog_visible', label: 'Blog', desc: 'Show blog page and nav link' },
+            { key: 'tools_visible', label: 'Tools', desc: 'Show tools section and nav link' },
+          ].map((row) => {
+            const visible = s[row.key] !== false;
+            return (
+              <div key={row.key} className="flex items-center justify-between gap-4 py-3">
+                <div>
+                  <p className="font-medium text-navy-900">{row.label}</p>
+                  <p className="text-xs text-navy-700/50">{row.desc}</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={visible}
+                  onChange={(e) => {
+                    const next = e.target.checked;
+                    if (!next && !window.confirm(`Hide ${row.label}? Visitors will no longer see this page or its navigation link.`)) return;
+                    setSetting.mutate({ key: row.key, value: next }, { onSuccess: () => toast.success(`${row.label} is now ${next ? 'visible' : 'hidden'}`) });
+                  }}
+                  className="h-5 w-5 rounded text-teal-600"
+                />
+              </div>
+            );
+          })}
+        </div>
+        <p className="mt-3 text-xs text-navy-700/50">ℹ️ Changes take effect immediately. Admin users can still access all pages regardless of visibility.</p>
+      </div>
     </div>
   );
 }

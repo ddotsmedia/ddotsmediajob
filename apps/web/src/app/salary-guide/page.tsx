@@ -1,10 +1,12 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import { auth } from '@ddots/auth';
 import { CATEGORIES, categoryBySlug, SITE } from '@ddots/shared';
 import { getApi } from '@/trpc/server';
 import { Card, CardContent } from '@/components/ui/primitives';
 
-export const revalidate = 3600;
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'UAE Salary Guide 2026',
@@ -19,6 +21,8 @@ export default async function SalaryGuidePage({
 }) {
   const { category } = await searchParams;
   const api = await getApi();
+  const [vis, session] = await Promise.all([api.content.pageVisibility().catch(() => null), auth()]);
+  if (vis && !vis.salary_guide_visible && session?.user?.role !== 'admin') notFound();
   const rows = await api.content.salaryGuide(category ? { category } : undefined).catch(() => []);
 
   return (

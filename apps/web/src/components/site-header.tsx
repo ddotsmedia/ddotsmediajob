@@ -7,20 +7,23 @@ import { Menu, X, LayoutDashboard, LogOut, Briefcase } from 'lucide-react';
 import { Logo } from './logo';
 import { Button } from './ui/button';
 import { NotificationBell } from './notification-bell';
+import { trpc } from '@/trpc/react';
 import { cn } from '@/lib/utils';
 
 const NAV = [
   { href: '/jobs', label: 'Jobs' },
   { href: '/companies', label: 'Companies' },
-  { href: '/salary-guide', label: 'Salary Guide' },
-  { href: '/community', label: 'Community' },
-  { href: '/whatsapp-groups', label: 'WhatsApp' },
-  { href: '/blog', label: 'Blog' },
-];
+  { href: '/community', label: 'Community', key: 'community_visible' },
+  { href: '/whatsapp-groups', label: 'WhatsApp', key: 'whatsapp_groups_visible' },
+  { href: '/blog', label: 'Blog', key: 'blog_visible' },
+  { href: '/salary-guide', label: 'Salary Guide', key: 'salary_guide_visible' },
+] as const;
 
 export function SiteHeader() {
   const { data: session } = useSession();
   const [open, setOpen] = useState(false);
+  const visibility = trpc.content.pageVisibility.useQuery(undefined, { staleTime: 60_000 });
+  const nav = NAV.filter((i) => !('key' in i) || visibility.data?.[i.key as keyof typeof visibility.data] !== false);
   const role = session?.user?.role;
   const dashHref = role === 'admin' ? '/admin' : role === 'employer' ? '/employer' : '/dashboard';
 
@@ -30,7 +33,7 @@ export function SiteHeader() {
         <div className="flex items-center gap-8">
           <Logo />
           <nav className="hidden items-center gap-6 md:flex">
-            {NAV.map((item) => (
+            {nav.map((item) => (
               <Link key={item.href} href={item.href} className="text-sm font-medium text-navy-700 hover:text-teal-600">
                 {item.label}
               </Link>
@@ -76,7 +79,7 @@ export function SiteHeader() {
 
       <div className={cn('border-t bg-white md:hidden', open ? 'block' : 'hidden')}>
         <nav className="flex flex-col gap-1 p-4">
-          {NAV.map((item) => (
+          {nav.map((item) => (
             <Link
               key={item.href}
               href={item.href}
