@@ -29,10 +29,13 @@ export function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-50 border-b bg-white/90 backdrop-blur">
-      <div className="bg-[#25D366] text-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-center gap-2 px-4 py-1.5 text-xs font-medium sm:justify-end">
-          <a href="https://wa.me/971509379212" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 hover:underline">
-            <MessageCircle className="h-3.5 w-3.5" /> WhatsApp us: +971 50 937 9212
+      <div className="bg-navy-900 text-white">
+        <div className="mx-auto flex max-w-7xl items-center justify-center gap-2 px-4 py-2 text-sm font-semibold sm:justify-end">
+          <a href="https://wa.me/971509379212" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 hover:text-[#25D366]">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#25D366]">
+              <MessageCircle className="h-3 w-3 text-white" />
+            </span>
+            WhatsApp us: <span className="text-[#25D366]">+971 50 937 9212</span>
           </a>
         </div>
       </div>
