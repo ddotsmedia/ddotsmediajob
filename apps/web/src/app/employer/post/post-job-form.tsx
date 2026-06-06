@@ -108,8 +108,8 @@ export function PostJobForm() {
               <Field label="Salary min (AED/mo)"><Input type="number" value={draft.salaryMin ?? ''} onChange={(e) => set('salaryMin', e.target.value ? Number(e.target.value) : null)} /></Field>
               <Field label="Salary max (AED/mo)"><Input type="number" value={draft.salaryMax ?? ''} onChange={(e) => set('salaryMax', e.target.value ? Number(e.target.value) : null)} /></Field>
             </div>
-            <Field label="Skills (comma-separated)"><Input value={draft.skills.join(', ')} onChange={(e) => set('skills', e.target.value.split(',').map((s) => s.trim()).filter(Boolean))} /></Field>
-            <Field label="Benefits (comma-separated)"><Input value={draft.benefits.join(', ')} onChange={(e) => set('benefits', e.target.value.split(',').map((s) => s.trim()).filter(Boolean))} /></Field>
+            <Field label="Skills (comma-separated)"><Textarea className="min-h-[80px] resize-y" value={draft.skills.join(', ')} onChange={(e) => set('skills', e.target.value.split(',').map((s) => s.trim()).filter(Boolean))} placeholder="e.g. Excel, IELTS 6.5, UAE driving licence, customer service" /></Field>
+            <Field label="Benefits (comma-separated)"><Textarea className="min-h-[80px] resize-y" value={draft.benefits.join(', ')} onChange={(e) => set('benefits', e.target.value.split(',').map((s) => s.trim()).filter(Boolean))} placeholder="e.g. Visa, medical insurance, annual flight, accommodation" /></Field>
             <div className="flex flex-wrap gap-x-6 gap-y-2">
               {([
                 ['isRemote', 'Remote'], ['isFresher', 'Fresher friendly'], ['isUrgent', 'Urgent hiring'],

@@ -7,7 +7,7 @@ import { Loader2, Send, Save, MessageCircle, Trash2, Sparkles, Languages, WandSp
 import { CATEGORIES, EMIRATES, JOB_TYPES, formatSalary } from '@ddots/shared';
 import { trpc } from '@/trpc/react';
 import { Button } from '@/components/ui/button';
-import { Input, Label, Select, Badge } from '@/components/ui/primitives';
+import { Input, Label, Select, Badge, Textarea } from '@/components/ui/primitives';
 import { TiptapEditor } from '@/components/tiptap-editor';
 import { cn } from '@/lib/utils';
 
@@ -132,8 +132,8 @@ export function AdminJobReviewForm({ draft, source = 'manual', onReset }: { draf
         <Field label={<>Salary min (AED) <Conf level={conf.salary} /></>}><Input type="number" value={f.salaryMin} onChange={(e) => set('salaryMin', e.target.value)} /></Field>
         <Field label="Salary max (AED)"><Input type="number" value={f.salaryMax} onChange={(e) => set('salaryMax', e.target.value)} /></Field>
         <Field label="WhatsApp contact"><Input value={f.contactWhatsapp} onChange={(e) => set('contactWhatsapp', e.target.value)} placeholder="+9715xxxxxxxx" /></Field>
-        <Field label="Skills / tags (comma-separated)"><Input value={f.skills} onChange={(e) => set('skills', e.target.value)} /></Field>
-        <Field label="Benefits (comma-separated)"><Input value={f.benefits} onChange={(e) => set('benefits', e.target.value)} /></Field>
+        <Field label="Skills / tags (comma-separated)"><Textarea className="min-h-[80px] resize-y" value={f.skills} onChange={(e) => set('skills', e.target.value)} /></Field>
+        <Field label="Benefits (comma-separated)"><Textarea className="min-h-[80px] resize-y" value={f.benefits} onChange={(e) => set('benefits', e.target.value)} /></Field>
       </div>
 
       <div className="space-y-1.5"><Label>Description</Label><TiptapEditor value={f.description} onChange={(v) => set('description', v)} /></div>
