@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import DOMPurify from 'isomorphic-dompurify';
 import { MapPin, Briefcase, Banknote, Clock, GraduationCap, BadgeCheck, CheckCircle2 } from 'lucide-react';
 import { TRPCError } from '@trpc/server';
 import {
@@ -161,7 +162,11 @@ export default async function JobDetailPage({ params }: Props) {
             <Card>
               <CardContent className="prose prose-slate max-w-none p-6 prose-headings:font-display">
                 <h2 className="text-lg font-bold text-navy-900">Job Description</h2>
-                <div className="whitespace-pre-wrap text-navy-700">{job.description}</div>
+                {/^\s*</.test(job.description) ? (
+                  <div className="text-navy-700" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(job.description) }} />
+                ) : (
+                  <div className="whitespace-pre-wrap text-navy-700">{job.description}</div>
+                )}
 
                 {job.skills.length > 0 && (
                   <>

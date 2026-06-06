@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { Bold, Italic, Heading2, Heading3, List, ListOrdered, Quote, Undo, Redo } from 'lucide-react';
@@ -18,6 +19,14 @@ export function TiptapEditor({ value, onChange }: { value: string; onChange: (ht
     },
     onUpdate: ({ editor }) => onChange(editor.getHTML()),
   });
+
+  // Sync when the value changes externally (e.g. loading an existing job or AI-filled draft),
+  // so HTML renders in the editor instead of being lost/shown stale.
+  useEffect(() => {
+    if (!editor) return;
+    const next = value || '<p></p>';
+    if (next !== editor.getHTML()) editor.commands.setContent(next, false);
+  }, [value, editor]);
 
   if (!editor) return <div className="h-80 rounded-lg border bg-navy-50" />;
 
