@@ -2,7 +2,7 @@
 
 import { toast } from 'sonner';
 import { Megaphone, Plus, Loader2 } from 'lucide-react';
-import { CATEGORIES, EMIRATES } from '@ddots/shared';
+import { CATEGORIES, EMIRATES, categoryBySlug, emirateBySlug } from '@ddots/shared';
 import { trpc } from '@/trpc/react';
 import { Button } from '@/components/ui/button';
 import { Input, Label, Select, Badge } from '@/components/ui/primitives';
@@ -135,7 +135,7 @@ export default function ReferPage() {
               <div>
                 <p className="font-semibold text-navy-900">{p.title}</p>
                 <p className="text-sm text-navy-700/60">
-                  {[p.categorySlug, p.emirateSlug].filter(Boolean).join(' · ')}
+                  {[categoryBySlug(p.categorySlug ?? '')?.name ?? p.categorySlug, emirateBySlug(p.emirateSlug ?? '')?.name ?? p.emirateSlug].filter(Boolean).join(' · ')}
                   {p.rejectionReason ? ` · ${p.rejectionReason}` : ''}
                 </p>
               </div>

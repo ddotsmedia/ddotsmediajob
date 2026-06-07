@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 import { ArrowBigUp, ArrowLeft, Loader2 } from 'lucide-react';
-import { timeAgo } from '@ddots/shared';
+import { timeAgo, categoryBySlug } from '@ddots/shared';
 import { trpc } from '@/trpc/react';
 import { Button } from '@/components/ui/button';
 import { Textarea, Badge } from '@/components/ui/primitives';
@@ -40,7 +40,7 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
       <article className="mt-4 rounded-xl border bg-white p-6">
         <div className="flex items-start justify-between gap-3">
           <h1 className="font-display text-2xl font-bold text-navy-900">{post.title}</h1>
-          {post.categorySlug && <Badge variant="muted">{post.categorySlug}</Badge>}
+          {post.categorySlug && <Badge variant="muted">{categoryBySlug(post.categorySlug)?.name ?? post.categorySlug}</Badge>}
         </div>
         <p className="mt-3 whitespace-pre-wrap text-navy-800">{post.body}</p>
         <div className="mt-4 flex items-center gap-3 text-xs text-navy-700/50">

@@ -101,3 +101,23 @@ See [`.env.example`](.env.example) — covers database, Auth.js + Google OAuth, 
 ## Brand
 
 Teal `#2a9aa4`, Navy `#0f172a`, fonts Sora (display) + DM Sans (body), 4-dot 2×2 logo mark.
+
+## Submit the sitemap to Google Search Console
+
+The sitemap is generated automatically and served at:
+
+    https://ddotsmediajobs.com/sitemap.xml
+
+To get pages indexed by Google:
+
+1. Go to https://search.google.com/search-console
+2. Add/select the property `ddotsmediajobs.com` (verify ownership via DNS or the
+   HTML-tag method if not already verified).
+3. In the left menu choose **Sitemaps**.
+4. Under **Add a new sitemap**, enter `sitemap.xml` and click **Submit**.
+5. Status should show **Success**; Google then crawls the listed jobs, blog posts
+   and static pages. Re-check after a few days for indexing coverage.
+
+`robots.txt` (https://ddotsmediajobs.com/robots.txt) already references the sitemap,
+so submission mainly speeds up discovery. Resubmit is not required after content
+changes — the sitemap updates automatically (ISR).

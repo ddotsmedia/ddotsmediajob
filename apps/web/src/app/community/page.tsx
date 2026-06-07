@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 import { MessagesSquare, Plus, ArrowBigUp, MessageCircle, Loader2 } from 'lucide-react';
-import { CATEGORIES, timeAgo } from '@ddots/shared';
+import { CATEGORIES, categoryBySlug, timeAgo } from '@ddots/shared';
 import { trpc } from '@/trpc/react';
 import { Button } from '@/components/ui/button';
 import { Input, Label, Textarea, Select, Badge } from '@/components/ui/primitives';
@@ -71,7 +71,7 @@ export default function CommunityPage() {
           <Link key={t.id} href={`/community/${t.id}`} className="block rounded-xl border bg-white p-5 transition-all hover:border-teal-300 hover:shadow-sm">
             <div className="flex items-start justify-between gap-3">
               <h2 className="font-display font-bold text-navy-900">{t.title}</h2>
-              {t.categorySlug && <Badge variant="muted">{t.categorySlug}</Badge>}
+              {t.categorySlug && <Badge variant="muted">{categoryBySlug(t.categorySlug)?.name ?? t.categorySlug}</Badge>}
             </div>
             <p className="mt-1 line-clamp-2 text-sm text-navy-700/70">{t.body}</p>
             <div className="mt-3 flex items-center gap-4 text-xs text-navy-700/50">
