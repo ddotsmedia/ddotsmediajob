@@ -147,14 +147,21 @@ export default async function HomePage() {
       <section className="bg-navy-900">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 px-4 py-14 text-center md:flex-row md:text-left">
           <div>
-            <h2 className="font-display text-2xl font-bold text-white md:text-3xl">Hiring in the UAE?</h2>
-            <p className="mt-2 text-navy-100/80">Post a job in minutes with AI assist and reach thousands of candidates.</p>
+            <h2 className="font-display text-2xl font-bold text-white md:text-3xl">Post a Job in 60 Seconds</h2>
+            <ul className="mt-3 flex flex-wrap justify-center gap-x-5 gap-y-1 text-sm text-navy-100/80 md:justify-start">
+              <li>✓ Free to post</li>
+              <li>✓ AI writes the job description</li>
+              <li>✓ Reach thousands of UAE jobseekers</li>
+            </ul>
           </div>
-          <Button asChild variant="accent" size="lg" className="shrink-0">
-            <Link href="/employer/post">
-              Post a Job <ArrowRight />
-            </Link>
-          </Button>
+          <div className="shrink-0 text-center">
+            <Button asChild variant="accent" size="lg">
+              <Link href="/employer/post">
+                Post a Job Free <ArrowRight />
+              </Link>
+            </Button>
+            <p className="mt-2 text-xs text-navy-100/60">No account needed to start</p>
+          </div>
         </div>
       </section>
     </>

@@ -52,6 +52,11 @@ export function SiteHeader() {
         </div>
 
         <div className="hidden items-center gap-3 md:flex">
+          <Button asChild variant="accent" size="sm">
+            <Link href="/employer/post">
+              <Briefcase /> Post a Job
+            </Link>
+          </Button>
           {session ? (
             <>
               <NotificationBell />
@@ -66,11 +71,6 @@ export function SiteHeader() {
             </>
           ) : (
             <>
-              <Button asChild variant="ghost" size="sm">
-                <Link href="/employer/post">
-                  <Briefcase /> Post a Job
-                </Link>
-              </Button>
               <span className="mx-1 h-5 w-px bg-navy-100" />
               <Button asChild variant="outline" size="sm">
                 <Link href="/login">Log in</Link>
