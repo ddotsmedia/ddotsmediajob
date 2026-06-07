@@ -172,4 +172,12 @@ export const contentRouter = router({
     const map = new Map(rows.map((r) => [r.key, r.value]));
     return Object.fromEntries(KEYS.map((k) => [k, map.get(k) !== false])) as Record<(typeof KEYS)[number], boolean>;
   }),
+
+  /** Public announcement banner config (site_settings key: announcement_banner). */
+  announcement: publicProcedure.query(async ({ ctx }) => {
+    const row = await ctx.db.query.siteSettings.findFirst({ where: eq(siteSettings.key, 'announcement_banner') });
+    const v = (row?.value ?? null) as { enabled?: boolean; text?: string; link?: string } | null;
+    if (!v || !v.enabled || !v.text) return null;
+    return { text: String(v.text).slice(0, 200), link: v.link ? String(v.link).slice(0, 300) : null };
+  }),
 });

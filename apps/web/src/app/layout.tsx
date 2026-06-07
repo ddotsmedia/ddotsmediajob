@@ -5,6 +5,7 @@ import { Providers } from './providers';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
 import { PostJobFab } from '@/components/post-job-fab';
+import { AnnouncementBanner } from '@/components/announcement-banner';
 import { MobileBottomNav } from '@/components/mobile-bottom-nav';
 import './globals.css';
 
@@ -44,6 +45,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${sora.variable} ${dmSans.variable}`} suppressHydrationWarning>
       <body className="min-h-screen flex flex-col">
         <Providers>
+          <AnnouncementBanner />
           <SiteHeader />
           <main className="flex-1 pb-16 md:pb-0">{children}</main>
           <SiteFooter />

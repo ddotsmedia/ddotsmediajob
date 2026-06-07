@@ -75,6 +75,34 @@ export default function AdminSettingsPage() {
       </div>
 
       <div className="mt-6 rounded-xl border bg-white p-6">
+        <h2 className="font-display text-lg font-bold text-navy-900">Announcement Banner</h2>
+        <p className="text-sm text-navy-700/60">Site-wide banner above the header. Leave text empty or untick to hide.</p>
+        {(() => {
+          const ann = (s.announcement_banner ?? {}) as { enabled?: boolean; text?: string; link?: string };
+          return (
+            <div className="mt-4 space-y-3">
+              <label className="flex items-center gap-2 text-sm text-navy-700">
+                <input type="checkbox" id="ann_enabled" defaultChecked={!!ann.enabled} className="h-4 w-4 rounded text-teal-600" /> Show banner
+              </label>
+              <div className="space-y-1.5"><Label>Banner text</Label><Input id="ann_text" defaultValue={ann.text ?? ''} placeholder="e.g. 🎉 New: post a job in 60 seconds — free" /></div>
+              <div className="space-y-1.5"><Label>Link (optional)</Label><Input id="ann_link" defaultValue={ann.link ?? ''} placeholder="/post-a-job" /></div>
+              <Button
+                onClick={() => {
+                  const enabled = (document.getElementById('ann_enabled') as HTMLInputElement | null)?.checked ?? false;
+                  const text = (document.getElementById('ann_text') as HTMLInputElement | null)?.value ?? '';
+                  const link = (document.getElementById('ann_link') as HTMLInputElement | null)?.value ?? '';
+                  setSetting.mutate({ key: 'announcement_banner', value: { enabled, text, link } });
+                }}
+                disabled={setSetting.isPending}
+              >
+                <Save /> Save banner
+              </Button>
+            </div>
+          );
+        })()}
+      </div>
+
+      <div className="mt-6 rounded-xl border bg-white p-6">
         <h2 className="font-display text-lg font-bold text-navy-900">Page Visibility</h2>
         <p className="text-sm text-navy-700/60">Show or hide pages from the public navigation.</p>
         <div className="mt-4 divide-y">
