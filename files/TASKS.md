@@ -21,7 +21,7 @@
 - [x] /jobs/emiratization (SSG)
 - [x] /jobs/remote (SSG)
 - [x] /jobs/visa-provided (SSG)
-- [ ] /assessments page  (Phase 2 work)
+- [x] /assessments page (browse + leaderboard) + /dashboard/assessments (take quiz + badges)
 - [x] Dynamic OG images via next/og for job detail + blog
 - [x] Applicant count on all job cards
 - [x] Salary transparency badge on job cards
@@ -76,7 +76,7 @@
 - [ ] /admin/applications (new) — full table + CV preview + status
 - [ ] /admin/comments (new) — community moderation + auto-flag
 - [ ] /admin/site-settings — all tabs (General/SEO/Email/Integrations/Maintenance/Danger)
-- [ ] /admin/skills-tests — create/edit test banks
+- [x] /admin/assessments — create/edit test banks (skill_assessments CRUD)
 - [ ] /admin/success-stories — manage success stories
 - [ ] /admin/community-groups — moderate groups
 - [ ] /admin/jobs/add — 6-tab quick upload (paste/whatsapp/csv/quick/url/manual)
