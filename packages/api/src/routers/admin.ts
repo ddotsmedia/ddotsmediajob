@@ -348,6 +348,60 @@ export const adminRouter = router({
     return { ok: true };
   }),
 
+  /** Load any job for admin editing. */
+  jobForEdit: adminProcedure.input(z.object({ id: z.string().uuid() })).query(async ({ ctx, input }) => {
+    const job = await ctx.db.query.jobs.findFirst({ where: eq(jobs.id, input.id) });
+    if (!job) throw new TRPCError({ code: 'NOT_FOUND' });
+    return job;
+  }),
+
+  /** Admin: full edit of any job. Edits go live immediately (bypass approval). */
+  updateJob: adminProcedure
+    .input(z.object({
+      id: z.string().uuid(),
+      title: z.string().min(3).max(160),
+      description: z.string().min(10),
+      categorySlug: z.string().max(40),
+      emirateSlug: z.string().max(40),
+      location: z.string().max(160).optional(),
+      jobType: z.string().max(20),
+      salaryMin: z.number().int().nonnegative().nullable().optional(),
+      salaryMax: z.number().int().nonnegative().nullable().optional(),
+      salaryHidden: z.boolean(),
+      visaProvided: z.boolean(),
+      accommodationProvided: z.boolean(),
+      isFresher: z.boolean(),
+      isRemote: z.boolean(),
+      isUrgent: z.boolean(),
+      isFeatured: z.boolean(),
+      freeZone: z.boolean(),
+      isAnonymous: z.boolean(),
+      skills: z.array(z.string().max(50)).max(40),
+      benefits: z.array(z.string().max(80)).max(20),
+      contactWhatsapp: z.string().max(30).optional(),
+      applyEmail: z.string().email().optional().or(z.literal('')),
+      status: z.enum(['active', 'pending', 'rejected', 'closed', 'expired', 'filled', 'draft']),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { id, applyEmail, ...rest } = input;
+      const [job] = await ctx.db
+        .update(jobs)
+        .set({
+          ...rest,
+          jobType: input.jobType as never,
+          description: input.description.includes('<') ? sanitizeHtml(input.description) : input.description,
+          location: input.location ?? null,
+          contactWhatsapp: input.contactWhatsapp ?? null,
+          applyEmail: applyEmail || null,
+          publishedAt: input.status === 'active' ? new Date() : undefined,
+        })
+        .where(eq(jobs.id, id))
+        .returning();
+      await enqueueSearchSync({ type: input.status === 'active' ? 'upsert' : 'delete', jobId: id });
+      await audit(ctx.session.user.id, 'admin.job.update', 'job', id, { status: input.status });
+      return { ok: true, slug: job!.slug };
+    }),
+
   // ── Companies ──────────────────────────────────────────
   allCompanies: adminProcedure.query(async ({ ctx }) =>
     ctx.db.query.companies.findMany({ orderBy: [desc(companies.createdAt)], limit: 100 }),

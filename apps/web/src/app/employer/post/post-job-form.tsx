@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import DOMPurify from 'isomorphic-dompurify';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
@@ -157,7 +158,11 @@ export function PostJobForm() {
               {draft.isRemote && <Badge variant="success">Remote</Badge>}
               {draft.isUrgent && <Badge variant="urgent">Urgent</Badge>}
             </div>
-            <p className="whitespace-pre-wrap text-sm text-navy-700/80">{draft.description || '—'}</p>
+            {/^\s*</.test(draft.description) ? (
+              <div className="prose prose-sm max-w-none text-navy-700/80" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(draft.description) }} />
+            ) : (
+              <p className="whitespace-pre-wrap text-sm text-navy-700/80">{draft.description || '—'}</p>
+            )}
             {draft.skills.length > 0 && <div className="flex flex-wrap gap-1.5">{draft.skills.map((s) => <Badge key={s} variant="muted">{s}</Badge>)}</div>}
             <p className="text-xs text-navy-700/50">Jobs are reviewed before going live (usually within a few hours).</p>
           </div>

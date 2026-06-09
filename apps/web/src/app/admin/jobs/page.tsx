@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { toast } from 'sonner';
-import { Loader2, Star, Trash2, ExternalLink, Search } from 'lucide-react';
+import { Loader2, Star, Trash2, ExternalLink, Search, Pencil } from 'lucide-react';
 import { JOB_STATUS, formatSalary } from '@ddots/shared';
 import { trpc } from '@/trpc/react';
 import { Input, Select, Badge } from '@/components/ui/primitives';
@@ -58,8 +58,9 @@ export default function AdminJobsPage() {
                       <Button variant="ghost" size="icon" onClick={() => feat.mutate({ id: j.id, featured: !j.isFeatured })} title="Toggle featured">
                         <Star className={j.isFeatured ? 'fill-gold-500 text-gold-500' : ''} />
                       </Button>
-                      <Button asChild variant="ghost" size="icon"><Link href={`/jobs/${j.slug}`} target="_blank"><ExternalLink /></Link></Button>
-                      <Button variant="ghost" size="icon" onClick={() => del.mutate({ id: j.id })}><Trash2 className="text-red-500" /></Button>
+                      <Button asChild variant="ghost" size="icon" title="Edit"><Link href={`/admin/jobs/${j.id}/edit`}><Pencil /></Link></Button>
+                      <Button asChild variant="ghost" size="icon" title="Preview"><Link href={`/jobs/${j.slug}`} target="_blank"><ExternalLink /></Link></Button>
+                      <Button variant="ghost" size="icon" title="Delete" onClick={() => del.mutate({ id: j.id })}><Trash2 className="text-red-500" /></Button>
                     </div>
                   </td>
                 </tr>

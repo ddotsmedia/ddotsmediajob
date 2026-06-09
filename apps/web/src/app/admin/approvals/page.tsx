@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import DOMPurify from 'isomorphic-dompurify';
 import { toast } from 'sonner';
 import { Loader2, Check, X } from 'lucide-react';
 import { formatSalary, emirateBySlug, categoryBySlug, timeAgo } from '@ddots/shared';
@@ -67,7 +68,7 @@ export default function ApprovalsPage() {
               </div>
             </div>
 
-            <p className="mt-3 line-clamp-3 whitespace-pre-wrap text-sm text-navy-700/80">{job.description}</p>
+            <div className="mt-3 line-clamp-3 text-sm text-navy-700/80" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(job.description, { ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'ul', 'ol', 'li', 'h2', 'h3', 'h4', 'a'] }) }} />
 
             {rejecting === job.id && (
               <div className="mt-3 flex gap-2 border-t pt-3">
