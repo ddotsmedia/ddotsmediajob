@@ -71,6 +71,13 @@
       "when": 1780673054911,
       "tag": "0009_charming_black_bolt",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1781035128892,
+      "tag": "0010_white_maximus",
+      "breakpoints": true
     }
   ]
 }

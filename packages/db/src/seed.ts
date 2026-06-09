@@ -17,6 +17,7 @@ import {
   salaryReports,
   blogPosts,
   siteSettings,
+  skillAssessments,
 } from './schema';
 import {
   CATEGORIES,
@@ -225,6 +226,43 @@ async function main() {
       publishedAt: new Date(),
     })),
   );
+
+  // ── Skill assessments ──────────────────────────────────
+  await db.insert(skillAssessments).values([
+    {
+      slug: 'excel-fundamentals', title: 'Excel Fundamentals', categorySlug: 'admin',
+      description: 'Core spreadsheet skills every UAE office role needs.', badgeName: 'Excel Verified', badgeColor: '#2a9aa4', timeLimitSec: 60, passScore: 70,
+      questions: [
+        { q: 'Which symbol starts a formula in Excel?', options: ['#', '=', '+', '@'], correct: 1 },
+        { q: 'Which function adds a range of cells?', options: ['SUM', 'COUNT', 'AVERAGE', 'MAX'], correct: 0 },
+        { q: 'What does VLOOKUP do?', options: ['Sorts data', 'Looks up a value in a column', 'Deletes rows', 'Formats cells'], correct: 1 },
+        { q: 'How do you lock a cell reference?', options: ['Use $ signs', 'Use brackets', 'Use quotes', 'Use %'], correct: 0 },
+        { q: 'Which chart shows parts of a whole?', options: ['Line', 'Pie', 'Scatter', 'Histogram'], correct: 1 },
+      ],
+    },
+    {
+      slug: 'customer-service-basics', title: 'Customer Service Basics', categorySlug: 'hospitality',
+      description: 'Service essentials for UAE hospitality and retail.', badgeName: 'Service Pro', badgeColor: '#ea7a3c', timeLimitSec: 60, passScore: 70,
+      questions: [
+        { q: 'A guest complains. Your first step?', options: ['Argue', 'Listen and empathise', 'Ignore', 'Walk away'], correct: 1 },
+        { q: 'Best way to greet a guest?', options: ['Say nothing', 'Warm, professional greeting', 'Look at phone', 'Point silently'], correct: 1 },
+        { q: 'What is upselling?', options: ['Refusing service', 'Recommending relevant add-ons', 'Raising prices secretly', 'Closing early'], correct: 1 },
+        { q: 'Handling a dietary request?', options: ['Guess', 'Confirm details and accommodate', 'Refuse', 'Charge extra'], correct: 1 },
+        { q: 'After resolving a complaint?', options: ['Forget it', 'Follow up to ensure satisfaction', 'Tell other guests', 'Take a break'], correct: 1 },
+      ],
+    },
+    {
+      slug: 'javascript-basics', title: 'JavaScript Basics', categorySlug: 'it',
+      description: 'Fundamental JavaScript knowledge for developer roles.', badgeName: 'JS Verified', badgeColor: '#f4cf3f', timeLimitSec: 60, passScore: 70,
+      questions: [
+        { q: 'Which keyword declares a block-scoped variable?', options: ['var', 'let', 'function', 'global'], correct: 1 },
+        { q: 'What does === check?', options: ['Value only', 'Value and type', 'Type only', 'Reference only'], correct: 1 },
+        { q: 'Which is an array method?', options: ['map', 'toUpper', 'select', 'fetchAll'], correct: 0 },
+        { q: 'What is a Promise used for?', options: ['Styling', 'Async operations', 'Loops', 'Comments'], correct: 1 },
+        { q: 'How do you write an arrow function?', options: ['=> ', 'fn()', '::', '->'], correct: 0 },
+      ],
+    },
+  ]);
 
   // ── Site settings ──────────────────────────────────────
   await db

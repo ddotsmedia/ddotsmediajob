@@ -630,3 +630,55 @@ export const companyReviewsRelations = relations(companyReviews, ({ one }) => ({
 export const jobTemplatesRelations = relations(jobTemplates, ({ one }) => ({
   employer: one(users, { fields: [jobTemplates.employerId], references: [users.id] }),
 }));
+
+// ─── Skill assessments ───────────────────────────────────
+export type AssessmentQuestion = { q: string; options: string[]; correct: number };
+
+export const skillAssessments = pgTable(
+  'skill_assessments',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    slug: varchar('slug', { length: 80 }).notNull(),
+    title: varchar('title', { length: 160 }).notNull(),
+    categorySlug: varchar('category_slug', { length: 40 }).notNull(),
+    description: text('description'),
+    questions: jsonb('questions').$type<AssessmentQuestion[]>().notNull(),
+    timeLimitSec: integer('time_limit_sec').default(60).notNull(),
+    passScore: integer('pass_score').default(70).notNull(),
+    badgeName: varchar('badge_name', { length: 60 }).notNull(),
+    badgeColor: varchar('badge_color', { length: 20 }).default('#2a9aa4').notNull(),
+    isActive: boolean('is_active').default(true).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex('assessment_slug_idx').on(t.slug), index('assessment_category_idx').on(t.categorySlug)],
+);
+
+export const assessmentResults = pgTable(
+  'assessment_results',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    assessmentId: uuid('assessment_id')
+      .notNull()
+      .references(() => skillAssessments.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    score: integer('score').notNull(),
+    passed: boolean('passed').notNull(),
+    completedAt: timestamp('completed_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index('result_assessment_idx').on(t.assessmentId),
+    index('result_user_idx').on(t.userId),
+    index('result_completed_idx').on(t.completedAt),
+  ],
+);
+
+export const skillAssessmentsRelations = relations(skillAssessments, ({ many }) => ({
+  results: many(assessmentResults),
+}));
+
+export const assessmentResultsRelations = relations(assessmentResults, ({ one }) => ({
+  assessment: one(skillAssessments, { fields: [assessmentResults.assessmentId], references: [skillAssessments.id] }),
+  user: one(users, { fields: [assessmentResults.userId], references: [users.id] }),
+}));
