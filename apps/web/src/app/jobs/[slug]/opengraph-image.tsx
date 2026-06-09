@@ -43,8 +43,9 @@ export default async function Image({ params }: { params: { slug: string } }) {
             <div style={{ width: 18, height: 18, borderRadius: 9999, background: '#b3cb4f' }} />
             <div style={{ width: 18, height: 18, borderRadius: 9999, background: '#f3ca3d' }} />
           </div>
-          <div style={{ fontSize: 32, fontWeight: 800, color: '#fff' }}>
-            <span style={{ color: '#f4cf3f' }}>Ddots</span>MediaJobs
+          <div style={{ display: 'flex', fontSize: 32, fontWeight: 800, color: '#fff' }}>
+            <span style={{ color: '#f4cf3f' }}>Ddots</span>
+            <span>MediaJobs</span>
           </div>
         </div>
 
