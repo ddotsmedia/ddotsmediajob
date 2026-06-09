@@ -120,6 +120,50 @@ export const aiRouter = router({
       return { content: reply };
     }),
 
+  /** STAR interview coach: score a behavioural answer 0-25 per S/T/A/R + suggestions (Haiku). */
+  starInterviewCoach: protectedProcedure
+    .input(z.object({ question: z.string().min(3).max(500), answer: z.string().min(10).max(4000) }))
+    .mutation(async ({ ctx, input }) => {
+      await guardAi(ctx, input.answer);
+      const STAR_TOOL = {
+        name: 'star_score',
+        description: 'Score a behavioural interview answer using the STAR framework for the UAE workplace.',
+        input_schema: {
+          type: 'object' as const,
+          properties: {
+            situation: { type: 'integer', description: 'Was the context clear? 0-25' },
+            task: { type: 'integer', description: 'Was the role/challenge defined? 0-25' },
+            action: { type: 'integer', description: 'Were specific steps described? 0-25' },
+            result: { type: 'integer', description: 'Was a measurable outcome included? 0-25' },
+            verdict: { type: 'string', enum: ['strong', 'good', 'needs_work'] },
+            suggestions: { type: 'array', items: { type: 'string' }, description: '2-4 specific, UAE-aware improvements' },
+          },
+          required: ['situation', 'task', 'action', 'result', 'verdict', 'suggestions'],
+        },
+      };
+      const schema = z.object({
+        situation: z.number().int().min(0).max(25),
+        task: z.number().int().min(0).max(25),
+        action: z.number().int().min(0).max(25),
+        result: z.number().int().min(0).max(25),
+        verdict: z.enum(['strong', 'good', 'needs_work']),
+        suggestions: z.array(z.string().max(400)).max(6),
+      });
+      try {
+        const raw = await structured<unknown>(
+          'You are an interview coach for the UAE job market. Score the candidate answer against the STAR framework (Situation, Task, Action, Result), 0-25 each. Be specific and reference UAE workplace norms (professionalism, hierarchy, cultural fit) where relevant. Call star_score.',
+          `Behavioural question:\n${wrapUserContent(input.question)}\n\nCandidate answer:\n${wrapUserContent(input.answer)}`,
+          STAR_TOOL as never,
+          { model: MODEL_FAST, maxTokens: 900 },
+        );
+        const r = schema.parse(raw);
+        return { ...r, total: r.situation + r.task + r.action + r.result };
+      } catch (err) {
+        console.error('[starInterviewCoach]', err);
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Coaching is unavailable right now. Please try again in a moment.' });
+      }
+    }),
+
   /** Profile coach: review jobseeker profile and suggest improvements (Sonnet). */
   profileCoach: protectedProcedure.mutation(async ({ ctx }) => {
     const profile = await loadProfileText(ctx.db, ctx.session.user.id);

@@ -1,6 +1,6 @@
 'use client';
 
-import { LayoutDashboard, FileText, Bookmark, Bell, User, FileSpreadsheet, Sparkles, Megaphone } from 'lucide-react';
+import { LayoutDashboard, FileText, Bookmark, Bell, User, FileSpreadsheet, Sparkles, Megaphone, Target } from 'lucide-react';
 import { DashboardSidebar, MobileTabs, type NavItem } from '@/components/dashboard/sidebar';
 
 const NAV: NavItem[] = [
@@ -11,6 +11,7 @@ const NAV: NavItem[] = [
   { href: '/dashboard/alerts', label: 'Job Alerts', icon: Bell },
   { href: '/dashboard/cv', label: 'CV & ATS', icon: FileSpreadsheet },
   { href: '/dashboard/ai', label: 'AI Tools', icon: Sparkles },
+  { href: '/dashboard/star-coach', label: 'STAR Coach', icon: Target },
   { href: '/dashboard/profile', label: 'Profile', icon: User },
 ];
 
