@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 import { Sparkles, Loader2, Send, ArrowRight, ArrowLeft, Check } from 'lucide-react';
 import { CATEGORIES, EMIRATES, JOB_TYPES, EXPERIENCE_LEVELS, formatSalary } from '@ddots/shared';
@@ -15,6 +16,7 @@ type Draft = {
   jobType: string; experienceLevel: string; salaryMin: number | null; salaryMax: number | null;
   skills: string[]; benefits: string[]; isRemote: boolean; isFresher: boolean; isUrgent: boolean;
   freeZone: boolean; isAnonymous: boolean; visaProvided: boolean; accommodationProvided: boolean;
+  contactWhatsapp: string; applyEmail: string;
 };
 
 const EMPTY: Draft = {
@@ -22,6 +24,7 @@ const EMPTY: Draft = {
   experienceLevel: '1-3-years', salaryMin: null, salaryMax: null, skills: [], benefits: [],
   isRemote: false, isFresher: false, isUrgent: false,
   freeZone: false, isAnonymous: false, visaProvided: false, accommodationProvided: false,
+  contactWhatsapp: '', applyEmail: '',
 };
 
 const STEPS = ['Basics', 'Description', 'Compensation', 'Review'] as const;
@@ -32,6 +35,13 @@ export function PostJobForm() {
   const [prompt, setPrompt] = useState('');
   const [draft, setDraft] = useState<Draft>(EMPTY);
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setDraft((d) => ({ ...d, [k]: v }));
+  const { data: session } = useSession();
+
+  // Pre-fill the contact email from the logged-in employer's account.
+  useEffect(() => {
+    const email = session?.user?.email;
+    if (email) setDraft((d) => (d.applyEmail ? d : { ...d, applyEmail: email }));
+  }, [session?.user?.email]);
 
   const ai = trpc.jobs.aiQuickPost.useMutation({
     onSuccess: (d) => { setDraft({ ...EMPTY, ...d }); toast.success('Draft generated — review each step'); },
@@ -49,7 +59,14 @@ export function PostJobForm() {
 
   function publish() {
     const salaryHidden = draft.salaryMin == null && draft.salaryMax == null;
-    create.mutate({ ...draft, salaryPeriod: 'monthly', salaryHidden, visaStatus: 'any' } as never);
+    create.mutate({
+      ...draft,
+      salaryPeriod: 'monthly',
+      salaryHidden,
+      visaStatus: 'any',
+      contactWhatsapp: draft.contactWhatsapp.trim() || undefined,
+      applyEmail: draft.applyEmail.trim() || undefined,
+    } as never);
   }
 
   return (
@@ -110,6 +127,11 @@ export function PostJobForm() {
             </div>
             <Field label="Skills (comma-separated)"><Textarea className="min-h-[80px] resize-y" value={draft.skills.join(', ')} onChange={(e) => set('skills', e.target.value.split(',').map((s) => s.trim()).filter(Boolean))} placeholder="e.g. Excel, IELTS 6.5, UAE driving licence, customer service" /></Field>
             <Field label="Benefits (comma-separated)"><Textarea className="min-h-[80px] resize-y" value={draft.benefits.join(', ')} onChange={(e) => set('benefits', e.target.value.split(',').map((s) => s.trim()).filter(Boolean))} placeholder="e.g. Visa, medical insurance, annual flight, accommodation" /></Field>
+            <div className="grid gap-5 sm:grid-cols-2">
+              <Field label="Contact WhatsApp"><Input type="tel" value={draft.contactWhatsapp} onChange={(e) => set('contactWhatsapp', e.target.value)} placeholder="+971 50 123 4567" /></Field>
+              <Field label="Contact Email"><Input type="email" value={draft.applyEmail} onChange={(e) => set('applyEmail', e.target.value)} placeholder="hr@company.com" /></Field>
+            </div>
+            <p className="-mt-2 text-xs text-navy-700/50">Applicants reach you via WhatsApp or email — add at least one.</p>
             <div className="flex flex-wrap gap-x-6 gap-y-2">
               {([
                 ['isRemote', 'Remote'], ['isFresher', 'Fresher friendly'], ['isUrgent', 'Urgent hiring'],

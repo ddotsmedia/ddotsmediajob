@@ -4,12 +4,29 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
-import { Bookmark, Send, Loader2, Upload, Sparkles } from 'lucide-react';
+import { Bookmark, Send, Loader2, Upload, Sparkles, Mail } from 'lucide-react';
 import { trpc } from '@/trpc/react';
 import { Button } from '@/components/ui/button';
 import { Input, Textarea } from '@/components/ui/primitives';
+import { WhatsappApplyButton } from '@/components/whatsapp-apply-button';
 
-export function JobActions({ jobId }: { jobId: string }) {
+export function JobActions({
+  jobId,
+  title,
+  slug,
+  company,
+  applyEmail,
+  applyWhatsapp,
+  contactWhatsapp,
+}: {
+  jobId: string;
+  title: string;
+  slug: string;
+  company?: string | null;
+  applyEmail?: string | null;
+  applyWhatsapp?: string | null;
+  contactWhatsapp?: string | null;
+}) {
   const { status } = useSession();
   const router = useRouter();
   const utils = trpc.useUtils();
@@ -50,8 +67,22 @@ export function JobActions({ jobId }: { jobId: string }) {
     } catch { toast.error('Upload failed'); } finally { setUploading(false); }
   }
 
+  const hasWa = !!(applyWhatsapp || contactWhatsapp);
+
   return (
     <div className="space-y-3">
+      {hasWa && (
+        <WhatsappApplyButton slug={slug} title={title} company={company} applyWhatsapp={applyWhatsapp} contactWhatsapp={contactWhatsapp} className="w-full" />
+      )}
+      {applyEmail && (
+        <a
+          href={`mailto:${applyEmail}?subject=${encodeURIComponent(`Application for ${title}`)}`}
+          className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-teal-300 px-4 py-2.5 text-sm font-semibold text-teal-700 hover:bg-teal-50"
+        >
+          <Mail className="h-4 w-4" /> Apply via Email
+        </a>
+      )}
+
       <Button variant="accent" size="lg" className="w-full" onClick={() => setShowApply((v) => !v)} disabled={apply.isPending}>
         <Send /> Apply Now
       </Button>

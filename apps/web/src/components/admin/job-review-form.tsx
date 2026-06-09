@@ -16,7 +16,7 @@ export type DraftInit = {
   categorySlug?: string; jobType?: string; salaryMin?: number; salaryMax?: number;
   visaProvided?: boolean; accommodation?: boolean; freshersWelcome?: boolean; remote?: boolean; urgent?: boolean; freeZone?: boolean;
   description?: string; requirements?: string; benefits?: string[]; tags?: string[];
-  contactWhatsapp?: string;
+  contactWhatsapp?: string; contactEmail?: string;
   confidence?: Record<string, string>;
 };
 
@@ -24,7 +24,7 @@ const blank = {
   title: '', companyName: '', categorySlug: 'admin', emirateSlug: 'dubai', location: '',
   jobType: 'full-time', salaryMin: '', salaryMax: '', salaryHidden: false,
   visaProvided: false, accommodationProvided: false, isFresher: false, isRemote: false, isUrgent: false,
-  freeZone: false, isAnonymous: false, isFeatured: false, contactWhatsapp: '', skills: '', benefits: '',
+  freeZone: false, isAnonymous: false, isFeatured: false, contactWhatsapp: '', applyEmail: '', skills: '', benefits: '',
   description: '<p></p>',
   titleAr: '', descriptionAr: '', requirementsAr: '', benefitsAr: [] as string[],
 };
@@ -73,7 +73,7 @@ export function AdminJobReviewForm({ draft, source = 'manual', onReset }: { draf
       salaryMin: draft.salaryMin ? String(draft.salaryMin) : '', salaryMax: draft.salaryMax ? String(draft.salaryMax) : '',
       visaProvided: !!draft.visaProvided, accommodationProvided: !!draft.accommodation,
       isFresher: !!draft.freshersWelcome, isRemote: !!draft.remote, isUrgent: !!draft.urgent, freeZone: !!draft.freeZone,
-      isAnonymous: false, isFeatured: false, contactWhatsapp: draft.contactWhatsapp ?? '',
+      isAnonymous: false, isFeatured: false, contactWhatsapp: draft.contactWhatsapp ?? '', applyEmail: draft.contactEmail ?? '',
       skills: (draft.tags ?? []).join(', '), benefits: (draft.benefits ?? []).join(', '),
       description: desc.trim() ? `<p>${desc.replace(/\n/g, '<br/>')}</p>` : '<p></p>',
     });
@@ -88,7 +88,7 @@ export function AdminJobReviewForm({ draft, source = 'manual', onReset }: { draf
       jobType: f.jobType, salaryMin: f.salaryMin ? Number(f.salaryMin) : null, salaryMax: f.salaryMax ? Number(f.salaryMax) : null,
       salaryHidden: f.salaryHidden || (!f.salaryMin && !f.salaryMax), visaProvided: f.visaProvided, accommodationProvided: f.accommodationProvided,
       isFresher: f.isFresher, isRemote: f.isRemote, isUrgent: f.isUrgent, isFeatured: f.isFeatured,
-      freeZone: f.freeZone, isAnonymous: f.isAnonymous, contactWhatsapp: f.contactWhatsapp || undefined,
+      freeZone: f.freeZone, isAnonymous: f.isAnonymous, contactWhatsapp: f.contactWhatsapp || undefined, applyEmail: f.applyEmail || undefined,
       skills: f.skills.split(',').map((s) => s.trim()).filter(Boolean),
       benefits: f.benefits.split(',').map((s) => s.trim()).filter(Boolean),
       titleAr: f.titleAr || undefined, descriptionAr: f.descriptionAr || undefined,
@@ -132,6 +132,7 @@ export function AdminJobReviewForm({ draft, source = 'manual', onReset }: { draf
         <Field label={<>Salary min (AED) <Conf level={conf.salary} /></>}><Input type="number" value={f.salaryMin} onChange={(e) => set('salaryMin', e.target.value)} /></Field>
         <Field label="Salary max (AED)"><Input type="number" value={f.salaryMax} onChange={(e) => set('salaryMax', e.target.value)} /></Field>
         <Field label="WhatsApp contact"><Input value={f.contactWhatsapp} onChange={(e) => set('contactWhatsapp', e.target.value)} placeholder="+9715xxxxxxxx" /></Field>
+        <Field label="Contact Email"><Input type="email" value={f.applyEmail} onChange={(e) => set('applyEmail', e.target.value)} placeholder="hr@company.com" /></Field>
         <Field label="Skills / tags (comma-separated)"><Textarea className="min-h-[80px] resize-y" value={f.skills} onChange={(e) => set('skills', e.target.value)} /></Field>
         <Field label="Benefits (comma-separated)"><Textarea className="min-h-[80px] resize-y" value={f.benefits} onChange={(e) => set('benefits', e.target.value)} /></Field>
       </div>

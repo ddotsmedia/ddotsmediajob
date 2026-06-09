@@ -198,7 +198,15 @@ export default async function JobDetailPage({ params }: Props) {
           <div className="space-y-4 lg:sticky lg:top-20 lg:self-start">
             <Card>
               <CardContent className="p-5">
-                <JobActions jobId={job.id} />
+                <JobActions
+                  jobId={job.id}
+                  title={job.title}
+                  slug={job.slug}
+                  company={job.isAnonymous ? null : job.company?.name}
+                  applyEmail={job.applyEmail}
+                  applyWhatsapp={job.applyWhatsapp}
+                  contactWhatsapp={job.contactWhatsapp}
+                />
                 <div className="mt-3">
                   <ShareMenu jobId={job.id} title={job.title} url={`${SITE.url}/jobs/${job.slug}`} variant="button" />
                 </div>

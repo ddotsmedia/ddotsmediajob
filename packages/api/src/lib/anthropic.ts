@@ -295,6 +295,7 @@ export type JobDraft = {
   benefits: string[];
   tags: string[];
   contactWhatsapp: string;
+  contactEmail: string;
   deadline: string;
   vacancies: number;
   confidence: Record<string, 'high' | 'medium' | 'low'>;
@@ -325,6 +326,7 @@ export const JOB_DRAFT_TOOL: Anthropic.Tool = {
       benefits: { type: 'array', items: { type: 'string' } },
       tags: { type: 'array', items: { type: 'string' } },
       contactWhatsapp: { type: 'string', description: 'Contact WhatsApp/phone if present, else empty' },
+      contactEmail: { type: 'string', description: 'Contact email for applications if present (patterns: an email address, "send CV to", "email:"), else empty' },
       deadline: { type: 'string', description: 'ISO date or empty string' },
       vacancies: { type: 'integer' },
       confidence: {
@@ -341,6 +343,6 @@ export const JOB_DRAFT_TOOL: Anthropic.Tool = {
         required: ['title', 'company', 'emirate', 'category', 'salary', 'jobType'],
       },
     },
-    required: ['title', 'company', 'emirate', 'area', 'categorySlug', 'jobType', 'salaryMin', 'salaryMax', 'visaProvided', 'accommodation', 'freshersWelcome', 'remote', 'urgent', 'freeZone', 'description', 'requirements', 'benefits', 'tags', 'contactWhatsapp', 'deadline', 'vacancies', 'confidence'],
+    required: ['title', 'company', 'emirate', 'area', 'categorySlug', 'jobType', 'salaryMin', 'salaryMax', 'visaProvided', 'accommodation', 'freshersWelcome', 'remote', 'urgent', 'freeZone', 'description', 'requirements', 'benefits', 'tags', 'contactWhatsapp', 'contactEmail', 'deadline', 'vacancies', 'confidence'],
   },
 };
