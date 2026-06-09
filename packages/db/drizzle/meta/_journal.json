@@ -78,6 +78,13 @@
       "when": 1781035128892,
       "tag": "0010_white_maximus",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1781035818071,
+      "tag": "0011_clammy_jackpot",
+      "breakpoints": true
     }
   ]
 }

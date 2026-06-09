@@ -1,6 +1,6 @@
 'use client';
 
-import { LayoutDashboard, PlusCircle, Briefcase, Building2, Users, BarChart3, BadgeCheck, Bot } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, Briefcase, Building2, Users, BarChart3, BadgeCheck, MessageSquare } from 'lucide-react';
 import { DashboardSidebar, MobileTabs, type NavItem } from '@/components/dashboard/sidebar';
 import { HrChatbot } from '@/components/ai/hr-chatbot';
 
@@ -9,6 +9,7 @@ const NAV: NavItem[] = [
   { href: '/employer/post', label: 'Post a Job', icon: PlusCircle },
   { href: '/employer/jobs', label: 'Manage Jobs', icon: Briefcase },
   { href: '/employer/candidates', label: 'Candidate Search', icon: Users },
+  { href: '/employer/messages', label: 'Messages', icon: MessageSquare },
   { href: '/employer/analytics', label: 'Analytics', icon: BarChart3 },
   { href: '/employer/verify', label: 'Verification', icon: BadgeCheck },
   { href: '/employer/profile', label: 'Company Profile', icon: Building2 },

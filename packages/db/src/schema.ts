@@ -682,3 +682,28 @@ export const assessmentResultsRelations = relations(assessmentResults, ({ one })
   assessment: one(skillAssessments, { fields: [assessmentResults.assessmentId], references: [skillAssessments.id] }),
   user: one(users, { fields: [assessmentResults.userId], references: [users.id] }),
 }));
+
+// ─── Direct messages (unlock after shortlist) ────────────
+export const directMessages = pgTable(
+  'direct_messages',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    senderId: uuid('sender_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    receiverId: uuid('receiver_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    jobId: uuid('job_id').references(() => jobs.id, { onDelete: 'set null' }),
+    body: text('body').notNull(),
+    isRead: boolean('is_read').default(false).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index('dm_sender_idx').on(t.senderId),
+    index('dm_receiver_idx').on(t.receiverId),
+    index('dm_pair_idx').on(t.senderId, t.receiverId),
+  ],
+);
+
+export const directMessagesRelations = relations(directMessages, ({ one }) => ({
+  sender: one(users, { fields: [directMessages.senderId], references: [users.id], relationName: 'dm_sender' }),
+  receiver: one(users, { fields: [directMessages.receiverId], references: [users.id], relationName: 'dm_receiver' }),
+  job: one(jobs, { fields: [directMessages.jobId], references: [jobs.id] }),
+}));
