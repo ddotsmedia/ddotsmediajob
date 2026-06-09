@@ -2,17 +2,19 @@
 # Claude Code: read this, find all [ ], build in order, mark [x] when done
 
 ## PHASE 0 — Immediate Fixes
-- [ ] Upgrade Next.js to 15.5.18+
-- [ ] Fix homepage stat counters (connect to DB)
-- [ ] Add JSON-LD Organization + WebSite+SearchAction to homepage
-- [ ] Add JobPosting JSON-LD to /job/[slug]
-- [ ] Add robots.txt
-- [ ] Verify sitemap.xml includes all live jobs + static pages
-- [ ] Add CSP + security headers to next.config.js
-- [ ] Fix theme-color #2563eb → #2a9aa4 in layout.tsx + manifest.json
-- [ ] Fix job description HTML rendering (dangerouslySetInnerHTML + DOMPurify)
-- [ ] Fix mobile form inputs (font-size 16px, min-height 52px)
-- [ ] Fix Skills + Benefits fields → textarea or tag-input
+- [ ] Upgrade Next.js to 15.5.18+  (deferred: live-site risk, needs isolated test)
+- [x] Fix homepage stat counters (connect to DB)
+- [x] Add JSON-LD Organization + WebSite+SearchAction to homepage
+- [x] Add JobPosting JSON-LD to /job/[slug]
+- [x] Add robots.txt
+- [x] Verify sitemap.xml includes all live jobs + static pages
+- [x] Add CSP + security headers to next.config.js
+- [x] Fix theme-color #2563eb → #2a9aa4 in layout.tsx + manifest.json
+- [x] Fix job description HTML rendering (dangerouslySetInnerHTML + DOMPurify)
+- [x] Fix mobile form inputs (font-size 16px, min-height 52px)
+- [x] Fix Skills + Benefits fields → textarea or tag-input
+- [x] AI calls: 30s timeout + admin rate-limit bypass + 423/503 errors
+- [x] Admin /admin/jobs: bulk Approve/Reject/Delete + delete confirm + CSV export
 
 ## PHASE 1 — Missing Public Pages
 - [ ] /jobs/blue-visa (SSG)
