@@ -87,65 +87,66 @@
 - [ ] AI seeker behaviour insights widget on dashboard
 
 ## PHASE 5 — All AI Features (Haiku only)
-- [ ] extractJobFromText → JobDraft + confidenceMap
-- [ ] jobMatchScore → score + reasons + missing skills
-- [ ] cvAtsAnalyzer → score + gaps + improvements
-- [ ] careerAdvisor → streaming chat (Haiku)
-- [ ] interviewPrep → 10 Q+A frameworks
-- [ ] videoInterviewScore → scores + summary
-- [ ] salaryCoach → range + negotiation script
-- [ ] profileCoach → gaps + suggestions
-- [ ] hrChatbot → streaming UAE law (Haiku)
-- [ ] cvFraudDetection → score + flags
-- [ ] trendingSkills → skills + demand (weekly cron)
-- [ ] smartAlertMatch → semantic score
-- [ ] emiratizationAssistant → compliance + plan
-- [ ] socialPostGenerator → linkedin + instagram + whatsapp
-- [ ] skillGapAnalyzer → matched + missing + courses
-- [ ] coverLetterGenerator → letter + subject
-- [ ] candidateRanking → ranked batch (BullMQ)
-- [ ] whatsappJobBot → webhook + Haiku format
-- [ ] resumeBulletRewriter → 3 rewrites
-- [ ] jobTitleNormaliser → MOHRE title + category
-- [ ] salaryBenchmark → market comparison real-time
-- [ ] interviewQuestionBank → 20 Q + rubrics
-- [ ] offerLetterDrafter → MOHRE compliant DOCX
-- [ ] candidateOutreach → personalised message
-- [ ] rejectionMessage → professional + constructive
-- [ ] companyCultureAnalyser → culture summary
-- [ ] careerPathPredictor → 3 steps + salary
-- [ ] jobScamDetector → score + flags (pre-approval)
-- [ ] abTestJobDescription → 2 variants
-- [ ] seekerBehaviourInsights → weekly admin digest
-- [ ] jobVoiceover → browser SpeechSynthesis
-- [ ] videoSentimentAnalysis → sentiment + confidence
-- [ ] transcribeAndExtract → Whisper → Haiku
-- [ ] extractJobFromImage → Haiku vision
-- [ ] autoCompleteJobTitle → ghost text
-- [ ] continueJobDescription → Tiptap continuation
-- [ ] translateJobToArabic → titleAr + descriptionAr
-- [ ] predictJobPerformance → estimated apps + views
-- [ ] recommendBoosts → per boost recommendation
-- [ ] checkDuplicate → pg_trgm similarity
+- [x] extractJobFromText → JobDraft + confidenceMap
+- [x] jobMatchScore → score + reasons + missing skills
+- [x] cvAtsAnalyzer → score + gaps + improvements
+- [x] careerAdvisor → streaming chat (Haiku)
+- [x] interviewPrep → 10 Q+A frameworks
+- [ ] videoInterviewScore → scores + summary  (needs video pipeline — Phase 3)
+- [x] salaryCoach → range + negotiation script
+- [x] profileCoach → gaps + suggestions
+- [x] hrChatbot → streaming UAE law (Haiku)
+- [ ] cvFraudDetection → score + flags  (needs CV text pipeline)
+- [ ] trendingSkills → skills + demand (weekly cron)  (Phase 10 worker)
+- [ ] smartAlertMatch → semantic score  (Phase 10 worker)
+- [x] emiratizationAssistant → compliance + plan
+- [x] socialPostGenerator → linkedin + instagram + whatsapp
+- [x] skillGapAnalyzer → matched + missing + courses
+- [x] coverLetterGenerator → letter + subject
+- [x] candidateRanking → ranked batch (BullMQ)
+- [ ] whatsappJobBot → webhook + Haiku format  (partial — Phase 7)
+- [x] resumeBulletRewriter → 3 rewrites
+- [x] jobTitleNormaliser → MOHRE title + category
+- [x] salaryBenchmark → market comparison real-time
+- [x] interviewQuestionBank → 20 Q + rubrics
+- [ ] offerLetterDrafter → MOHRE compliant DOCX  (needs docx npm)
+- [x] candidateOutreach → personalised message
+- [x] rejectionMessage → professional + constructive
+- [x] companyCultureAnalyser → culture summary
+- [x] careerPathPredictor → 3 steps + salary
+- [x] jobScamDetector → score + flags (pre-approval)
+- [x] abTestJobDescription → 2 variants
+- [x] seekerBehaviourInsights → weekly admin digest
+- [ ] jobVoiceover → browser SpeechSynthesis  (browser API — Phase 8)
+- [ ] videoSentimentAnalysis → sentiment + confidence  (needs video pipeline)
+- [ ] transcribeAndExtract → Whisper → Haiku  (needs openai/whisper)
+- [x] extractJobFromImage → Haiku vision
+- [x] autoCompleteJobTitle → ghost text
+- [x] continueJobDescription → Tiptap continuation
+- [x] translateJobToArabic → titleAr + descriptionAr
+- [x] predictJobPerformance → estimated apps + views
+- [x] recommendBoosts → per boost recommendation
+- [x] checkDuplicate → pg_trgm similarity
 - [ ] repost → clone + Haiku refresh
-- [ ] smartExpirySuggestion → days by category
-- [ ] blogImprove + blogExcerpt + blogTags + blogSEO
-- [ ] contentModeration → flagScore + flags
-- [ ] checkPermitEligibility → eligibility + fixes
-- [ ] generateOnboardingChecklist → steps[]
-- [ ] labourComplaintGuide → steps[]
-- [ ] generateOnboardingPack → PDF pack
-- [ ] interviewCopilot → suggestions + scorecard
-- [ ] referenceCheckAnalysis → summary + recommendation
-- [ ] biasDetector → score + flags + alternatives
-- [ ] marketPulseGenerate → weekly insights
-- [ ] agenticApply → auto-apply matching jobs
-- [ ] proactiveMatch → ranked seekers for new job
-- [ ] predictAttrition → score + tips
-- [ ] negotiationSimulator → 5-round roleplay
-- [ ] careerTransitionPlan → 6-month plan
-- [ ] successStoryWriter → story from answers
-- [ ] suggestJobQandAAnswer → answer suggestion
+- [x] smartExpirySuggestion → days by category
+- [x] blogImprove + blogExcerpt + blogTags + blogSEO
+- [x] contentModeration → flagScore + flags
+- [x] checkPermitEligibility → eligibility + fixes
+- [x] generateOnboardingChecklist → steps[]
+- [x] labourComplaintGuide → steps[]
+- [ ] generateOnboardingPack → PDF pack  (needs react-pdf)
+- [ ] interviewCopilot → suggestions + scorecard  (Phase 8)
+- [ ] referenceCheckAnalysis → summary + recommendation  (Phase 8)
+- [x] biasDetector → score + flags + alternatives
+- [x] marketPulseGenerate → weekly insights (marketPulseReport)
+- [ ] agenticApply → auto-apply matching jobs  (Phase 10 worker)
+- [ ] proactiveMatch → ranked seekers for new job  (Phase 10 worker)
+- [x] predictAttrition → score + tips (retentionRiskPredictor)
+- [x] negotiationSimulator → 5-round roleplay
+- [x] careerTransitionPlan → 6-month plan
+- [ ] successStoryWriter → story from answers  (Phase 8)
+- [ ] suggestJobQandAAnswer → answer suggestion  (Phase 8)
+- [x] linkedinOptimiser, jobSearchPlanner, retentionRiskPredictor, candidatePipelineSummary
 
 ## PHASE 6 — Security
 - [ ] Rate limiting (Redis) on auth + AI + upload endpoints
