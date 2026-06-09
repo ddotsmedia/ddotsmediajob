@@ -15,6 +15,7 @@ import {
   Banknote,
   Settings,
   PlusCircle,
+  Award,
 } from 'lucide-react';
 import { DashboardSidebar, MobileTabs, type NavItem } from '@/components/dashboard/sidebar';
 
@@ -30,6 +31,7 @@ const NAV: NavItem[] = [
   { href: '/admin/whatsapp-bot', label: 'WhatsApp Bot', icon: MessageCircle },
   { href: '/admin/salary', label: 'Salary Reports', icon: Banknote },
   { href: '/admin/community', label: 'Community', icon: MessagesSquare },
+  { href: '/admin/assessments', label: 'Assessments', icon: Award },
   { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/blog', label: 'Blog Editor', icon: FileEdit },
   { href: '/admin/settings', label: 'Settings', icon: Settings },

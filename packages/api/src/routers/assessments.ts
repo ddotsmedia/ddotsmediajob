@@ -1,7 +1,24 @@
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { skillAssessments, assessmentResults, eq, and, desc, gte } from '@ddots/db';
-import { router, publicProcedure, protectedProcedure } from '../trpc';
+import { slugify } from '@ddots/shared';
+import { router, publicProcedure, protectedProcedure, adminProcedure } from '../trpc';
+
+const questionSchema = z.object({
+  q: z.string().min(2).max(500),
+  options: z.array(z.string().min(1).max(200)).length(4),
+  correct: z.number().int().min(0).max(3),
+});
+const assessmentInput = z.object({
+  title: z.string().min(2).max(160),
+  categorySlug: z.string().min(1).max(40),
+  description: z.string().max(600).optional(),
+  badgeName: z.string().min(1).max(60),
+  badgeColor: z.string().max(20).default('#2a9aa4'),
+  timeLimitSec: z.number().int().min(10).max(600).default(60),
+  passScore: z.number().int().min(0).max(100).default(70),
+  questions: z.array(questionSchema).min(1).max(50),
+});
 
 export const assessmentsRouter = router({
   /** Public: list active assessments (no answers). */
@@ -70,5 +87,32 @@ export const assessmentsRouter = router({
       name: r.user?.name ?? 'Anonymous', score: r.score, title: r.assessment?.title ?? '',
       badge: r.assessment?.badgeName ?? '', completedAt: r.completedAt,
     }));
+  }),
+
+  // ── Admin CRUD ──────────────────────────────────────────
+  adminList: adminProcedure.query(async ({ ctx }) =>
+    ctx.db.query.skillAssessments.findMany({ orderBy: [desc(skillAssessments.createdAt)] }),
+  ),
+
+  create: adminProcedure.input(assessmentInput).mutation(async ({ ctx, input }) => {
+    const slug = `${slugify(input.title)}-${Math.random().toString(36).slice(2, 6)}`;
+    const [row] = await ctx.db.insert(skillAssessments).values({ ...input, slug }).returning();
+    return row;
+  }),
+
+  update: adminProcedure.input(assessmentInput.partial().extend({ id: z.string().uuid() })).mutation(async ({ ctx, input }) => {
+    const { id, ...rest } = input;
+    await ctx.db.update(skillAssessments).set(rest).where(eq(skillAssessments.id, id));
+    return { ok: true };
+  }),
+
+  toggleActive: adminProcedure.input(z.object({ id: z.string().uuid(), isActive: z.boolean() })).mutation(async ({ ctx, input }) => {
+    await ctx.db.update(skillAssessments).set({ isActive: input.isActive }).where(eq(skillAssessments.id, input.id));
+    return { ok: true };
+  }),
+
+  remove: adminProcedure.input(z.object({ id: z.string().uuid() })).mutation(async ({ ctx, input }) => {
+    await ctx.db.delete(skillAssessments).where(eq(skillAssessments.id, input.id));
+    return { ok: true };
   }),
 });
