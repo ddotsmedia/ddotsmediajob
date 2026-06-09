@@ -17,14 +17,18 @@
 - [x] Admin /admin/jobs: bulk Approve/Reject/Delete + delete confirm + CSV export
 
 ## PHASE 1 — Missing Public Pages
-- [ ] /jobs/blue-visa (SSG)
-- [ ] /jobs/emiratization (SSG)
-- [ ] /jobs/remote (SSG)
-- [ ] /jobs/visa-provided (SSG)
-- [ ] /assessments page
-- [ ] Dynamic OG images via next/og for job detail + blog
-- [ ] Applicant count on all job cards
-- [ ] Salary transparency badge on job cards
+- [x] /jobs/blue-visa (SSG)
+- [x] /jobs/emiratization (SSG)
+- [x] /jobs/remote (SSG)
+- [x] /jobs/visa-provided (SSG)
+- [ ] /assessments page  (Phase 2 work)
+- [x] Dynamic OG images via next/og for job detail + blog
+- [x] Applicant count on all job cards
+- [x] Salary transparency badge on job cards
+- [x] /salary/[role]-salary-in-[emirate] — 84 SSG pages
+- [x] /interview-questions/[role]-in-uae — 12 SSG pages
+- [x] 20 SEO blog articles seeded
+- [ ] Google Indexing API  (deferred: needs GOOGLE_INDEXING_KEY)
 
 ## PHASE 2 — Jobseeker Dashboard
 - [ ] /jobseeker/profile (photo R2, all sections, completion %)

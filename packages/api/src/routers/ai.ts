@@ -652,4 +652,302 @@ export const aiRouter = router({
         },
       };
     }),
+
+  // ═══════════════════════ Phase 5 — additional AI features (Haiku) ═══════════════════════
+
+  /** Standardise a raw job title → clean title + MOHRE title + category slug (Haiku). */
+  jobTitleNormaliser: protectedProcedure
+    .input(z.object({ title: z.string().min(2).max(160) }))
+    .mutation(async ({ ctx, input }) => {
+      await guardAi(ctx, input.title);
+      const TOOL = { name: 'normalise', description: 'Normalise a UAE job title.', input_schema: { type: 'object' as const, properties: {
+        normalizedTitle: { type: 'string' }, mohreTitle: { type: 'string', description: 'Closest MOHRE occupation title' },
+        categorySlug: { type: 'string', enum: ['it', 'healthcare', 'finance', 'sales', 'construction', 'hospitality', 'driving', 'education', 'admin', 'manufacturing', 'security', 'beauty'] },
+      }, required: ['normalizedTitle', 'mohreTitle', 'categorySlug'] } };
+      const schema = z.object({ normalizedTitle: z.string().max(160), mohreTitle: z.string().max(160), categorySlug: z.string() });
+      const raw = await structured<unknown>('You normalise UAE job titles to MOHRE standards. Call normalise.', wrapUserContent(input.title), TOOL as never, { model: MODEL_FAST, maxTokens: 200 });
+      return schema.parse(raw);
+    }),
+
+  /** Benchmark a salary against the UAE market for a role/emirate (Haiku). */
+  salaryBenchmark: protectedProcedure
+    .input(z.object({ title: z.string().min(2).max(160), emirate: z.string().max(40).optional(), salary: z.number().int().nonnegative().optional() }))
+    .mutation(async ({ ctx, input }) => {
+      await guardAi(ctx, input.title);
+      const TOOL = { name: 'benchmark', description: 'Benchmark a UAE salary.', input_schema: { type: 'object' as const, properties: {
+        marketMin: { type: 'integer', description: 'Monthly AED' }, marketMax: { type: 'integer' }, marketAvg: { type: 'integer' },
+        verdict: { type: 'string', enum: ['below', 'fair', 'above'] }, comment: { type: 'string', description: 'One sentence' },
+      }, required: ['marketMin', 'marketMax', 'marketAvg', 'verdict', 'comment'] } };
+      const schema = z.object({ marketMin: z.number().int(), marketMax: z.number().int(), marketAvg: z.number().int(), verdict: z.enum(['below', 'fair', 'above']), comment: z.string().max(300) });
+      const raw = await structured<unknown>('You are a UAE compensation analyst. Give realistic monthly AED ranges. Call benchmark.',
+        `Role: ${wrapUserContent(input.title)}\nEmirate: ${input.emirate ?? 'UAE'}\nOffered: ${input.salary ? 'AED ' + input.salary : 'n/a'}`, TOOL as never, { model: MODEL_FAST, maxTokens: 250 });
+      return schema.parse(raw);
+    }),
+
+  /** Rewrite a CV bullet 3 ways, optionally tailored to a target job (Haiku). */
+  resumeBulletRewriter: protectedProcedure
+    .input(z.object({ bullet: z.string().min(5).max(600), targetJob: z.string().max(160).optional() }))
+    .mutation(async ({ ctx, input }) => {
+      await guardAi(ctx, input.bullet);
+      const content = await chat('You rewrite CV bullet points for UAE jobseekers. Return exactly 3 strong, achievement-focused rewrites as a markdown numbered list. Use action verbs and quantify where possible.',
+        [{ role: 'user', content: `Bullet: ${wrapUserContent(input.bullet)}${input.targetJob ? `\nTarget role: ${input.targetJob}` : ''}` }], { model: MODEL_FAST, maxTokens: 400 });
+      return { content };
+    }),
+
+  /** Draft a professional, constructive rejection message (Haiku, employer). */
+  rejectionMessage: employerProcedure
+    .input(z.object({ jobTitle: z.string().min(2).max(160), reason: z.string().max(400).optional(), candidateName: z.string().max(120).optional() }))
+    .mutation(async ({ ctx, input }) => {
+      await guardAi(ctx, input.reason);
+      const content = await chat('You write polite, professional, encouraging candidate rejection messages for UAE employers. Keep under 120 words, warm but clear, no false promises.',
+        [{ role: 'user', content: `Role: ${input.jobTitle}\nCandidate: ${input.candidateName ?? 'Candidate'}\nReason (internal): ${input.reason ? wrapUserContent(input.reason) : 'not a fit at this time'}` }], { model: MODEL_FAST, maxTokens: 300 });
+      return { content };
+    }),
+
+  /** Personalised candidate outreach message (Haiku, employer). */
+  candidateOutreach: employerProcedure
+    .input(z.object({ candidateSummary: z.string().min(5).max(1200), jobTitle: z.string().min(2).max(160) }))
+    .mutation(async ({ ctx, input }) => {
+      await guardAi(ctx, input.candidateSummary);
+      const content = await chat('You write short, personalised recruiter outreach messages for UAE candidates. Friendly, specific, under 110 words, with a clear call to action.',
+        [{ role: 'user', content: `Hiring for: ${input.jobTitle}\nCandidate: ${wrapUserContent(input.candidateSummary)}` }], { model: MODEL_FAST, maxTokens: 280 });
+      return { content };
+    }),
+
+  /** Detect biased / non-inclusive language in a job description (Haiku, employer). */
+  biasDetector: employerProcedure
+    .input(z.object({ description: z.string().min(20).max(8000) }))
+    .mutation(async ({ ctx, input }) => {
+      await guardAi(ctx, input.description);
+      const TOOL = { name: 'bias', description: 'Flag biased language in a job description.', input_schema: { type: 'object' as const, properties: {
+        score: { type: 'integer', description: '0 (inclusive) - 100 (heavily biased)' }, flags: { type: 'array', items: { type: 'string' }, description: 'Problem phrases + why' },
+        rewritten: { type: 'string', description: 'Inclusive rewrite of the description' },
+      }, required: ['score', 'flags', 'rewritten'] } };
+      const schema = z.object({ score: z.number().int().min(0).max(100), flags: z.array(z.string().max(300)).max(20), rewritten: z.string().max(8000) });
+      const raw = await structured<unknown>('You audit UAE job descriptions for biased, discriminatory or non-inclusive language (age, gender, nationality, marital status). Call bias.',
+        wrapUserContent(input.description), TOOL as never, { model: MODEL_FAST, maxTokens: 1500 });
+      return schema.parse(raw);
+    }),
+
+  /** Scam / fraud risk score for a job listing (Haiku). */
+  jobScamDetector: protectedProcedure
+    .input(z.object({ listing: z.string().min(20).max(8000) }))
+    .mutation(async ({ ctx, input }) => {
+      await guardAi(ctx, input.listing);
+      const TOOL = { name: 'scam', description: 'Score scam risk of a UAE job listing.', input_schema: { type: 'object' as const, properties: {
+        score: { type: 'integer', description: '0 (legit) - 100 (likely scam)' }, verdict: { type: 'string', enum: ['safe', 'caution', 'high_risk'] },
+        flags: { type: 'array', items: { type: 'string' } },
+      }, required: ['score', 'verdict', 'flags'] } };
+      const schema = z.object({ score: z.number().int().min(0).max(100), verdict: z.enum(['safe', 'caution', 'high_risk']), flags: z.array(z.string().max(300)).max(20) });
+      const raw = await structured<unknown>('You detect job scams targeting UAE jobseekers (upfront fees, visa-payment requests, too-good salaries, personal-account contact). Call scam.',
+        wrapUserContent(input.listing), TOOL as never, { model: MODEL_FAST, maxTokens: 600 });
+      return schema.parse(raw);
+    }),
+
+  /** Generate 2 A/B variants of a job description (Haiku, employer). */
+  abTestJobDescription: employerProcedure
+    .input(z.object({ description: z.string().min(20).max(8000) }))
+    .mutation(async ({ ctx, input }) => {
+      await guardAi(ctx, input.description);
+      const content = await chat('You optimise UAE job ads. Produce 2 distinct variants (A: benefits-led, B: mission-led) of the description as markdown with "## Variant A" and "## Variant B" headings. Keep each compelling and scannable.',
+        [{ role: 'user', content: wrapUserContent(input.description) }], { model: MODEL_FAST, maxTokens: 1600 });
+      return { content };
+    }),
+
+  /** Optimise a LinkedIn headline + summary (Haiku). */
+  linkedinOptimiser: protectedProcedure
+    .input(z.object({ headline: z.string().max(220).optional(), summary: z.string().max(2600).optional(), role: z.string().max(160).optional() }))
+    .mutation(async ({ ctx, input }) => {
+      await guardAi(ctx, input.summary ?? input.headline);
+      const content = await chat('You optimise LinkedIn profiles for UAE professionals. Return markdown: an improved headline (1 line) and a rewritten 3-4 sentence summary, keyword-rich and recruiter-friendly.',
+        [{ role: 'user', content: `Target role: ${input.role ?? '—'}\nHeadline: ${input.headline ? wrapUserContent(input.headline) : '—'}\nSummary: ${input.summary ? wrapUserContent(input.summary) : '—'}` }], { model: MODEL_FAST, maxTokens: 500 });
+      return { content };
+    }),
+
+  /** Relocation advisor for moving to the UAE (Haiku). */
+  relocationAdvisor: protectedProcedure
+    .input(z.object({ country: z.string().min(2).max(80), role: z.string().min(2).max(160), salary: z.number().int().nonnegative().optional(), familySize: z.number().int().min(1).max(12).optional() }))
+    .mutation(async ({ ctx, input }) => {
+      await guardAi(ctx, `${input.country} ${input.role}`);
+      const content = await chat('You are a UAE relocation advisor. Given origin country, role, salary and family size, return markdown: best-fit emirate, visa route, monthly cost-of-living estimate, rough net savings, and a 30-day action plan. Practical and UAE-specific, under 320 words.',
+        [{ role: 'user', content: `From: ${input.country}\nRole: ${input.role}\nSalary: ${input.salary ? 'AED ' + input.salary : 'n/a'}\nFamily size: ${input.familySize ?? 1}` }], { model: MODEL_FAST, maxTokens: 900 });
+      return { content };
+    }),
+
+  /** Predict a 3-step career path with salary milestones (Haiku). */
+  careerPathPredictor: protectedProcedure
+    .input(z.object({ role: z.string().min(2).max(160), years: z.number().int().min(0).max(50).optional(), emirate: z.string().max(40).optional() }))
+    .mutation(async ({ ctx, input }) => {
+      await guardAi(ctx, input.role);
+      const content = await chat('You map UAE career paths. Return markdown: 3 progression steps from the current role, each with a likely title, timeframe, key skills to gain, and an AED monthly salary range. UAE market realistic.',
+        [{ role: 'user', content: `Current role: ${input.role}\nExperience: ${input.years ?? '—'} yrs\nEmirate: ${input.emirate ?? 'UAE'}` }], { model: MODEL_FAST, maxTokens: 700 });
+      return { content };
+    }),
+
+  /** Salary-negotiation roleplay simulator — one turn (Haiku). */
+  negotiationSimulator: protectedProcedure
+    .input(z.object({ role: z.string().min(2).max(160), messages }))
+    .mutation(async ({ ctx, input }) => {
+      await guardAi(ctx, input.messages.at(-1)?.content);
+      const reply = await chat(`You roleplay a UAE hiring manager in a salary negotiation for a ${input.role}. Respond in character, push back realistically but fairly, and after your reply add one short coaching tip prefixed "Coach:". Keep under 160 words.`,
+        input.messages as ChatMessage[], { model: MODEL_FAST, maxTokens: 500 });
+      return { reply };
+    }),
+
+  /** 6-month career transition plan between roles (Haiku). */
+  careerTransitionPlan: protectedProcedure
+    .input(z.object({ fromRole: z.string().min(2).max(160), toRole: z.string().min(2).max(160), months: z.number().int().min(1).max(24).optional() }))
+    .mutation(async ({ ctx, input }) => {
+      await guardAi(ctx, `${input.fromRole} ${input.toRole}`);
+      const content = await chat('You build UAE career-transition plans. Return a markdown month-by-month plan to move between the two roles: skills to learn, certifications, portfolio, and networking. Practical, UAE-relevant.',
+        [{ role: 'user', content: `From: ${input.fromRole}\nTo: ${input.toRole}\nTimeline: ${input.months ?? 6} months` }], { model: MODEL_FAST, maxTokens: 900 });
+      return { content };
+    }),
+
+  /** Weekly job-search action plan (Haiku). */
+  jobSearchPlanner: protectedProcedure
+    .input(z.object({ currentRole: z.string().max(160).optional(), targetRole: z.string().min(2).max(160), weeks: z.number().int().min(1).max(26).optional() }))
+    .mutation(async ({ ctx, input }) => {
+      await guardAi(ctx, input.targetRole);
+      const content = await chat('You create week-by-week UAE job-search plans. Return markdown with weekly goals: applications targets, networking, skill-building, and follow-ups. Concrete and motivating.',
+        [{ role: 'user', content: `Current: ${input.currentRole ?? '—'}\nTarget: ${input.targetRole}\nWeeks: ${input.weeks ?? 4}` }], { model: MODEL_FAST, maxTokens: 800 });
+      return { content };
+    }),
+
+  /** Interview question bank: 20 questions + rubrics for a role (Haiku, employer). */
+  interviewQuestionBank: employerProcedure
+    .input(z.object({ title: z.string().min(2).max(160), requirements: z.string().max(3000).optional() }))
+    .mutation(async ({ ctx, input }) => {
+      await guardAi(ctx, input.requirements ?? input.title);
+      const content = await chat('You build UAE interview question banks for employers. Return markdown: 20 questions grouped (technical, behavioural, situational, culture-fit), each with a one-line scoring rubric.',
+        [{ role: 'user', content: `Role: ${input.title}\nRequirements: ${input.requirements ? wrapUserContent(input.requirements) : '—'}` }], { model: MODEL_FAST, maxTokens: 1800 });
+      return { content };
+    }),
+
+  /** Analyse company culture from job ads + reviews text (Haiku, employer). */
+  companyCultureAnalyser: employerProcedure
+    .input(z.object({ jobAdsText: z.string().min(20).max(8000), reviewsText: z.string().max(8000).optional() }))
+    .mutation(async ({ ctx, input }) => {
+      await guardAi(ctx, input.jobAdsText);
+      const content = await chat('You analyse employer culture for UAE companies. From the provided job ads and reviews, return markdown: a culture summary, top 5 values signalled, and 3 employer-brand improvement tips.',
+        [{ role: 'user', content: `JOB ADS:\n${wrapUserContent(input.jobAdsText)}\n\nREVIEWS:\n${input.reviewsText ? wrapUserContent(input.reviewsText) : '—'}` }], { model: MODEL_FAST, maxTokens: 900 });
+      return { content };
+    }),
+
+  /** Retention / attrition risk for a candidate-role fit (Haiku, employer). */
+  retentionRiskPredictor: employerProcedure
+    .input(z.object({ candidateSummary: z.string().min(10).max(2000), role: z.string().min(2).max(160) }))
+    .mutation(async ({ ctx, input }) => {
+      await guardAi(ctx, input.candidateSummary);
+      const TOOL = { name: 'retention', description: 'Predict retention risk.', input_schema: { type: 'object' as const, properties: {
+        riskScore: { type: 'integer', description: '0 (will stay) - 100 (high flight risk)' }, level: { type: 'string', enum: ['low', 'medium', 'high'] },
+        factors: { type: 'array', items: { type: 'string' } }, tips: { type: 'array', items: { type: 'string' } },
+      }, required: ['riskScore', 'level', 'factors', 'tips'] } };
+      const schema = z.object({ riskScore: z.number().int().min(0).max(100), level: z.enum(['low', 'medium', 'high']), factors: z.array(z.string().max(300)).max(10), tips: z.array(z.string().max(300)).max(10) });
+      const raw = await structured<unknown>('You assess employee retention risk in the UAE context (visa stability, salary fit, overqualification, commute). Call retention.',
+        `Role: ${input.role}\nCandidate: ${wrapUserContent(input.candidateSummary)}`, TOOL as never, { model: MODEL_FAST, maxTokens: 600 });
+      return schema.parse(raw);
+    }),
+
+  /** Summarise a candidate pipeline from pasted applicant data (Haiku, employer). */
+  candidatePipelineSummary: employerProcedure
+    .input(z.object({ jobTitle: z.string().min(2).max(160), applicantsText: z.string().min(10).max(12000) }))
+    .mutation(async ({ ctx, input }) => {
+      await guardAi(ctx, input.applicantsText);
+      const content = await chat('You summarise hiring pipelines for UAE employers. Return markdown: top 3 candidates with why, overall quality read, and recommended next actions.',
+        [{ role: 'user', content: `Role: ${input.jobTitle}\nApplicants:\n${wrapUserContent(input.applicantsText)}` }], { model: MODEL_FAST, maxTokens: 900 });
+      return { content };
+    }),
+
+  /** Step-by-step UAE labour complaint guide (Haiku). */
+  labourComplaintGuide: protectedProcedure
+    .input(z.object({ issueType: z.string().min(2).max(160), emirate: z.string().max(40).optional() }))
+    .mutation(async ({ ctx, input }) => {
+      await guardAi(ctx, input.issueType);
+      const content = await chat('You guide UAE workers on labour complaints. Return markdown: clear steps to resolve the issue, who to contact (MOHRE 800 60, relevant authority), documents needed, and timelines. Note this is general info, not legal advice.',
+        [{ role: 'user', content: `Issue: ${wrapUserContent(input.issueType)}\nEmirate: ${input.emirate ?? 'UAE'}` }], { model: MODEL_FAST, maxTokens: 800 });
+      return { content };
+    }),
+
+  /** MOHRE work-permit eligibility check (Haiku). */
+  checkPermitEligibility: protectedProcedure
+    .input(z.object({ role: z.string().min(2).max(160), salary: z.number().int().nonnegative(), nationality: z.string().max(80).optional(), companySize: z.string().max(40).optional() }))
+    .mutation(async ({ ctx, input }) => {
+      await guardAi(ctx, input.role);
+      const content = await chat('You assess UAE work-permit eligibility at a high level. Return markdown: likely permit category, eligibility verdict, any gaps to fix, and required documents. General guidance, not legal advice.',
+        [{ role: 'user', content: `Role: ${input.role}\nSalary: AED ${input.salary}\nNationality: ${input.nationality ?? '—'}\nCompany size: ${input.companySize ?? '—'}` }], { model: MODEL_FAST, maxTokens: 600 });
+      return { content };
+    }),
+
+  /** New-hire onboarding checklist by nationality + emirate (Haiku). */
+  generateOnboardingChecklist: protectedProcedure
+    .input(z.object({ nationality: z.string().min(2).max(80), emirate: z.string().min(2).max(40) }))
+    .mutation(async ({ ctx, input }) => {
+      await guardAi(ctx, `${input.nationality} ${input.emirate}`);
+      const content = await chat('You create UAE onboarding checklists for new hires. Return a markdown checklist: visa/medical/Emirates ID steps, bank account, ejari/tenancy basics, and first-week tasks, tailored to nationality and emirate.',
+        [{ role: 'user', content: `Nationality: ${input.nationality}\nEmirate: ${input.emirate}` }], { model: MODEL_FAST, maxTokens: 800 });
+      return { content };
+    }),
+
+  /** Emiratization compliance plan for an employer (Haiku, employer). */
+  emiratizationAssistant: employerProcedure
+    .input(z.object({ companySize: z.number().int().min(1).max(100000), currentNationals: z.number().int().min(0).max(100000) }))
+    .mutation(async ({ ctx, input }) => {
+      await guardAi(ctx);
+      const content = await chat('You advise UAE employers on Emiratization and Nafis compliance. Return markdown: target Emirati headcount, current gap, a hiring plan, and Nafis incentives available. Practical and current.',
+        [{ role: 'user', content: `Company size: ${input.companySize}\nCurrent Emirati staff: ${input.currentNationals}` }], { model: MODEL_FAST, maxTokens: 700 });
+      return { content };
+    }),
+
+  // ── Blog assist (Haiku, admin) ──────────────────────────────────
+  blogImprove: adminProcedure.input(z.object({ content: z.string().min(20).max(20000) })).mutation(async ({ ctx, input }) => {
+    await guardAi(ctx, input.content);
+    const content = await chat('You improve blog drafts for a UAE jobs site. Return the improved article in clean markdown — stronger structure, clarity, SEO headings — keeping the meaning.', [{ role: 'user', content: wrapUserContent(input.content) }], { model: MODEL_FAST, maxTokens: 2500 });
+    return { content };
+  }),
+  blogExcerpt: adminProcedure.input(z.object({ content: z.string().min(20).max(20000) })).mutation(async ({ ctx, input }) => {
+    await guardAi(ctx, input.content);
+    const content = await chat('Write a single compelling 1-2 sentence excerpt (max 200 chars) for this article. Return only the excerpt.', [{ role: 'user', content: wrapUserContent(input.content) }], { model: MODEL_FAST, maxTokens: 120 });
+    return { excerpt: content.trim().slice(0, 280) };
+  }),
+  blogTags: adminProcedure.input(z.object({ content: z.string().min(20).max(20000) })).mutation(async ({ ctx, input }) => {
+    await guardAi(ctx, input.content);
+    const content = await chat('Return 4-8 lowercase, hyphenated SEO tags for this UAE jobs article as a comma-separated list. Only the list.', [{ role: 'user', content: wrapUserContent(input.content) }], { model: MODEL_FAST, maxTokens: 120 });
+    const tags = content.split(',').map((t) => t.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')).filter(Boolean).slice(0, 8);
+    return { tags };
+  }),
+  blogSEO: adminProcedure.input(z.object({ title: z.string().min(2).max(200), content: z.string().min(20).max(20000) })).mutation(async ({ ctx, input }) => {
+    await guardAi(ctx, input.content);
+    const TOOL = { name: 'seo', description: 'SEO meta for an article.', input_schema: { type: 'object' as const, properties: {
+      metaTitle: { type: 'string', description: 'Max 60 chars' }, metaDescription: { type: 'string', description: 'Max 160 chars' },
+    }, required: ['metaTitle', 'metaDescription'] } };
+    const schema = z.object({ metaTitle: z.string().max(120), metaDescription: z.string().max(320) });
+    const raw = await structured<unknown>('You write SEO meta tags for a UAE jobs blog. Call seo.', `Title: ${input.title}\n${wrapUserContent(input.content.slice(0, 4000))}`, TOOL as never, { model: MODEL_FAST, maxTokens: 200 });
+    return schema.parse(raw);
+  }),
+
+  /** Content moderation score for community text (Haiku, admin). */
+  contentModeration: adminProcedure.input(z.object({ text: z.string().min(1).max(8000) })).mutation(async ({ ctx, input }) => {
+    await guardAi(ctx, input.text);
+    const TOOL = { name: 'moderate', description: 'Moderate user text.', input_schema: { type: 'object' as const, properties: {
+      flagScore: { type: 'integer', description: '0 (clean) - 100 (severe)' }, action: { type: 'string', enum: ['allow', 'review', 'block'] }, flags: { type: 'array', items: { type: 'string' } },
+    }, required: ['flagScore', 'action', 'flags'] } };
+    const schema = z.object({ flagScore: z.number().int().min(0).max(100), action: z.enum(['allow', 'review', 'block']), flags: z.array(z.string().max(200)).max(15) });
+    const raw = await structured<unknown>('You moderate community posts for a UAE jobs platform (spam, scams, harassment, personal data, hate). Call moderate.', wrapUserContent(input.text), TOOL as never, { model: MODEL_FAST, maxTokens: 400 });
+    return schema.parse(raw);
+  }),
+
+  /** Weekly seeker-behaviour insights from pasted log data (Haiku, admin). */
+  seekerBehaviourInsights: adminProcedure.input(z.object({ logsText: z.string().min(10).max(12000) })).mutation(async ({ ctx, input }) => {
+    await guardAi(ctx, input.logsText);
+    const content = await chat('You analyse jobseeker activity for a UAE jobs admin. Return markdown: key trends, drop-off points, and 3 recommended actions to boost engagement.', [{ role: 'user', content: wrapUserContent(input.logsText) }], { model: MODEL_FAST, maxTokens: 800 });
+    return { content };
+  }),
+
+  /** Weekly market-pulse report from pasted aggregate data (Haiku, admin). */
+  marketPulseReport: adminProcedure.input(z.object({ dataText: z.string().min(10).max(12000) })).mutation(async ({ ctx, input }) => {
+    await guardAi(ctx, input.dataText);
+    const content = await chat('You write a weekly UAE jobs market-pulse report. From the data, return markdown: headline trends, hottest categories/emirates, salary movements, and an outlook. Concise and publishable.', [{ role: 'user', content: wrapUserContent(input.dataText) }], { model: MODEL_FAST, maxTokens: 900 });
+    return { content };
+  }),
 });
