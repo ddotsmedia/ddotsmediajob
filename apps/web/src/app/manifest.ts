@@ -7,10 +7,23 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: SITE.name,
     description: SITE.description,
     start_url: '/',
+    scope: '/',
     display: 'standalone',
-    background_color: '#2a9aa4',
+    orientation: 'portrait',
+    lang: 'en',
+    background_color: '#0f172a',
     theme_color: '#2a9aa4',
-    icons: [{ src: '/logo.png', sizes: '512x512', type: 'image/png', purpose: 'any' }],
+    icons: [
+      { src: '/logo-mark.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+      { src: '/logo-mark.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+      { src: '/logo.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+    ],
+    shortcuts: [
+      { name: 'Browse Jobs', short_name: 'Jobs', url: '/jobs' },
+      { name: 'Post a Job', short_name: 'Post Job', url: '/employer/post' },
+      { name: 'WhatsApp Groups', short_name: 'WA Groups', url: '/whatsapp-groups' },
+      { name: 'My Dashboard', short_name: 'Dashboard', url: '/dashboard' },
+    ],
     categories: ['business', 'jobs'],
   };
 }
