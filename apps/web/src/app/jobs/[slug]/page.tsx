@@ -17,8 +17,16 @@ import { MatchScoreCard } from '@/components/ai/match-score';
 import { SkillGap } from '@/components/ai/skill-gap';
 import { ShareMenu } from '@/components/share-menu';
 import { Badge, Card, CardContent } from '@/components/ui/primitives';
+import { parseRoleEmirate, roleEmirateMetadata, roleEmirateStaticParams, RoleEmirateView } from './role-emirate';
 
 type Props = { params: Promise<{ slug: string }> };
+
+export const revalidate = 3600;
+
+/** Pre-render the 84 role+emirate SEO pages; job slugs still render on-demand. */
+export function generateStaticParams() {
+  return roleEmirateStaticParams();
+}
 
 async function loadJob(slug: string) {
   try {
@@ -32,6 +40,8 @@ async function loadJob(slug: string) {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
+  const re = parseRoleEmirate(slug);
+  if (re) return roleEmirateMetadata(re.category, re.emirate);
   const job = await loadJob(slug);
   if (!job) return { title: 'Job not found' };
   const emirate = emirateBySlug(job.emirateSlug)?.name ?? 'UAE';
@@ -61,6 +71,8 @@ const GTAG_EMPLOYMENT: Record<string, string> = {
 
 export default async function JobDetailPage({ params }: Props) {
   const { slug } = await params;
+  const re = parseRoleEmirate(slug);
+  if (re) return <RoleEmirateView category={re.category} emirate={re.emirate} />;
   const job = await loadJob(slug);
   if (!job) notFound();
 
