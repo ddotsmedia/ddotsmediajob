@@ -22,7 +22,7 @@ export function getAnthropic(): Anthropic {
   if (anthropic) return anthropic;
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not set.');
-  anthropic = new Anthropic({ apiKey });
+  anthropic = new Anthropic({ apiKey, timeout: 30_000, maxRetries: 1 });
   return anthropic;
 }
 
@@ -32,6 +32,8 @@ function getGemini(): OpenAI {
   gemini = new OpenAI({
     apiKey: GEMINI_KEY,
     baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/',
+    timeout: 30_000,
+    maxRetries: 1,
   });
   return gemini;
 }

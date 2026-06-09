@@ -124,3 +124,12 @@ select {
   -webkit-appearance: none;
   appearance: none;
 }
+
+/* Comfortable mobile tap targets — exclude toggles so checkbox/radio keep their size. */
+input:not([type='checkbox']):not([type='radio']):not([type='range']),
+select {
+  min-height: 52px;
+}
+textarea {
+  min-height: 80px;
+}

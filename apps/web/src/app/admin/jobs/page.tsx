@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { toast } from 'sonner';
-import { Loader2, Star, Trash2, ExternalLink, Search, Pencil } from 'lucide-react';
+import { Loader2, Star, Trash2, ExternalLink, Search, Pencil, Check, X, Download } from 'lucide-react';
 import { JOB_STATUS, formatSalary } from '@ddots/shared';
 import { trpc } from '@/trpc/react';
 import { Input, Select, Badge } from '@/components/ui/primitives';
@@ -13,12 +13,60 @@ export default function AdminJobsPage() {
   const utils = trpc.useUtils();
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
+  const [sel, setSel] = useState<Set<string>>(new Set());
+  const [busy, setBusy] = useState(false);
   const jobs = trpc.admin.allJobs.useQuery({ q: q || undefined, status: status || undefined, page: 1 });
 
   const inval = () => utils.admin.allJobs.invalidate();
   const feat = trpc.admin.setJobFeatured.useMutation({ onSuccess: () => { inval(); toast.success('Updated'); } });
   const setStatusM = trpc.admin.setJobStatus.useMutation({ onSuccess: () => { inval(); toast.success('Status changed'); } });
-  const del = trpc.admin.deleteJob.useMutation({ onSuccess: () => { inval(); toast.success('Deleted'); } });
+  const del = trpc.admin.deleteJob.useMutation();
+  const setStatusBulk = trpc.admin.setJobStatus.useMutation();
+
+  const rows = jobs.data ?? [];
+  const allSelected = rows.length > 0 && rows.every((j) => sel.has(j.id));
+
+  function toggle(id: string) {
+    setSel((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  }
+  function toggleAll() {
+    setSel(allSelected ? new Set() : new Set(rows.map((j) => j.id)));
+  }
+
+  async function bulkStatus(next: 'active' | 'rejected') {
+    setBusy(true);
+    try {
+      await Promise.all([...sel].map((id) => setStatusBulk.mutateAsync({ id, status: next })));
+      toast.success(`${sel.size} job(s) ${next === 'active' ? 'approved' : 'rejected'}`);
+      setSel(new Set());
+      inval();
+    } catch { toast.error('Bulk update failed'); } finally { setBusy(false); }
+  }
+
+  async function bulkDelete() {
+    if (!confirm(`Delete ${sel.size} job(s)? This cannot be undone.`)) return;
+    setBusy(true);
+    try {
+      await Promise.all([...sel].map((id) => del.mutateAsync({ id })));
+      toast.success(`${sel.size} job(s) deleted`);
+      setSel(new Set());
+      inval();
+    } catch { toast.error('Bulk delete failed'); } finally { setBusy(false); }
+  }
+
+  function exportCsv() {
+    const src = sel.size ? rows.filter((j) => sel.has(j.id)) : rows;
+    const head = ['Title', 'Company', 'Status', 'SalaryMin', 'SalaryMax', 'Slug', 'Created'];
+    const esc = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const lines = src.map((j) =>
+      [j.title, j.company?.name ?? '', j.status, j.salaryMin ?? '', j.salaryMax ?? '', j.slug, new Date(j.createdAt).toISOString()].map(esc).join(','),
+    );
+    const blob = new Blob([[head.join(','), ...lines].join('\n')], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `jobs-${new Date().toISOString().slice(0, 10)}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  }
 
   return (
     <div>
@@ -32,17 +80,32 @@ export default function AdminJobsPage() {
           <option value="">All statuses</option>
           {JOB_STATUS.map((s) => <option key={s} value={s} className="capitalize">{s}</option>)}
         </Select>
+        <Button variant="outline" onClick={exportCsv} disabled={!rows.length}><Download className="h-4 w-4" /> Export CSV</Button>
       </div>
+
+      {sel.size > 0 && (
+        <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-teal-200 bg-teal-50 px-3 py-2 text-sm">
+          <span className="font-medium text-navy-900">{sel.size} selected</span>
+          <Button size="sm" variant="outline" disabled={busy} onClick={() => bulkStatus('active')}><Check className="h-4 w-4 text-green-600" /> Approve</Button>
+          <Button size="sm" variant="outline" disabled={busy} onClick={() => bulkStatus('rejected')}><X className="h-4 w-4 text-orange-600" /> Reject</Button>
+          <Button size="sm" variant="outline" disabled={busy} onClick={bulkDelete}><Trash2 className="h-4 w-4 text-red-500" /> Delete</Button>
+          <button className="ml-auto text-navy-700/60 hover:underline" onClick={() => setSel(new Set())}>Clear</button>
+        </div>
+      )}
 
       <div className="mt-6 overflow-x-auto rounded-xl border bg-white">
         {jobs.isLoading ? <Loader2 className="m-6 animate-spin text-teal-500" /> : (
           <table className="w-full text-sm">
             <thead className="border-b bg-navy-50 text-left text-navy-700">
-              <tr><th className="px-4 py-3">Title</th><th className="px-4 py-3">Company</th><th className="px-4 py-3">Salary</th><th className="px-4 py-3">Status</th><th className="px-4 py-3"></th></tr>
+              <tr>
+                <th className="px-4 py-3"><input type="checkbox" checked={allSelected} onChange={toggleAll} aria-label="Select all" /></th>
+                <th className="px-4 py-3">Title</th><th className="px-4 py-3">Company</th><th className="px-4 py-3">Salary</th><th className="px-4 py-3">Status</th><th className="px-4 py-3"></th>
+              </tr>
             </thead>
             <tbody>
-              {jobs.data?.map((j) => (
+              {rows.map((j) => (
                 <tr key={j.id} className="border-b last:border-0">
+                  <td className="px-4 py-3"><input type="checkbox" checked={sel.has(j.id)} onChange={() => toggle(j.id)} aria-label={`Select ${j.title}`} /></td>
                   <td className="px-4 py-3 font-medium text-navy-900">
                     {j.title} {j.isFeatured && <Badge className="ml-1">★</Badge>}
                   </td>
@@ -60,12 +123,12 @@ export default function AdminJobsPage() {
                       </Button>
                       <Button asChild variant="ghost" size="icon" title="Edit"><Link href={`/admin/jobs/${j.id}/edit`}><Pencil /></Link></Button>
                       <Button asChild variant="ghost" size="icon" title="Preview"><Link href={`/jobs/${j.slug}`} target="_blank"><ExternalLink /></Link></Button>
-                      <Button variant="ghost" size="icon" title="Delete" onClick={() => del.mutate({ id: j.id })}><Trash2 className="text-red-500" /></Button>
+                      <Button variant="ghost" size="icon" title="Delete" onClick={() => { if (confirm(`Delete "${j.title}"?`)) del.mutate({ id: j.id }, { onSuccess: () => { inval(); toast.success('Deleted'); } }); }}><Trash2 className="text-red-500" /></Button>
                     </div>
                   </td>
                 </tr>
               ))}
-              {jobs.data?.length === 0 && <tr><td colSpan={5} className="px-4 py-12 text-center text-navy-700/60">No jobs.</td></tr>}
+              {rows.length === 0 && <tr><td colSpan={6} className="px-4 py-12 text-center text-navy-700/60">No jobs.</td></tr>}
             </tbody>
           </table>
         )}
