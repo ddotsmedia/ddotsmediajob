@@ -173,10 +173,15 @@ export const aiRouter = router({
     .input(z.object({ text: z.string().min(15).max(15000) }).strict())
     .mutation(async ({ ctx, input }): Promise<JobDraft> => {
       await guardAi(ctx, input.text);
-      return structured<JobDraft>(JOB_EXTRACT_SYSTEM, `Extract a job posting from this text:\n\n${wrapUserContent(input.text)}`, JOB_DRAFT_TOOL, {
-        model: MODEL_FAST,
-        maxTokens: 1800,
-      });
+      try {
+        return await structured<JobDraft>(JOB_EXTRACT_SYSTEM, `Extract a job posting from this text:\n\n${wrapUserContent(input.text)}`, JOB_DRAFT_TOOL, {
+          model: MODEL_FAST,
+          maxTokens: 1800,
+        });
+      } catch (err) {
+        console.error('[extractJobFromText]', err);
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'AI extraction is unavailable right now. Please try again in a moment, or fill the form manually.' });
+      }
     }),
 
   extractJobFromUrl: adminProcedure
