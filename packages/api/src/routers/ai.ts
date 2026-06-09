@@ -224,7 +224,13 @@ export const aiRouter = router({
         });
       } catch (err) {
         console.error('[extractJobFromText]', err);
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'AI extraction is unavailable right now. Please try again in a moment, or fill the form manually.' });
+        const over = err instanceof Error && /\b429\b|quota|rate limit/i.test(err.message);
+        throw new TRPCError({
+          code: over ? 'TOO_MANY_REQUESTS' : 'INTERNAL_SERVER_ERROR',
+          message: over
+            ? 'AI is over its quota right now — please wait ~60 seconds and try again, or fill the form manually.'
+            : 'AI extraction is unavailable right now. Please try again, or fill the form manually.',
+        });
       }
     }),
 
