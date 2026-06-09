@@ -6,6 +6,7 @@
  */
 import bcrypt from 'bcryptjs';
 import { db } from './index';
+import { BLOG_ARTICLES, renderArticle } from './blog-seed';
 import {
   users,
   employerProfiles,
@@ -210,33 +211,20 @@ async function main() {
   }
   await db.insert(salaryReports).values(salaryRows);
 
-  // ── Blog ───────────────────────────────────────────────
-  await db.insert(blogPosts).values([
-    {
-      slug: 'how-to-find-a-job-in-dubai',
-      title: 'How to Find a Job in Dubai in 2026',
-      excerpt: 'A practical step-by-step guide to landing a job in Dubai.',
-      content:
-        '# How to Find a Job in Dubai\n\nDubai remains one of the most attractive job markets in the region. Start by polishing your CV, targeting the right industries, and applying through trusted portals like DdotsMediaJobs.\n\n## 1. Optimise your CV\nKeep it to two pages, lead with achievements, and tailor it per role.\n\n## 2. Use the right channels\nApply on job portals, join WhatsApp groups, and network on LinkedIn.\n\n## 3. Understand visa status\nEmployers often prefer candidates already on a transferable or cancelled visa.',
+  // ── Blog (20 SEO articles) ─────────────────────────────
+  await db.insert(blogPosts).values(
+    BLOG_ARTICLES.map((a) => ({
+      slug: a.slug,
+      title: a.title,
+      excerpt: a.excerpt,
+      content: renderArticle(a),
       authorId: admin!.id,
-      category: 'Career Advice',
-      tags: ['dubai', 'job-search', 'cv'],
+      category: a.category,
+      tags: a.tags,
       isPublished: true,
       publishedAt: new Date(),
-    },
-    {
-      slug: 'uae-salary-guide-2026',
-      title: 'UAE Salary Guide 2026: What to Expect',
-      excerpt: 'Average salaries across key UAE industries for 2026.',
-      content:
-        '# UAE Salary Guide 2026\n\nSalaries in the UAE vary widely by industry, experience, and emirate. This guide breaks down typical monthly ranges so you can negotiate with confidence.',
-      authorId: admin!.id,
-      category: 'Salary',
-      tags: ['salary', 'uae', 'guide'],
-      isPublished: true,
-      publishedAt: new Date(),
-    },
-  ]);
+    })),
+  );
 
   // ── Site settings ──────────────────────────────────────
   await db

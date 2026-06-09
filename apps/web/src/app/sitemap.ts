@@ -81,5 +81,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     EMIRATES.map((e) => ({ url: `${base}/jobs/${c}-jobs-in-${e.slug}`, changeFrequency: 'weekly' as const, priority: 0.8 })),
   );
 
-  return [...staticRoutes, ...toolRoutes, ...categoryRoutes, ...emirateRoutes, ...roleEmirateRoutes, ...jobRoutes, ...blogRoutes, ...companyRoutes];
+  const salaryRoutes: MetadataRoute.Sitemap = ROLE_SLUGS.flatMap((c) =>
+    EMIRATES.map((e) => ({ url: `${base}/salary/${c}-salary-in-${e.slug}`, changeFrequency: 'weekly' as const, priority: 0.7 })),
+  );
+
+  const interviewRoutes: MetadataRoute.Sitemap = ROLE_SLUGS.map((c) => ({
+    url: `${base}/interview-questions/${c}-in-uae`,
+    changeFrequency: 'monthly' as const,
+    priority: 0.6,
+  }));
+
+  return [...staticRoutes, ...toolRoutes, ...categoryRoutes, ...emirateRoutes, ...roleEmirateRoutes, ...salaryRoutes, ...interviewRoutes, ...jobRoutes, ...blogRoutes, ...companyRoutes];
 }
