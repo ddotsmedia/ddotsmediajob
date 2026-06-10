@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { db, jobs, blogPosts, eq, desc } from '@ddots/db';
 import { CATEGORIES, EMIRATES, SITE } from '@ddots/shared';
+import { rolePageStaticParams } from './jobs/[slug]/role-jobs';
 
 export const revalidate = 3600;
 
@@ -114,5 +115,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }));
 
-  return [...staticRoutes, ...toolRoutes, ...categoryRoutes, ...emirateRoutes, ...roleEmirateRoutes, ...salaryRoutes, ...interviewRoutes, ...jobRoutes, ...blogRoutes, ...companyRoutes];
+  const roleJobRoutes: MetadataRoute.Sitemap = rolePageStaticParams().map((p) => ({
+    url: `${base}/jobs/${p.slug}`,
+    changeFrequency: 'weekly' as const,
+    priority: 0.7,
+  }));
+
+  return [...staticRoutes, ...toolRoutes, ...categoryRoutes, ...emirateRoutes, ...roleEmirateRoutes, ...roleJobRoutes, ...salaryRoutes, ...interviewRoutes, ...jobRoutes, ...blogRoutes, ...companyRoutes];
 }
