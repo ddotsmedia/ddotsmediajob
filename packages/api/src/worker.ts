@@ -9,20 +9,25 @@ import {
   jobAlerts,
   applications,
   jobseekerProfiles,
+  siteSettings,
   users,
   eq,
   and,
   gt,
+  lt,
   desc,
   ilike,
   or,
+  inArray,
+  isNotNull,
 } from '@ddots/db';
-import { formatSalary } from '@ddots/shared';
-import { QUEUE, bullConnection, enqueueEmail, jobAlertsQueue, type EmailJob, type SearchSyncJob, type AlertScanJob, type AiScoringJob } from './lib/queue';
+import { formatSalary, CATEGORIES } from '@ddots/shared';
+import { QUEUE, bullConnection, enqueueEmail, jobAlertsQueue, maintenanceQueue, type EmailJob, type SearchSyncJob, type AlertScanJob, type AiScoringJob, type MaintenanceJob } from './lib/queue';
 import { expireStaleJobs } from './lib/helpers';
 import { sendEmailJob } from './lib/email';
 import { ensureJobsCollection, upsertJobDocument, deleteJobDocument, jobToDocument } from './lib/typesense';
 import { structured, MATCH_TOOL, MODEL_SMART, MODEL_FAST, type MatchResult } from './lib/anthropic';
+import { deleteObjectByUrl } from './lib/r2';
 
 const connection = bullConnection();
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://ddotsmediajobs.com';
@@ -171,6 +176,70 @@ new Worker<AiScoringJob>(
   { connection, concurrency: 2 },
 ).on('failed', (job, err) => console.error(`[ai-scoring] ${job?.id} failed:`, err.message));
 
+// ── Maintenance worker (cv-cleanup + trending-skills) ────
+const TRENDING_TOOL = {
+  name: 'trending',
+  description: 'Extract the top in-demand skills from UAE job listings.',
+  input_schema: {
+    type: 'object' as const,
+    properties: { skills: { type: 'array', items: { type: 'string' }, description: 'Up to 8 skills, most in-demand first' } },
+    required: ['skills'],
+  },
+};
+
+new Worker<MaintenanceJob>(
+  QUEUE.maintenance,
+  async (job) => {
+    if (job.data.task === 'cv-cleanup') {
+      const cutoff = new Date(Date.now() - 90 * 86_400_000);
+      const stale = await db.query.applications.findMany({
+        where: and(inArray(applications.status, ['rejected', 'withdrawn']), lt(applications.updatedAt, cutoff), isNotNull(applications.resumeUrl)),
+        columns: { id: true, resumeUrl: true },
+        limit: 500,
+      });
+      for (const a of stale) {
+        if (a.resumeUrl) {
+          try { await deleteObjectByUrl(a.resumeUrl); } catch (err) { console.error('[cv-cleanup] delete failed:', err instanceof Error ? err.message : err); }
+        }
+        await db.update(applications).set({ resumeUrl: null }).where(eq(applications.id, a.id));
+      }
+      console.log(`[cv-cleanup] cleared ${stale.length} expired CV(s)`);
+      return;
+    }
+
+    if (job.data.task === 'trending-skills') {
+      const result: Record<string, string[]> = {};
+      for (const cat of CATEGORIES) {
+        const rows = await db.query.jobs.findMany({
+          where: and(eq(jobs.status, 'active'), eq(jobs.categorySlug, cat.slug)),
+          columns: { title: true, skills: true },
+          orderBy: [desc(jobs.publishedAt)],
+          limit: 30,
+        });
+        if (!rows.length) continue;
+        const text = rows.map((r) => `${r.title}: ${(r.skills ?? []).join(', ')}`).join('\n').slice(0, 4000);
+        try {
+          const out = await structured<{ skills: string[] }>(
+            'You analyse UAE job listings. Extract the most in-demand skills. Call trending.',
+            text,
+            TRENDING_TOOL as never,
+            { model: MODEL_FAST, maxTokens: 300 },
+          );
+          result[cat.slug] = (out.skills ?? []).slice(0, 8);
+        } catch (err) {
+          console.error('[trending-skills] failed for', cat.slug, err instanceof Error ? err.message : err);
+        }
+      }
+      await db
+        .insert(siteSettings)
+        .values({ key: 'trending_skills', value: result })
+        .onConflictDoUpdate({ target: siteSettings.key, set: { value: result } });
+      console.log(`[trending-skills] updated ${Object.keys(result).length} categories`);
+    }
+  },
+  { connection, concurrency: 1 },
+).on('failed', (job, err) => console.error(`[maintenance] ${job?.id} failed:`, err.message));
+
 // ── Auto-expire stale jobs (in-process hourly tick) ──────
 async function expireTick() {
   try {
@@ -189,6 +258,10 @@ async function scheduleAlertScans() {
   // Daily at 08:00, weekly Mon 08:00 (server timezone).
   await q.add('daily', { frequency: 'daily' }, { repeat: { pattern: '0 8 * * *' }, jobId: 'alerts-daily' });
   await q.add('weekly', { frequency: 'weekly' }, { repeat: { pattern: '0 8 * * 1' }, jobId: 'alerts-weekly' });
+
+  const m = maintenanceQueue();
+  await m.add('cv-cleanup', { task: 'cv-cleanup' }, { repeat: { pattern: '0 3 * * *' }, jobId: 'cv-cleanup-daily' });
+  await m.add('trending-skills', { task: 'trending-skills' }, { repeat: { pattern: '0 6 * * 1' }, jobId: 'trending-weekly' });
 }
 
 scheduleAlertScans()

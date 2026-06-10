@@ -23,9 +23,11 @@ export const QUEUE = {
   jobAlerts: 'job-alerts',
   search: 'search-sync',
   aiScoring: 'ai-scoring',
+  maintenance: 'maintenance',
 } as const;
 
 export type AiScoringJob = { applicationId: string };
+export type MaintenanceJob = { task: 'cv-cleanup' | 'trending-skills' };
 
 export type EmailJob =
   | { type: 'welcome'; to: string; name: string; role: 'jobseeker' | 'employer' }
@@ -60,6 +62,7 @@ export const emailQueue = () => makeQueue<EmailJob>(QUEUE.email);
 export const searchQueue = () => makeQueue<SearchSyncJob>(QUEUE.search);
 export const jobAlertsQueue = () => makeQueue<AlertScanJob>(QUEUE.jobAlerts);
 export const aiScoringQueue = () => makeQueue<AiScoringJob>(QUEUE.aiScoring);
+export const maintenanceQueue = () => makeQueue<MaintenanceJob>(QUEUE.maintenance);
 
 const defaultOpts: JobsOptions = {
   attempts: 3,

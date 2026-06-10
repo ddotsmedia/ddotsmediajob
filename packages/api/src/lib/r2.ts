@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 let s3: S3Client | null = null;
@@ -29,4 +29,12 @@ export async function presignUpload(
   const command = new PutObjectCommand({ Bucket: BUCKET, Key: key, ContentType: contentType });
   const uploadUrl = await getSignedUrl(getClient(), command, { expiresIn: 600 });
   return { uploadUrl, publicUrl: `${PUBLIC_URL}/${key}` };
+}
+
+/** Delete an R2 object given its stored public URL. No-op if the URL isn't ours. */
+export async function deleteObjectByUrl(url: string): Promise<void> {
+  if (!PUBLIC_URL || !url.startsWith(`${PUBLIC_URL}/`)) return;
+  const key = url.slice(PUBLIC_URL.length + 1);
+  if (!key) return;
+  await getClient().send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }));
 }
