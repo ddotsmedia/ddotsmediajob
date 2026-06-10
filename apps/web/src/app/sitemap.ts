@@ -30,6 +30,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     '/jobs/freezone',
     '/jobs/remote',
     '/jobs/visa-provided',
+    '/compare',
   ].map((path) => ({ url: `${base}${path}`, changeFrequency: 'weekly', priority: 0.6 }));
 
   const categoryRoutes: MetadataRoute.Sitemap = CATEGORIES.map((c) => ({

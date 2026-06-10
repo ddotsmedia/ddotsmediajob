@@ -25,6 +25,15 @@ import { enqueueSearchSync, enqueueJobEvent } from '../lib/queue';
 import { generateJobFromPrompt } from '../lib/anthropic';
 
 export const jobsRouter = router({
+  /** Public: fetch up to 3 active jobs by slug for side-by-side comparison. */
+  bySlugs: publicProcedure.input(z.object({ slugs: z.array(z.string().max(120)).min(1).max(3) })).query(async ({ ctx, input }) =>
+    ctx.db.query.jobs.findMany({
+      where: and(inArray(jobs.slug, input.slugs), eq(jobs.status, 'active')),
+      with: { company: { columns: { name: true, logoUrl: true } } },
+      limit: 3,
+    }),
+  ),
+
   /** Public paginated, filtered job listing. */
   list: publicProcedure.input(jobFilterSchema).query(async ({ ctx, input }) => {
     // Active and not past expiry (lazy-expire guard — never show stale listings even if cron lags).

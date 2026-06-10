@@ -3,6 +3,7 @@ import { MapPin, Briefcase, Clock, Banknote, Zap } from 'lucide-react';
 import { formatSalary, timeAgo, emirateBySlug, categoryBySlug } from '@ddots/shared';
 import { Badge } from './ui/primitives';
 import { WhatsappApplyButton } from './whatsapp-apply-button';
+import { CompareButton } from './compare-button';
 import { cn } from '@/lib/utils';
 
 export type JobCardData = {
@@ -117,6 +118,7 @@ export function JobCard({ job }: { job: JobCardData }) {
         >
           View
         </Link>
+        <CompareButton slug={job.slug} title={job.title} />
       </div>
     </div>
   );

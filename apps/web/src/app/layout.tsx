@@ -8,6 +8,7 @@ import { PostJobFab } from '@/components/post-job-fab';
 import { AnnouncementBanner } from '@/components/announcement-banner';
 import { MobileBottomNav } from '@/components/mobile-bottom-nav';
 import { AccessibilityWidget } from '@/components/accessibility-widget';
+import { CompareBar } from '@/components/compare-bar';
 import './globals.css';
 
 const sora = Sora({ subsets: ['latin'], variable: '--font-sora', display: 'swap' });
@@ -52,6 +53,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <SiteFooter />
           <MobileBottomNav />
           <PostJobFab />
+          <CompareBar />
           <AccessibilityWidget />
         </Providers>
       </body>
