@@ -23,7 +23,7 @@ export function MobileBottomNav() {
   ];
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t bg-white/95 backdrop-blur md:hidden">
+    <nav className="pb-safe fixed inset-x-0 bottom-0 z-40 border-t bg-white/95 backdrop-blur md:hidden">
       <div className="mx-auto flex max-w-md items-stretch justify-around">
         {items.map((item) => {
           const href = !session && 'fallback' in item && item.fallback ? item.fallback : item.href;
@@ -34,7 +34,7 @@ export function MobileBottomNav() {
               key={item.label}
               href={href}
               className={cn(
-                'flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-medium',
+                'flex min-h-[56px] flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium active:scale-95',
                 active ? 'text-teal-600' : 'text-navy-700/60',
               )}
             >

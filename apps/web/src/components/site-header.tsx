@@ -8,7 +8,6 @@ import { Logo } from './logo';
 import { Button } from './ui/button';
 import { NotificationBell } from './notification-bell';
 import { trpc } from '@/trpc/react';
-import { cn } from '@/lib/utils';
 
 const NAV = [
   { href: '/jobs', label: 'Jobs' },
@@ -82,49 +81,58 @@ export function SiteHeader() {
           )}
         </div>
 
-        <button className="md:hidden" onClick={() => setOpen((v) => !v)} aria-label="Toggle menu">
-          {open ? <X /> : <Menu />}
+        <button className="flex h-11 w-11 items-center justify-center md:hidden" onClick={() => setOpen((v) => !v)} aria-label="Toggle menu">
+          {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
       </div>
 
-      <div className={cn('border-t bg-white md:hidden', open ? 'block' : 'hidden')}>
-        <nav className="flex flex-col gap-1 p-4">
-          {nav.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="rounded-lg px-3 py-2 text-sm font-medium text-navy-700 hover:bg-navy-50"
-              onClick={() => setOpen(false)}
-            >
-              {item.label}
-            </Link>
-          ))}
-          <div className="mt-2 flex flex-col gap-2 border-t pt-3">
-            {session ? (
-              <>
-                <Button asChild variant="outline" size="sm">
-                  <Link href={dashHref}>Dashboard</Link>
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => signOut({ callbackUrl: '/' })}>
-                  Sign out
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button asChild variant="accent" size="sm">
-                  <Link href="/register" onClick={() => setOpen(false)}>Sign up</Link>
-                </Button>
-                <Button asChild variant="outline" size="sm">
-                  <Link href="/login" onClick={() => setOpen(false)}>Log in</Link>
-                </Button>
-                <Button asChild variant="ghost" size="sm">
-                  <Link href="/employer/post" onClick={() => setOpen(false)}>Post a Job</Link>
-                </Button>
-              </>
-            )}
+      {/* Full-screen mobile menu overlay */}
+      {open && (
+        <div className="fixed inset-0 z-[60] flex flex-col bg-white md:hidden">
+          <div className="flex h-16 shrink-0 items-center justify-between border-b px-4">
+            <Logo />
+            <button onClick={() => setOpen(false)} aria-label="Close menu" className="flex h-11 w-11 items-center justify-center">
+              <X className="h-6 w-6 text-navy-700" />
+            </button>
           </div>
-        </nav>
-      </div>
+          <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-4">
+            {nav.filter((i) => i.href !== '/salary-guide').map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="rounded-lg px-3 py-4 text-lg font-medium text-navy-800 hover:bg-navy-50"
+                onClick={() => setOpen(false)}
+              >
+                {item.label}
+              </Link>
+            ))}
+            <div className="mt-4 flex flex-col gap-3 border-t pt-5">
+              {session ? (
+                <>
+                  <Button asChild variant="accent" className="w-full py-6 text-base">
+                    <Link href={dashHref} onClick={() => setOpen(false)}>Dashboard</Link>
+                  </Button>
+                  <Button variant="outline" className="w-full py-6 text-base" onClick={() => { setOpen(false); signOut({ callbackUrl: '/' }); }}>
+                    Sign out
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button asChild variant="accent" className="w-full py-6 text-base">
+                    <Link href="/register" onClick={() => setOpen(false)}>Sign up</Link>
+                  </Button>
+                  <Button asChild variant="outline" className="w-full py-6 text-base">
+                    <Link href="/login" onClick={() => setOpen(false)}>Log in</Link>
+                  </Button>
+                  <Button asChild variant="ghost" className="w-full py-6 text-base">
+                    <Link href="/employer/post" onClick={() => setOpen(false)}>Post a Job</Link>
+                  </Button>
+                </>
+              )}
+            </div>
+          </nav>
+        </div>
+      )}
     </header>
   );
 }
