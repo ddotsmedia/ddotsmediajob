@@ -125,6 +125,21 @@ select {
   appearance: none;
 }
 
+/* Accessibility: user-controlled text scaling (rem-based, scales whole UI). */
+html[data-font='1'] { font-size: 106.25%; }
+html[data-font='2'] { font-size: 112.5%; }
+html[data-font='3'] { font-size: 125%; }
+
+/* Accessibility: high-contrast mode. */
+html.a11y-contrast body { color: #0a0f1a; }
+html.a11y-contrast a { text-decoration: underline; }
+html.a11y-contrast :where(p, span, li, label, td, th) { color: #0a0f1a; }
+html.a11y-contrast :where(button, input, textarea, select, a):focus-visible {
+  outline: 3px solid #0d3b66;
+  outline-offset: 2px;
+}
+html.a11y-contrast :where(.border, [class*='border']) { border-color: #1e293b !important; }
+
 /* Comfortable mobile tap targets — exclude toggles so checkbox/radio keep their size. */
 input:not([type='checkbox']):not([type='radio']):not([type='range']),
 select {
