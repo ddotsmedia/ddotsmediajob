@@ -326,6 +326,7 @@ export const savedJobs = pgTable(
     jobId: uuid('job_id')
       .notNull()
       .references(() => jobs.id, { onDelete: 'cascade' }),
+    folderId: uuid('folder_id'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [primaryKey({ columns: [t.userId, t.jobId] })],
@@ -706,4 +707,21 @@ export const directMessagesRelations = relations(directMessages, ({ one }) => ({
   sender: one(users, { fields: [directMessages.senderId], references: [users.id], relationName: 'dm_sender' }),
   receiver: one(users, { fields: [directMessages.receiverId], references: [users.id], relationName: 'dm_receiver' }),
   job: one(jobs, { fields: [directMessages.jobId], references: [jobs.id] }),
+}));
+
+// ─── Saved-job folders ───────────────────────────────────
+export const savedJobFolders = pgTable(
+  'saved_job_folders',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    name: varchar('name', { length: 60 }).notNull(),
+    color: varchar('color', { length: 20 }).default('#2a9aa4').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index('saved_folder_user_idx').on(t.userId)],
+);
+
+export const savedJobFoldersRelations = relations(savedJobFolders, ({ one }) => ({
+  user: one(users, { fields: [savedJobFolders.userId], references: [users.id] }),
 }));

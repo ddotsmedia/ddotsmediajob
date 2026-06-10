@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
-import { jobseekerProfiles, savedJobs, jobs, users, eq, and, ne, desc, ilike, sql } from '@ddots/db';
+import { jobseekerProfiles, savedJobs, savedJobFolders, jobs, users, eq, and, ne, desc, ilike, sql } from '@ddots/db';
 import { jobseekerProfileSchema, slugify } from '@ddots/shared';
 import { router, protectedProcedure, publicProcedure, employerProcedure } from '../trpc';
 import { presignUpload } from '../lib/r2';
@@ -166,6 +166,46 @@ export const jobseekersRouter = router({
     });
     return { saved: Boolean(existing) };
   }),
+
+  // ── Saved-job folders ───────────────────────────────────
+  savedFolders: protectedProcedure.query(async ({ ctx }) =>
+    ctx.db.query.savedJobFolders.findMany({
+      where: eq(savedJobFolders.userId, ctx.session.user.id),
+      orderBy: [desc(savedJobFolders.createdAt)],
+    }),
+  ),
+
+  createFolder: protectedProcedure
+    .input(z.object({ name: z.string().min(1).max(60), color: z.string().max(20).default('#2a9aa4') }))
+    .mutation(async ({ ctx, input }) => {
+      const [row] = await ctx.db.insert(savedJobFolders).values({ userId: ctx.session.user.id, name: input.name, color: input.color }).returning();
+      return row;
+    }),
+
+  updateFolder: protectedProcedure
+    .input(z.object({ id: z.string().uuid(), name: z.string().min(1).max(60).optional(), color: z.string().max(20).optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const { id, ...rest } = input;
+      await ctx.db.update(savedJobFolders).set(rest).where(and(eq(savedJobFolders.id, id), eq(savedJobFolders.userId, ctx.session.user.id)));
+      return { ok: true };
+    }),
+
+  deleteFolder: protectedProcedure.input(z.object({ id: z.string().uuid() })).mutation(async ({ ctx, input }) => {
+    await ctx.db.update(savedJobs).set({ folderId: null }).where(and(eq(savedJobs.userId, ctx.session.user.id), eq(savedJobs.folderId, input.id)));
+    await ctx.db.delete(savedJobFolders).where(and(eq(savedJobFolders.id, input.id), eq(savedJobFolders.userId, ctx.session.user.id)));
+    return { ok: true };
+  }),
+
+  moveSavedJob: protectedProcedure
+    .input(z.object({ jobId: z.string().uuid(), folderId: z.string().uuid().nullable() }))
+    .mutation(async ({ ctx, input }) => {
+      if (input.folderId) {
+        const owns = await ctx.db.query.savedJobFolders.findFirst({ where: and(eq(savedJobFolders.id, input.folderId), eq(savedJobFolders.userId, ctx.session.user.id)) });
+        if (!owns) throw new TRPCError({ code: 'FORBIDDEN' });
+      }
+      await ctx.db.update(savedJobs).set({ folderId: input.folderId }).where(and(eq(savedJobs.userId, ctx.session.user.id), eq(savedJobs.jobId, input.jobId)));
+      return { ok: true };
+    }),
 
   /** Presign a resume upload to R2. */
   presignResume: protectedProcedure

@@ -85,6 +85,13 @@
       "when": 1781035818071,
       "tag": "0011_clammy_jackpot",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1781051547749,
+      "tag": "0012_breezy_dragon_lord",
+      "breakpoints": true
     }
   ]
 }
