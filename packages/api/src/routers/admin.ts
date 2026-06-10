@@ -436,6 +436,29 @@ export const adminRouter = router({
       return { ok: true };
     }),
 
+  // ── Applications (all jobs) ────────────────────────────
+  allApplications: adminProcedure
+    .input(z.object({ status: z.string().optional() }).optional())
+    .query(async ({ ctx, input }) =>
+      ctx.db.query.applications.findMany({
+        where: input?.status ? eq(applications.status, input.status as never) : undefined,
+        orderBy: [desc(applications.createdAt)],
+        limit: 200,
+        with: {
+          job: { columns: { title: true, slug: true } },
+          seeker: { columns: { name: true, email: true } },
+        },
+      }),
+    ),
+
+  setApplicationStatus: adminProcedure
+    .input(z.object({ id: z.string().uuid(), status: z.enum(['applied', 'reviewing', 'shortlisted', 'interview', 'offered', 'hired', 'rejected', 'withdrawn']) }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db.update(applications).set({ status: input.status }).where(eq(applications.id, input.id));
+      await audit(ctx.session.user.id, 'admin.application.status', 'application', input.id, { status: input.status });
+      return { ok: true };
+    }),
+
   // ── WhatsApp groups CRUD ───────────────────────────────
   waGroups: adminProcedure.query(async ({ ctx }) =>
     ctx.db.query.whatsappGroups.findMany({ orderBy: [desc(whatsappGroups.createdAt)], limit: 200 }),
