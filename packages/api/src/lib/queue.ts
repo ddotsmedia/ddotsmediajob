@@ -22,7 +22,10 @@ export const QUEUE = {
   email: 'email',
   jobAlerts: 'job-alerts',
   search: 'search-sync',
+  aiScoring: 'ai-scoring',
 } as const;
+
+export type AiScoringJob = { applicationId: string };
 
 export type EmailJob =
   | { type: 'welcome'; to: string; name: string; role: 'jobseeker' | 'employer' }
@@ -56,6 +59,7 @@ function makeQueue<T>(name: string): Queue<T> {
 export const emailQueue = () => makeQueue<EmailJob>(QUEUE.email);
 export const searchQueue = () => makeQueue<SearchSyncJob>(QUEUE.search);
 export const jobAlertsQueue = () => makeQueue<AlertScanJob>(QUEUE.jobAlerts);
+export const aiScoringQueue = () => makeQueue<AiScoringJob>(QUEUE.aiScoring);
 
 const defaultOpts: JobsOptions = {
   attempts: 3,
@@ -70,4 +74,8 @@ export async function enqueueEmail(job: EmailJob): Promise<void> {
 
 export async function enqueueSearchSync(job: SearchSyncJob): Promise<void> {
   await searchQueue().add(job.type, job, defaultOpts);
+}
+
+export async function enqueueAiScoring(job: AiScoringJob): Promise<void> {
+  await aiScoringQueue().add('score', job, { ...defaultOpts, attempts: 2 });
 }

@@ -4,7 +4,7 @@ import { jobs, applications, eq, and, desc, sql } from '@ddots/db';
 import { applySchema, updateApplicationStatusSchema } from '@ddots/shared';
 import { router, publicProcedure, protectedProcedure, employerProcedure } from '../trpc';
 import { audit, notify } from '../lib/helpers';
-import { enqueueEmail } from '../lib/queue';
+import { enqueueEmail, enqueueAiScoring } from '../lib/queue';
 import { presignUpload } from '../lib/r2';
 import { enforceRateLimit, assertUploadType } from '../lib/security';
 
@@ -40,6 +40,8 @@ export const applicationsRouter = router({
       .update(jobs)
       .set({ applicationCount: sql`${jobs.applicationCount} + 1` })
       .where(eq(jobs.id, input.jobId));
+
+    await enqueueAiScoring({ applicationId: app!.id }).catch(() => {});
 
     if (ctx.session.user.email) {
       await enqueueEmail({
@@ -108,6 +110,7 @@ export const applicationsRouter = router({
         body: `${input.guestName} applied (guest).`,
         link: `/employer/jobs/${job.id}/applications`,
       });
+      await enqueueAiScoring({ applicationId: app!.id }).catch(() => {});
       return { id: app!.id };
     }),
 

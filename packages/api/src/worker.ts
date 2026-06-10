@@ -7,6 +7,8 @@ import {
   db,
   jobs,
   jobAlerts,
+  applications,
+  jobseekerProfiles,
   users,
   eq,
   and,
@@ -16,10 +18,11 @@ import {
   or,
 } from '@ddots/db';
 import { formatSalary } from '@ddots/shared';
-import { QUEUE, bullConnection, enqueueEmail, jobAlertsQueue, type EmailJob, type SearchSyncJob, type AlertScanJob } from './lib/queue';
+import { QUEUE, bullConnection, enqueueEmail, jobAlertsQueue, type EmailJob, type SearchSyncJob, type AlertScanJob, type AiScoringJob } from './lib/queue';
 import { expireStaleJobs } from './lib/helpers';
 import { sendEmailJob } from './lib/email';
 import { ensureJobsCollection, upsertJobDocument, deleteJobDocument, jobToDocument } from './lib/typesense';
+import { structured, MATCH_TOOL, MODEL_SMART, MODEL_FAST, type MatchResult } from './lib/anthropic';
 
 const connection = bullConnection();
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://ddotsmediajobs.com';
@@ -102,6 +105,71 @@ new Worker<AlertScanJob>(
   },
   { connection, concurrency: 1 },
 ).on('failed', (job, err) => console.error(`[alerts] ${job?.id} failed:`, err.message));
+
+// ── AI scoring worker (match + fraud on new application) ──
+const FRAUD_TOOL = {
+  name: 'fraud_check',
+  description: 'Score fraud/misrepresentation risk in a job application.',
+  input_schema: {
+    type: 'object' as const,
+    properties: {
+      score: { type: 'integer', description: '0 (genuine) - 100 (likely fraudulent)' },
+      flags: { type: 'array', items: { type: 'string' } },
+    },
+    required: ['score', 'flags'],
+  },
+};
+
+new Worker<AiScoringJob>(
+  QUEUE.aiScoring,
+  async (job) => {
+    const app = await db.query.applications.findFirst({ where: eq(applications.id, job.data.applicationId) });
+    if (!app) return;
+    const jobRow = await db.query.jobs.findFirst({ where: eq(jobs.id, app.jobId) });
+    if (!jobRow) return;
+
+    let profileText = app.coverLetter ?? '';
+    if (app.seekerId) {
+      const p = await db.query.jobseekerProfiles.findFirst({ where: eq(jobseekerProfiles.userId, app.seekerId) });
+      if (p) {
+        profileText = [
+          `Headline: ${p.headline ?? '—'}`,
+          `Experience: ${p.experienceLevel ?? '—'}`,
+          `Skills: ${(p.skills ?? []).join(', ') || '—'}`,
+          `Bio: ${p.bio ?? '—'}`,
+          `Cover letter: ${app.coverLetter ?? '—'}`,
+        ].join('\n');
+      }
+    }
+
+    // Match score (Sonnet-class).
+    const match = await structured<MatchResult>(
+      'You are an expert UAE recruiter. Score candidate-job fit honestly and concisely.',
+      `JOB:\nTitle: ${jobRow.title}\nDescription: ${jobRow.description.slice(0, 2000)}\n\nCANDIDATE:\n${profileText.slice(0, 2500)}`,
+      MATCH_TOOL,
+      { model: MODEL_SMART },
+    );
+
+    // Fraud score (Haiku) — best-effort, never fails the job.
+    let fraudScore = 0;
+    try {
+      if (profileText.trim().length > 30) {
+        const fraud = await structured<{ score: number; flags: string[] }>(
+          'You detect misrepresentation/fraud risk in UAE job applications (fake experience, copied content, inconsistent claims). Call fraud_check.',
+          profileText.slice(0, 3000),
+          FRAUD_TOOL as never,
+          { model: MODEL_FAST, maxTokens: 400 },
+        );
+        fraudScore = Math.max(0, Math.min(100, fraud.score));
+      }
+    } catch (err) {
+      console.error('[ai-scoring] fraud check failed:', err instanceof Error ? err.message : err);
+    }
+
+    await db.update(applications).set({ matchScore: match.score, aiSummary: match.summary, fraudScore }).where(eq(applications.id, app.id));
+  },
+  { connection, concurrency: 2 },
+).on('failed', (job, err) => console.error(`[ai-scoring] ${job?.id} failed:`, err.message));
 
 // ── Auto-expire stale jobs (in-process hourly tick) ──────
 async function expireTick() {
