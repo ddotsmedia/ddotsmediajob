@@ -148,3 +148,26 @@ select {
 textarea {
   min-height: 80px;
 }
+
+/* ── Global mobile / touch tweaks ── */
+/* clip (not hidden) prevents horizontal scroll WITHOUT breaking position: sticky. */
+body { overflow-x: clip; }
+* { -webkit-tap-highlight-color: transparent; }
+button,
+a,
+[role='button'],
+label {
+  touch-action: manipulation;
+}
+
+/* Hide scrollbars on horizontal pill scrollers (.scrollbar-hide). */
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+
+/* iOS safe-area helpers. */
+.pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+.pt-safe { padding-top: env(safe-area-inset-top); }
+.bottom-safe { bottom: calc(0.5rem + env(safe-area-inset-bottom)); }
+
+/* Prevent rubber-band scroll bleed on overlays/drawers. */
+.overscroll-contain { overscroll-behavior: contain; }
