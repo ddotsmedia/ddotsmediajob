@@ -36,6 +36,7 @@ const NAV: NavItem[] = [
   { href: '/admin/salary', label: 'Salary Reports', icon: Banknote },
   { href: '/admin/community', label: 'Community', icon: MessagesSquare },
   { href: '/admin/assessments', label: 'Assessments', icon: Award },
+  { href: '/admin/success-stories', label: 'Success Stories', icon: Star },
   { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/blog', label: 'Blog Editor', icon: FileEdit },
   { href: '/admin/settings', label: 'Settings', icon: Settings },

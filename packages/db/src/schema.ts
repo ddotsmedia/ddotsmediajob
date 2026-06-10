@@ -838,3 +838,22 @@ export const videoInterviewsRelations = relations(videoInterviews, ({ one, many 
 export const videoResponsesRelations = relations(videoResponses, ({ one }) => ({
   interview: one(videoInterviews, { fields: [videoResponses.interviewId], references: [videoInterviews.id] }),
 }));
+
+// ─── Success stories ─────────────────────────────────────
+export const successStories = pgTable(
+  'success_stories',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    seekerName: varchar('seeker_name', { length: 160 }).notNull(),
+    role: varchar('role', { length: 160 }).notNull(),
+    company: varchar('company', { length: 160 }),
+    emirate: varchar('emirate', { length: 40 }),
+    story: text('story').notNull(),
+    timeToHire: varchar('time_to_hire', { length: 60 }),
+    tips: text('tips'),
+    photoUrl: text('photo_url'),
+    isPublished: boolean('is_published').default(false).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index('success_published_idx').on(t.isPublished)],
+);
