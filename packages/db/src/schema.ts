@@ -725,3 +725,27 @@ export const savedJobFolders = pgTable(
 export const savedJobFoldersRelations = relations(savedJobFolders, ({ one }) => ({
   user: one(users, { fields: [savedJobFolders.userId], references: [users.id] }),
 }));
+
+// ─── Interview scorecards ────────────────────────────────
+export type ScorecardItem = { competency: string; weight: number; score: number };
+
+export const interviewScorecards = pgTable(
+  'interview_scorecards',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    employerId: uuid('employer_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    jobId: uuid('job_id').references(() => jobs.id, { onDelete: 'set null' }),
+    candidateName: varchar('candidate_name', { length: 160 }).notNull(),
+    items: jsonb('items').$type<ScorecardItem[]>().notNull(),
+    weightedTotal: real('weighted_total').notNull(),
+    recommendation: varchar('recommendation', { length: 40 }),
+    notes: text('notes'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index('scorecard_employer_idx').on(t.employerId), index('scorecard_job_idx').on(t.jobId)],
+);
+
+export const interviewScorecardsRelations = relations(interviewScorecards, ({ one }) => ({
+  employer: one(users, { fields: [interviewScorecards.employerId], references: [users.id] }),
+  job: one(jobs, { fields: [interviewScorecards.jobId], references: [jobs.id] }),
+}));
