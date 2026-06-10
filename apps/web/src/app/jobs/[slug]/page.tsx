@@ -206,6 +206,17 @@ export default async function JobDetailPage({ params }: Props) {
                 )}
               </CardContent>
             </Card>
+
+            <Card>
+              <CardContent className="p-6">
+                <h2 className="font-display text-base font-bold text-navy-900">Explore more</h2>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Link href={`/jobs/${job.categorySlug}-jobs-in-${job.emirateSlug}`} className="rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-sm text-teal-700 hover:bg-teal-100">More {category?.name} jobs in {emirate?.name}</Link>
+                  <Link href={`/salary/${job.categorySlug}-salary-in-${job.emirateSlug}`} className="rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-sm text-teal-700 hover:bg-teal-100">{category?.name} salary in {emirate?.name}</Link>
+                  <Link href={`/interview-questions/${job.categorySlug}-in-uae`} className="rounded-full border border-navy-200 bg-white px-3 py-1 text-sm text-navy-700 hover:bg-navy-50">{category?.name} interview questions</Link>
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           <div id="apply" className="scroll-mt-24 space-y-4 lg:sticky lg:top-20 lg:self-start">

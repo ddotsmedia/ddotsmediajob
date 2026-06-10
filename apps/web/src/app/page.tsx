@@ -80,6 +80,16 @@ export default async function HomePage() {
                 {t}
               </Link>
             ))}
+            {[
+              { l: 'Walk-in', h: '/jobs/walk-in-interview-dubai' },
+              { l: 'Urgent Hiring', h: '/jobs/urgent-hiring-uae' },
+              { l: 'Visa Provided', h: '/jobs/visa-provided' },
+              { l: 'Work from Home', h: '/jobs/remote' },
+            ].map((p) => (
+              <Link key={p.h} href={p.h} className="shrink-0 rounded-full bg-white/10 px-3 py-1 hover:bg-white/20">
+                {p.l}
+              </Link>
+            ))}
           </div>
         </div>
       </section>
