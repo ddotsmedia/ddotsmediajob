@@ -1,6 +1,6 @@
 'use client';
 
-import { LayoutDashboard, PlusCircle, Briefcase, Building2, Users, BarChart3, BadgeCheck, MessageSquare, Sparkles, Landmark, FileCheck2, ClipboardCheck, CalendarDays, UsersRound } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, Briefcase, Building2, Users, BarChart3, BadgeCheck, MessageSquare, Sparkles, Landmark, FileCheck2, ClipboardCheck, CalendarDays, UsersRound, Video } from 'lucide-react';
 import { DashboardSidebar, MobileTabs, type NavItem } from '@/components/dashboard/sidebar';
 import { HrChatbot } from '@/components/ai/hr-chatbot';
 
@@ -9,6 +9,7 @@ const NAV: NavItem[] = [
   { href: '/employer/post', label: 'Post a Job', icon: PlusCircle },
   { href: '/employer/jobs', label: 'Manage Jobs', icon: Briefcase },
   { href: '/employer/candidates', label: 'Candidate Search', icon: Users },
+  { href: '/employer/video-interviews', label: 'Video Interviews', icon: Video },
   { href: '/employer/scorecards', label: 'Scorecards', icon: ClipboardCheck },
   { href: '/employer/events', label: 'Hiring Events', icon: CalendarDays },
   { href: '/employer/ai-tools', label: 'AI Tools', icon: Sparkles },

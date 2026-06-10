@@ -793,3 +793,48 @@ export const employerTeamMembersRelations = relations(employerTeamMembers, ({ on
   owner: one(users, { fields: [employerTeamMembers.ownerId], references: [users.id], relationName: 'team_owner' }),
   member: one(users, { fields: [employerTeamMembers.userId], references: [users.id], relationName: 'team_member' }),
 }));
+
+// ─── Video interviews ────────────────────────────────────
+export type VideoQuestion = { text: string; timeLimitSec: number };
+export type VideoAnswer = { questionText: string; videoUrl: string };
+
+export const videoInterviews = pgTable(
+  'video_interviews',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    employerId: uuid('employer_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    jobId: uuid('job_id').references(() => jobs.id, { onDelete: 'set null' }),
+    title: varchar('title', { length: 200 }).notNull(),
+    questions: jsonb('questions').$type<VideoQuestion[]>().notNull(),
+    shareToken: varchar('share_token', { length: 32 }).notNull(),
+    isActive: boolean('is_active').default(true).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex('vi_token_idx').on(t.shareToken), index('vi_employer_idx').on(t.employerId)],
+);
+
+export const videoResponses = pgTable(
+  'video_responses',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    interviewId: uuid('interview_id').notNull().references(() => videoInterviews.id, { onDelete: 'cascade' }),
+    applicantName: varchar('applicant_name', { length: 160 }).notNull(),
+    applicantEmail: varchar('applicant_email', { length: 255 }),
+    answers: jsonb('answers').$type<VideoAnswer[]>().notNull(),
+    aiScore: integer('ai_score'),
+    aiSentiment: varchar('ai_sentiment', { length: 40 }),
+    aiTranscript: text('ai_transcript'),
+    aiSummary: text('ai_summary'),
+    status: varchar('status', { length: 20 }).notNull().default('submitted'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index('vr_interview_idx').on(t.interviewId)],
+);
+
+export const videoInterviewsRelations = relations(videoInterviews, ({ one, many }) => ({
+  employer: one(users, { fields: [videoInterviews.employerId], references: [users.id] }),
+  responses: many(videoResponses),
+}));
+export const videoResponsesRelations = relations(videoResponses, ({ one }) => ({
+  interview: one(videoInterviews, { fields: [videoResponses.interviewId], references: [videoInterviews.id] }),
+}));
