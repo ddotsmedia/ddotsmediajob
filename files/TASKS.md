@@ -33,17 +33,17 @@
 ## PHASE 2 — Jobseeker Dashboard
 - [ ] /jobseeker/profile (photo R2, all sections, completion %)
 - [ ] /jobseeker/applications (history + Kanban)
-- [ ] /jobseeker/saved (grid + folders)
+- [x] /dashboard/saved (grid + folders + colour picker + move)
 - [ ] /jobseeker/alerts (list + create modal)
 - [ ] /jobseeker/cv-builder (3 templates + PDF + ATS tab)
 - [ ] /jobseeker/assessments (take quiz, earn badge)
 - [ ] /jobseeker/career-tools (all AI tools tabs)
-- [ ] /jobseeker/messages (inbox + thread)
+- [x] /dashboard/messages + /employer/messages (inbox + thread, shortlist-gated)
 - [ ] /jobseeker/ai-agent (agentic apply setup)
 - [ ] ActivityStreakCard on dashboard
 - [ ] 30-sec video pitch (MediaRecorder → R2)
 - [ ] AI match score on recommended jobs
-- [ ] Saved job folders (saved_job_folders table)
+- [x] Saved job folders (saved_job_folders table)
 - [ ] Push notification permission prompt on dashboard
 
 ## PHASE 3 — Employer Dashboard
