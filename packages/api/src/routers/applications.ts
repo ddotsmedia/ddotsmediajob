@@ -6,7 +6,7 @@ import { router, publicProcedure, protectedProcedure, employerProcedure } from '
 import { audit, notify } from '../lib/helpers';
 import { enqueueEmail } from '../lib/queue';
 import { presignUpload } from '../lib/r2';
-import { enforceRateLimit } from '../lib/security';
+import { enforceRateLimit, assertUploadType } from '../lib/security';
 
 const ipOf = (ctx: { headers?: Headers }) => ctx.headers?.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
 
@@ -114,7 +114,9 @@ export const applicationsRouter = router({
   /** Guest: presign a CV upload to R2 (no account required). */
   presignGuestCv: publicProcedure
     .input(z.object({ filename: z.string().max(200), contentType: z.string().max(100) }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      await enforceRateLimit(`guestcv:${ipOf(ctx)}`, 20, 3600);
+      assertUploadType('cv', input.contentType, input.filename);
       const ext = input.filename.split('.').pop() ?? 'pdf';
       const key = `guest-cv/${Date.now()}-${Math.round(Math.random() * 1e6)}.${ext}`;
       return presignUpload(key, input.contentType);

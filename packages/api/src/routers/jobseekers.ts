@@ -5,6 +5,7 @@ import { jobseekerProfileSchema, slugify } from '@ddots/shared';
 import { router, protectedProcedure, publicProcedure, employerProcedure } from '../trpc';
 import { presignUpload } from '../lib/r2';
 import { notify } from '../lib/helpers';
+import { assertUploadType, enforceRateLimit } from '../lib/security';
 
 /** Generate a unique username from a display name (firstname.lastname[.n]). */
 async function ensureUsername(db: typeof import('@ddots/db').db, userId: string, name: string | null): Promise<string | null> {
@@ -211,6 +212,8 @@ export const jobseekersRouter = router({
   presignResume: protectedProcedure
     .input(z.object({ filename: z.string().max(200), contentType: z.string().max(100) }))
     .mutation(async ({ ctx, input }) => {
+      await enforceRateLimit(`upload:${ctx.session.user.id}`, 10, 3600);
+      assertUploadType('cv', input.contentType, input.filename);
       const ext = input.filename.split('.').pop() ?? 'pdf';
       const key = `resumes/${ctx.session.user.id}/${Date.now()}.${ext}`;
       return presignUpload(key, input.contentType);
@@ -220,6 +223,8 @@ export const jobseekersRouter = router({
   presignAvatar: protectedProcedure
     .input(z.object({ filename: z.string().max(200), contentType: z.string().max(100) }))
     .mutation(async ({ ctx, input }) => {
+      await enforceRateLimit(`upload:${ctx.session.user.id}`, 10, 3600);
+      assertUploadType('image', input.contentType, input.filename);
       const ext = input.filename.split('.').pop() ?? 'jpg';
       const key = `avatars/${ctx.session.user.id}/${Date.now()}.${ext}`;
       return presignUpload(key, input.contentType);

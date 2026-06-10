@@ -48,6 +48,24 @@ export function verifyTwilioSignature(
   }
 }
 
+// ─── Upload type validation (presign-time MIME + extension allowlist) ──
+const UPLOAD_TYPES = {
+  cv: {
+    mimes: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+    exts: ['pdf', 'doc', 'docx'],
+  },
+  image: { mimes: ['image/jpeg', 'image/png', 'image/webp'], exts: ['jpg', 'jpeg', 'png', 'webp'] },
+  video: { mimes: ['video/mp4', 'video/webm'], exts: ['mp4', 'webm'] },
+} as const;
+
+export function assertUploadType(kind: keyof typeof UPLOAD_TYPES, contentType: string, filename: string): void {
+  const spec = UPLOAD_TYPES[kind];
+  const ext = filename.split('.').pop()?.toLowerCase() ?? '';
+  if (!(spec.mimes as readonly string[]).includes(contentType) || !(spec.exts as readonly string[]).includes(ext)) {
+    throw new TRPCError({ code: 'BAD_REQUEST', message: `Unsupported file type. Allowed: ${spec.exts.join(', ')}.` });
+  }
+}
+
 // ─── Redis rate limiting (fail-open) ────────────────────────────────
 export async function rateLimit(
   key: string,
