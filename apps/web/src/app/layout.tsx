@@ -34,12 +34,16 @@ export const metadata: Metadata = {
   twitter: { card: 'summary_large_image', title: SITE.name, description: SITE.description },
   robots: { index: true, follow: true },
   alternates: { canonical: SITE.url },
+  manifest: '/manifest.webmanifest',
+  appleWebApp: { capable: true, statusBarStyle: 'black-translucent', title: 'DdotsJobs' },
+  icons: { icon: '/logo-mark.png', apple: '/logo-mark.png' },
 };
 
 export const viewport: Viewport = {
   themeColor: '#2a9aa4',
   width: 'device-width',
   initialScale: 1,
+  viewportFit: 'cover', // required for env(safe-area-inset-*) on notched iPhones
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
