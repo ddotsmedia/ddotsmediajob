@@ -16,6 +16,7 @@ import { JobActions } from '@/components/job-actions';
 import { MatchScoreCard } from '@/components/ai/match-score';
 import { SkillGap } from '@/components/ai/skill-gap';
 import { ShareMenu } from '@/components/share-menu';
+import { MobileApplyBar } from '@/components/mobile-apply-bar';
 import { Badge, Card, CardContent } from '@/components/ui/primitives';
 import { parseRoleEmirate, roleEmirateMetadata, roleEmirateStaticParams, RoleEmirateView } from './role-emirate';
 
@@ -122,7 +123,7 @@ export default async function JobDetailPage({ params }: Props) {
     <div className="bg-navy-50/30">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
-      <div className="mx-auto max-w-7xl px-4 py-8">
+      <div className="mx-auto max-w-7xl px-4 py-8 pb-32 lg:pb-8">
         <nav className="mb-4 text-sm text-navy-700/60">
           <Link href="/jobs" className="hover:text-teal-600">Jobs</Link>
           {category && (
@@ -140,7 +141,7 @@ export default async function JobDetailPage({ params }: Props) {
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-start gap-4">
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-navy-50">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-navy-50 sm:h-16 sm:w-16">
                     {job.company?.logoUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={job.company.logoUrl} alt="" className="h-full w-full rounded-xl object-cover" />
@@ -150,7 +151,7 @@ export default async function JobDetailPage({ params }: Props) {
                   </div>
                   <div className="flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h1 className="font-display text-2xl font-bold text-navy-900">{job.title}</h1>
+                      <h1 className="font-display text-xl font-bold text-navy-900 sm:text-2xl">{job.title}</h1>
                       {job.isUrgent && <Badge variant="urgent">Urgent</Badge>}
                       {job.isFeatured && <Badge>Featured</Badge>}
                     </div>
@@ -207,7 +208,7 @@ export default async function JobDetailPage({ params }: Props) {
             </Card>
           </div>
 
-          <div className="space-y-4 lg:sticky lg:top-20 lg:self-start">
+          <div id="apply" className="scroll-mt-24 space-y-4 lg:sticky lg:top-20 lg:self-start">
             <Card>
               <CardContent className="p-5">
                 <JobActions
@@ -244,6 +245,7 @@ export default async function JobDetailPage({ params }: Props) {
           </div>
         </div>
       </div>
+      <MobileApplyBar salary={formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod, job.salaryHidden)} />
     </div>
   );
 }
