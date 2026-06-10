@@ -436,6 +436,22 @@ export const adminRouter = router({
       return { ok: true };
     }),
 
+  // ── Analytics ──────────────────────────────────────────
+  analytics: adminProcedure.query(async ({ ctx }) => {
+    const [jobsByStatus, jobsByCategory, appsByStatus, usersByRole] = await Promise.all([
+      ctx.db.select({ key: jobs.status, n: count() }).from(jobs).groupBy(jobs.status),
+      ctx.db.select({ key: jobs.categorySlug, n: count() }).from(jobs).groupBy(jobs.categorySlug),
+      ctx.db.select({ key: applications.status, n: count() }).from(applications).groupBy(applications.status),
+      ctx.db.select({ key: users.role, n: count() }).from(users).groupBy(users.role),
+    ]);
+    const map = (rows: { key: string | null; n: number }[]) => rows.map((r) => ({ label: r.key ?? 'unknown', value: Number(r.n) }));
+    // Funnel in application lifecycle order.
+    const order = ['applied', 'reviewing', 'shortlisted', 'interview', 'offered', 'hired'];
+    const appMap = new Map(appsByStatus.map((r) => [r.key, Number(r.n)]));
+    const funnel = order.map((s) => ({ label: s, value: appMap.get(s as never) ?? 0 }));
+    return { jobsByStatus: map(jobsByStatus), jobsByCategory: map(jobsByCategory), appsByStatus: map(appsByStatus), usersByRole: map(usersByRole), funnel };
+  }),
+
   // ── Applications (all jobs) ────────────────────────────
   allApplications: adminProcedure
     .input(z.object({ status: z.string().optional() }).optional())

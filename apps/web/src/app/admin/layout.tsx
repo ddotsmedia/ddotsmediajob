@@ -17,11 +17,13 @@ import {
   PlusCircle,
   Award,
   FileText,
+  TrendingUp,
 } from 'lucide-react';
 import { DashboardSidebar, MobileTabs, type NavItem } from '@/components/dashboard/sidebar';
 
 const NAV: NavItem[] = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/admin/analytics', label: 'Analytics', icon: TrendingUp },
   { href: '/admin/jobs/add', label: 'Add Job', icon: PlusCircle },
   { href: '/admin/approvals', label: 'Job Approvals', icon: CheckSquare },
   { href: '/admin/jobs', label: 'All Jobs', icon: Briefcase },
