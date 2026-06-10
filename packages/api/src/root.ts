@@ -19,6 +19,7 @@ import { assessmentsRouter } from './routers/assessments';
 import { messagesRouter } from './routers/messages';
 import { scorecardsRouter } from './routers/scorecards';
 import { eventsRouter } from './routers/events';
+import { teamRouter } from './routers/team';
 
 export const appRouter = router({
   auth: authRouter,
@@ -41,6 +42,7 @@ export const appRouter = router({
   messages: messagesRouter,
   scorecards: scorecardsRouter,
   events: eventsRouter,
+  team: teamRouter,
 });
 
 export type AppRouter = typeof appRouter;

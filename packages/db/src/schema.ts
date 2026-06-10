@@ -773,3 +773,23 @@ export const hiringEvents = pgTable(
 export const hiringEventsRelations = relations(hiringEvents, ({ one }) => ({
   employer: one(users, { fields: [hiringEvents.employerId], references: [users.id] }),
 }));
+
+// ─── Employer team / sub-accounts ────────────────────────
+export const employerTeamMembers = pgTable(
+  'employer_team_members',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    ownerId: uuid('owner_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    email: varchar('email', { length: 255 }).notNull(),
+    role: varchar('role', { length: 20 }).notNull().default('recruiter'),
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+    status: varchar('status', { length: 20 }).notNull().default('pending'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex('team_owner_email_idx').on(t.ownerId, t.email), index('team_owner_idx').on(t.ownerId)],
+);
+
+export const employerTeamMembersRelations = relations(employerTeamMembers, ({ one }) => ({
+  owner: one(users, { fields: [employerTeamMembers.ownerId], references: [users.id], relationName: 'team_owner' }),
+  member: one(users, { fields: [employerTeamMembers.userId], references: [users.id], relationName: 'team_member' }),
+}));

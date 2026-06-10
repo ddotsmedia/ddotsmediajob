@@ -1,6 +1,6 @@
 'use client';
 
-import { LayoutDashboard, PlusCircle, Briefcase, Building2, Users, BarChart3, BadgeCheck, MessageSquare, Sparkles, Landmark, FileCheck2, ClipboardCheck, CalendarDays } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, Briefcase, Building2, Users, BarChart3, BadgeCheck, MessageSquare, Sparkles, Landmark, FileCheck2, ClipboardCheck, CalendarDays, UsersRound } from 'lucide-react';
 import { DashboardSidebar, MobileTabs, type NavItem } from '@/components/dashboard/sidebar';
 import { HrChatbot } from '@/components/ai/hr-chatbot';
 
@@ -17,6 +17,7 @@ const NAV: NavItem[] = [
   { href: '/employer/nafis-dashboard', label: 'Nafis', icon: Landmark },
   { href: '/employer/mohre', label: 'MOHRE Permits', icon: FileCheck2 },
   { href: '/employer/verify', label: 'Verification', icon: BadgeCheck },
+  { href: '/employer/team', label: 'Team', icon: UsersRound },
   { href: '/employer/profile', label: 'Company Profile', icon: Building2 },
 ];
 
