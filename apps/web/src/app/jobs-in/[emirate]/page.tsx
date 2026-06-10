@@ -4,18 +4,23 @@ import Link from 'next/link';
 import { EMIRATES, emirateBySlug, CATEGORIES, SITE } from '@ddots/shared';
 import { getApi } from '@/trpc/server';
 import { JobCard } from '@/components/job-card';
+import { parseArea, areaStaticParams, areaMetadata, AreaView } from './areas';
 
 export const revalidate = 600;
 export const dynamicParams = false;
 
 export function generateStaticParams() {
-  return EMIRATES.map((e) => ({ emirate: e.slug }));
+  return [...EMIRATES.map((e) => ({ emirate: e.slug })), ...areaStaticParams()];
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ emirate: string }> }): Promise<Metadata> {
   const { emirate: slug } = await params;
   const emirate = emirateBySlug(slug);
-  if (!emirate) return { title: 'Emirate not found' };
+  if (!emirate) {
+    const area = parseArea(slug);
+    if (area) return areaMetadata(area);
+    return { title: 'Emirate not found' };
+  }
   return {
     title: `Jobs in ${emirate.name} 2026 — Live Vacancies`,
     description: `Find the latest jobs in ${emirate.name}, UAE 2026. Driver, nurse, accountant, sales, IT and engineering vacancies. Visa-provided roles, apply free on ${SITE.name}.`,
@@ -38,7 +43,11 @@ function emirateFaqs(name: string): { q: string; a: string }[] {
 export default async function EmiratePage({ params }: { params: Promise<{ emirate: string }> }) {
   const { emirate: slug } = await params;
   const emirate = emirateBySlug(slug);
-  if (!emirate) notFound();
+  if (!emirate) {
+    const area = parseArea(slug);
+    if (area) return <AreaView area={area} />;
+    notFound();
+  }
 
   const api = await getApi();
   const { jobs, total } = await api.jobs
