@@ -13,6 +13,7 @@
     "./lib/email": "./src/lib/email.ts",
     "./lib/r2": "./src/lib/r2.ts",
     "./lib/security": "./src/lib/security.ts",
+    "./lib/import": "./src/lib/import.ts",
     "./lib/whatsapp": "./src/lib/whatsapp/index.ts"
   },
   "scripts": {

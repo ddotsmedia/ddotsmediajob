@@ -25,5 +25,11 @@ export default function manifest(): MetadataRoute.Manifest {
       { name: 'My Dashboard', short_name: 'Dashboard', url: '/dashboard' },
     ],
     categories: ['business', 'jobs'],
-  };
+    // Android share-target: share a WhatsApp message → Quick Import.
+    share_target: {
+      action: '/admin/quick-import',
+      method: 'GET',
+      params: { text: 'text', title: 'title' },
+    },
+  } as MetadataRoute.Manifest;
 }

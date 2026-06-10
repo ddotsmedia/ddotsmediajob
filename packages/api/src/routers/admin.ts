@@ -27,6 +27,8 @@ import { createJobFromWhatsApp, type ParsedJob } from '../lib/whatsapp';
 import { router, adminProcedure } from '../trpc';
 import { audit, notify, uniqueJobSlug } from '../lib/helpers';
 import { enqueueEmail, enqueueSearchSync, enqueueJobEvent } from '../lib/queue';
+import { extractAndSaveDraft } from '../lib/import';
+import { enforceRateLimit } from '../lib/security';
 import { sanitizeHtml } from '../lib/security';
 
 /** Shared shape for admin-created jobs (from any of the 6 ingestion methods). */
@@ -476,6 +478,46 @@ export const adminRouter = router({
       await audit(ctx.session.user.id, 'admin.application.status', 'application', input.id, { status: input.status });
       return { ok: true };
     }),
+
+  // ── Import integrations (WhatsApp/Telegram/Email/Bulk) ──
+  /** Recent DRAFT jobs, optionally filtered by source. */
+  recentDrafts: adminProcedure.input(z.object({ source: z.string().max(50).optional() }).optional()).query(async ({ ctx, input }) => {
+    const conds = [eq(jobs.status, 'draft')];
+    if (input?.source) conds.push(eq(jobs.source, input.source));
+    return ctx.db.query.jobs.findMany({ where: and(...conds), orderBy: [desc(jobs.createdAt)], limit: 10, columns: { id: true, slug: true, title: true, source: true, createdAt: true } });
+  }),
+
+  /** Bulk-import: split pasted messages and extract each into a DRAFT. */
+  bulkImport: adminProcedure.input(z.object({ text: z.string().min(10).max(40000) })).mutation(async ({ ctx, input }) => {
+    await enforceRateLimit(`bulkimport:${ctx.session.user.id}`, 10, 3600);
+    const chunks = input.text
+      .split(/\n\s*---\s*\n|\n\s*\n\s*\n/)
+      .map((c) => c.trim())
+      .filter((c) => c.length >= 15)
+      .slice(0, 20);
+    const results: { title: string | null; ok: boolean; error?: string }[] = [];
+    for (const chunk of chunks) {
+      try {
+        const saved = await extractAndSaveDraft(chunk, 'paste');
+        results.push({ title: saved?.title ?? null, ok: Boolean(saved) });
+      } catch (err) {
+        results.push({ title: null, ok: false, error: err instanceof Error ? err.message : 'failed' });
+      }
+    }
+    return { count: results.filter((r) => r.ok).length, total: chunks.length, results };
+  }),
+
+  /** Ping Whapi to show a connection indicator. */
+  whapiStatus: adminProcedure.query(async () => {
+    const key = process.env.WHAPI_API_KEY;
+    if (!key) return { connected: false, configured: false };
+    try {
+      const res = await fetch('https://gate.whapi.cloud/health', { headers: { Authorization: `Bearer ${key}` } });
+      return { connected: res.ok, configured: true };
+    } catch {
+      return { connected: false, configured: true };
+    }
+  }),
 
   // ── WhatsApp groups CRUD ───────────────────────────────
   waGroups: adminProcedure.query(async ({ ctx }) =>

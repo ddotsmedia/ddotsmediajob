@@ -222,7 +222,8 @@ export const jobs = pgTable(
     applyEmail: varchar('apply_email', { length: 255 }),
     applyUrl: text('apply_url'),
     status: jobStatusEnum('status').default('pending').notNull(),
-    source: varchar('source', { length: 16 }).default('manual').notNull(), // paste|whatsapp|csv|quick|url|manual|community|whatsapp_bot|quick_post|admin_web
+    source: varchar('source', { length: 50 }).default('manual').notNull(), // paste|whatsapp|whapi|telegram|email|csv|quick|url|manual|community|whatsapp_bot|quick_post|admin_web
+    sourceMetadata: jsonb('source_metadata').$type<Record<string, unknown>>(), // original message, sender, etc.
     relation: varchar('relation', { length: 20 }), // community referral: work_there|friend_referred|other
     contactWhatsapp: varchar('contact_whatsapp', { length: 30 }),
     rejectionReason: text('rejection_reason'),

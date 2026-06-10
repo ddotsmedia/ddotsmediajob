@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import Papa from 'papaparse';
-import { ClipboardPaste, MessageCircle, Table2, Zap, Link2, FilePen, Loader2, Sparkles, Upload, Download, Check, X, ImagePlus } from 'lucide-react';
+import { ClipboardPaste, MessageCircle, Table2, Zap, Link2, FilePen, Loader2, Sparkles, Upload, Download, Check, X, ImagePlus, Send, RefreshCw } from 'lucide-react';
 import { EMIRATES } from '@ddots/shared';
 import { trpc } from '@/trpc/react';
 import { AdminJobReviewForm, type DraftInit } from '@/components/admin/job-review-form';
@@ -16,6 +17,8 @@ const TABS = [
   { key: 'paste', label: 'Quick Paste', icon: ClipboardPaste },
   { key: 'poster', label: 'Poster Image', icon: ImagePlus },
   { key: 'whatsapp', label: 'WhatsApp', icon: MessageCircle },
+  { key: 'whapi', label: 'WhatsApp Auto', icon: MessageCircle },
+  { key: 'telegram', label: 'Telegram', icon: Send },
   { key: 'csv', label: 'CSV Bulk', icon: Table2 },
   { key: 'quick', label: 'Quick Form', icon: Zap },
   { key: 'url', label: 'URL Import', icon: Link2 },
@@ -23,6 +26,14 @@ const TABS = [
 ] as const;
 
 export default function AddJobPage() {
+  return (
+    <Suspense fallback={null}>
+      <AddJobInner />
+    </Suspense>
+  );
+}
+
+function AddJobInner() {
   const [tab, setTab] = useState<(typeof TABS)[number]['key']>('paste');
   return (
     <div>
@@ -44,6 +55,8 @@ export default function AddJobPage() {
         {tab === 'paste' && <PasteTab />}
         {tab === 'poster' && <PosterTab />}
         {tab === 'whatsapp' && <WhatsAppTab />}
+        {tab === 'whapi' && <WhapiTab />}
+        {tab === 'telegram' && <TelegramTab />}
         {tab === 'csv' && <CsvTab />}
         {tab === 'quick' && <QuickTab />}
         {tab === 'url' && <UrlTab />}
@@ -54,9 +67,22 @@ export default function AddJobPage() {
 }
 
 function PasteTab() {
+  const params = useSearchParams();
   const [text, setText] = useState('');
   const [draft, setDraft] = useState<DraftInit | null>(null);
   const extract = trpc.ai.extractJobFromText.useMutation({ onSuccess: (d) => setDraft(d), onError: (e) => toast.error(e.message) });
+  const autoRan = useRef(false);
+
+  // Prefill + auto-extract from ?text= (bookmarklet / share target).
+  useEffect(() => {
+    const shared = params.get('text');
+    if (shared && !autoRan.current) {
+      autoRan.current = true;
+      setText(shared);
+      if (shared.trim().length >= 15) extract.mutate({ text: shared });
+    }
+  }, [params]); // eslint-disable-line react-hooks/exhaustive-deps
+
   return (
     <div>
       <div className="rounded-xl border bg-white p-5">
@@ -67,6 +93,108 @@ function PasteTab() {
         </Button>
       </div>
       {draft && <AdminJobReviewForm draft={draft} source="paste" onReset={() => { setDraft(null); setText(''); }} />}
+    </div>
+  );
+}
+
+// ── WhatsApp Auto-Import (Whapi) + Telegram tabs ──
+function SetupCard({ title, steps, children }: { title: string; steps: string[]; children?: React.ReactNode }) {
+  return (
+    <div className="rounded-xl border bg-white p-5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="font-display font-bold text-navy-900">{title}</h3>
+        {children}
+      </div>
+      <ol className="mt-3 space-y-1 text-sm text-navy-700/80">{steps.map((s, i) => <li key={i}>{s}</li>)}</ol>
+    </div>
+  );
+}
+
+function StatusDot({ ok, configured, loading }: { ok?: boolean; configured?: boolean; loading?: boolean }) {
+  if (loading) return <span className="text-xs text-navy-500">Checking…</span>;
+  const color = ok ? '#16a34a' : configured ? '#ea7a3c' : '#94a3b8';
+  const label = ok ? 'Connected' : configured ? 'Configured' : 'Not set';
+  return <span className="inline-flex items-center gap-1.5 text-xs text-navy-700"><span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} /> {label}</span>;
+}
+
+function DraftsList({ q, empty }: { q: { isLoading: boolean; data?: { id: string; title: string }[] }; empty: string }) {
+  return (
+    <div className="rounded-xl border bg-white p-5">
+      <h3 className="font-display font-bold text-navy-900">Recent drafts</h3>
+      {q.isLoading ? <Loader2 className="mt-2 animate-spin text-teal-500" /> : q.data && q.data.length ? (
+        <ul className="mt-3 space-y-2">
+          {q.data.map((d) => (
+            <li key={d.id} className="flex items-center justify-between gap-2 text-sm">
+              <span className="truncate text-navy-900">{d.title}</span>
+              <Link href={`/admin/jobs/${d.id}/edit`} className="shrink-0 text-teal-600 hover:underline">Review &amp; publish</Link>
+            </li>
+          ))}
+        </ul>
+      ) : <p className="mt-2 text-sm text-navy-700/60">{empty}</p>}
+    </div>
+  );
+}
+
+function WhapiTab() {
+  const status = trpc.admin.whapiStatus.useQuery();
+  const drafts = trpc.admin.recentDrafts.useQuery({ source: 'whapi' });
+  return (
+    <div className="space-y-4">
+      <SetupCard
+        title="WhatsApp Auto-Import (Whapi — free)"
+        steps={[
+          '1. Create a free account at whapi.cloud and connect your WhatsApp.',
+          '2. Copy your API key → set WHAPI_API_KEY. Set WHAPI_TOKEN to any random string.',
+          '3. In Whapi → Webhooks, set URL: https://ddotsmediajobs.com/api/whatsapp/whapi',
+          '4. Add request header  x-whapi-token = your WHAPI_TOKEN value.',
+          '5. Forward any job message to your connected WhatsApp number — a draft appears below.',
+        ]}
+      >
+        <StatusDot ok={status.data?.connected} configured={status.data?.configured} loading={status.isLoading} />
+      </SetupCard>
+      <DraftsList q={drafts} empty="No WhatsApp drafts yet." />
+    </div>
+  );
+}
+
+function TelegramTab() {
+  const drafts = trpc.admin.recentDrafts.useQuery({ source: 'telegram' });
+  const [configured, setConfigured] = useState<boolean | undefined>(undefined);
+  const [busy, setBusy] = useState(false);
+
+  async function refresh() {
+    try { const r = await fetch('/api/telegram/setup'); const d = (await r.json()) as { configured?: boolean }; setConfigured(d.configured); } catch { /* ignore */ }
+  }
+  useEffect(() => { void refresh(); }, []);
+
+  async function activate() {
+    setBusy(true);
+    try {
+      const r = await fetch('/api/telegram/setup', { method: 'POST' });
+      const d = (await r.json()) as { ok?: boolean; error?: string; description?: string };
+      if (d.ok) { toast.success('Telegram webhook activated'); void refresh(); }
+      else toast.error(d.error ?? d.description ?? 'Activation failed');
+    } catch { toast.error('Activation failed'); } finally { setBusy(false); }
+  }
+
+  return (
+    <div className="space-y-4">
+      <SetupCard
+        title="Telegram Bot (free)"
+        steps={[
+          '1. Open Telegram → message @BotFather → /newbot. Name it DdotsJobs Admin Bot.',
+          '2. Copy the bot token → set TELEGRAM_BOT_TOKEN.',
+          '3. Message @userinfobot to get your chat ID → set TELEGRAM_ADMIN_CHAT_ID.',
+          '4. Set TELEGRAM_SECRET to any random string, then click Activate Webhook.',
+          '5. Forward job messages to your bot. Commands: /drafts /stats /approve <id> /reject <id>.',
+        ]}
+      >
+        <div className="flex items-center gap-3">
+          <StatusDot ok={configured} configured={configured} loading={configured === undefined} />
+          <Button size="sm" onClick={activate} disabled={busy}>{busy ? <Loader2 className="animate-spin" /> : <RefreshCw className="h-4 w-4" />} Activate Webhook</Button>
+        </div>
+      </SetupCard>
+      <DraftsList q={drafts} empty="No Telegram drafts yet." />
     </div>
   );
 }

@@ -134,6 +134,13 @@
       "when": 1781072641001,
       "tag": "0018_puzzling_gauntlet",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1781076299900,
+      "tag": "0019_tired_logan",
+      "breakpoints": true
     }
   ]
 }
