@@ -168,12 +168,12 @@ export function PostJobForm() {
           </div>
         )}
 
-        <div className="flex items-center justify-between border-t pt-4">
-          <Button variant="ghost" onClick={() => setStep((s) => Math.max(0, s - 1))} disabled={step === 0}><ArrowLeft /> Back</Button>
+        <div className="flex flex-col-reverse gap-2 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+          <Button variant="ghost" className="w-full sm:w-auto" onClick={() => setStep((s) => Math.max(0, s - 1))} disabled={step === 0}><ArrowLeft /> Back</Button>
           {step < 3 ? (
-            <Button onClick={() => setStep((s) => s + 1)} disabled={!canNext}>Next <ArrowRight /></Button>
+            <Button className="w-full sm:w-auto" onClick={() => setStep((s) => s + 1)} disabled={!canNext}>Next <ArrowRight /></Button>
           ) : (
-            <Button variant="accent" onClick={publish} disabled={create.isPending}>
+            <Button variant="accent" className="w-full sm:w-auto" onClick={publish} disabled={create.isPending}>
               {create.isPending ? <Loader2 className="animate-spin" /> : <Send />} Submit for Review
             </Button>
           )}
