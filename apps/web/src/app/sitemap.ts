@@ -33,6 +33,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     '/compare',
     '/resources/relocation-advisor',
     '/resources/labour-rights',
+    '/tools/career-transition',
+    '/tools/negotiation-simulator',
   ].map((path) => ({ url: `${base}${path}`, changeFrequency: 'weekly', priority: 0.6 }));
 
   const categoryRoutes: MetadataRoute.Sitemap = CATEGORIES.map((c) => ({

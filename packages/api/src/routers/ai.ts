@@ -987,4 +987,30 @@ export const aiRouter = router({
       );
       return { content };
     }),
+
+  /** Public salary-negotiation roleplay — one turn. */
+  negotiationSimulatorPublic: publicProcedure
+    .input(z.object({ role: z.string().min(2).max(160), messages }))
+    .mutation(async ({ ctx, input }) => {
+      await guardAiPublic(ctx, input.messages.at(-1)?.content);
+      const reply = await chat(
+        `You roleplay a UAE hiring manager in a salary negotiation for a ${input.role}. Respond in character, push back realistically but fairly, and after your reply add one short coaching tip prefixed "Coach:". Keep under 160 words.`,
+        input.messages as ChatMessage[],
+        { model: MODEL_FAST, maxTokens: 500 },
+      );
+      return { reply };
+    }),
+
+  /** Public career-transition plan between two roles. */
+  careerTransitionPlanPublic: publicProcedure
+    .input(z.object({ fromRole: z.string().min(2).max(160), toRole: z.string().min(2).max(160), months: z.number().int().min(1).max(24).optional() }))
+    .mutation(async ({ ctx, input }) => {
+      await guardAiPublic(ctx, `${input.fromRole} ${input.toRole}`);
+      const content = await chat(
+        'You build UAE career-transition plans. Return a markdown month-by-month plan to move between the two roles: skills to learn, certifications, portfolio, and networking. Practical, UAE-relevant.',
+        [{ role: 'user', content: `From: ${input.fromRole}\nTo: ${input.toRole}\nTimeline: ${input.months ?? 6} months` }],
+        { model: MODEL_FAST, maxTokens: 900 },
+      );
+      return { content };
+    }),
 });
