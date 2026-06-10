@@ -36,6 +36,8 @@ export function SiteFooter() {
           <FooterLink href="/interview-prep">AI Interview Prep</FooterLink>
           <FooterLink href="/whatsapp-groups">WhatsApp Groups</FooterLink>
           <FooterLink href="/salary-guide">Salary Guide</FooterLink>
+          <FooterLink href="/assessments">Skill Assessments</FooterLink>
+          <FooterLink href="/compare">Compare Jobs</FooterLink>
         </FooterCol>
 
         <FooterCol title="For Employers">
@@ -53,6 +55,11 @@ export function SiteFooter() {
           <FooterLink href="/nafis-guide">Nafis & Emiratisation</FooterLink>
           <FooterLink href="/visa-guide">Visa Guide 2026</FooterLink>
           <FooterLink href="/jobs/freezone">Free Zone Jobs</FooterLink>
+          <FooterLink href="/resources/relocation-advisor">Relocation Advisor</FooterLink>
+          <FooterLink href="/resources/labour-rights">Labour Rights</FooterLink>
+          <FooterLink href="/tools/career-transition">Career Transition</FooterLink>
+          <FooterLink href="/tools/negotiation-simulator">Negotiation Simulator</FooterLink>
+          <FooterLink href="/events">Hiring Events</FooterLink>
         </FooterCol>
       </div>
 
