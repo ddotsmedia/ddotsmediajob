@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { jobs, jobseekerProfiles, eq, and, gte, ne, isNotNull } from '@ddots/db';
 import { formatSalary } from '@ddots/shared';
-import { router, protectedProcedure, employerProcedure, adminProcedure } from '../trpc';
+import { router, publicProcedure, protectedProcedure, employerProcedure, adminProcedure } from '../trpc';
 import {
   chat,
   structured,
@@ -24,6 +24,15 @@ import { enforceRateLimit, isJailbreakAttempt, wrapUserContent, ssrfSafeFetchTex
 async function guardAi(ctx: { session: { user: { id: string; role: string } } }, text?: string): Promise<void> {
   const isAdmin = ctx.session.user.role === 'admin';
   await enforceRateLimit(`ai:${ctx.session.user.id}`, isAdmin ? 200 : 50, 3600);
+  if (text && isJailbreakAttempt(text)) {
+    throw new TRPCError({ code: 'BAD_REQUEST', message: 'This request was blocked.' });
+  }
+}
+
+/** Public AI guard — rate-limit by IP (no account) for SEO tool pages. */
+const ipOfCtx = (ctx: { headers?: Headers }) => ctx.headers?.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+async function guardAiPublic(ctx: { headers?: Headers }, text?: string): Promise<void> {
+  await enforceRateLimit(`ai:pub:${ipOfCtx(ctx)}`, 20, 3600);
   if (text && isJailbreakAttempt(text)) {
     throw new TRPCError({ code: 'BAD_REQUEST', message: 'This request was blocked.' });
   }
@@ -950,4 +959,32 @@ export const aiRouter = router({
     const content = await chat('You write a weekly UAE jobs market-pulse report. From the data, return markdown: headline trends, hottest categories/emirates, salary movements, and an outlook. Concise and publishable.', [{ role: 'user', content: wrapUserContent(input.dataText) }], { model: MODEL_FAST, maxTokens: 900 });
     return { content };
   }),
+
+  // ═══ Public SEO tool endpoints (no login, IP rate-limited) ═══
+
+  /** Public relocation advisor. */
+  relocationAdvisorPublic: publicProcedure
+    .input(z.object({ country: z.string().min(2).max(80), role: z.string().min(2).max(160), salary: z.number().int().nonnegative().optional(), familySize: z.number().int().min(1).max(12).optional() }))
+    .mutation(async ({ ctx, input }) => {
+      await guardAiPublic(ctx, `${input.country} ${input.role}`);
+      const content = await chat(
+        'You are a UAE relocation advisor. Given origin country, role, salary and family size, return markdown: best-fit emirate, visa route, monthly cost-of-living estimate, rough net savings, and a 30-day action plan. Practical and UAE-specific, under 320 words.',
+        [{ role: 'user', content: `From: ${input.country}\nRole: ${input.role}\nSalary: ${input.salary ? 'AED ' + input.salary : 'n/a'}\nFamily size: ${input.familySize ?? 1}` }],
+        { model: MODEL_FAST, maxTokens: 900 },
+      );
+      return { content };
+    }),
+
+  /** Public UAE labour-rights / complaint guide. */
+  labourComplaintGuidePublic: publicProcedure
+    .input(z.object({ issueType: z.string().min(2).max(160), emirate: z.string().max(40).optional() }))
+    .mutation(async ({ ctx, input }) => {
+      await guardAiPublic(ctx, input.issueType);
+      const content = await chat(
+        'You guide UAE workers on labour complaints. Return markdown: clear steps to resolve the issue, who to contact (MOHRE 800 60, relevant authority), documents needed, and timelines. Note this is general info, not legal advice.',
+        [{ role: 'user', content: `Issue: ${wrapUserContent(input.issueType)}\nEmirate: ${input.emirate ?? 'UAE'}` }],
+        { model: MODEL_FAST, maxTokens: 800 },
+      );
+      return { content };
+    }),
 });
