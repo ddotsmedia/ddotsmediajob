@@ -70,8 +70,18 @@ function PasteTab() {
   const params = useSearchParams();
   const [text, setText] = useState('');
   const [draft, setDraft] = useState<DraftInit | null>(null);
-  const extract = trpc.ai.extractJobFromText.useMutation({ onSuccess: (d) => setDraft(d), onError: (e) => toast.error(e.message) });
+  const [aiFailed, setAiFailed] = useState(false);
+  // Non-blocking: AI failure (or empty fallback) never errors — the form opens for manual fill.
+  const extract = trpc.ai.extractJobFromText.useMutation({
+    onSuccess: (d) => {
+      if (d.title && d.title.trim()) { setDraft(d); setAiFailed(false); }
+      else { setDraft(null); setAiFailed(true); }
+    },
+    onError: () => { setDraft(null); setAiFailed(true); },
+  });
   const autoRan = useRef(false);
+
+  function run(value: string) { setAiFailed(false); extract.mutate({ text: value }); }
 
   // Prefill + auto-extract from ?text= (bookmarklet / share target).
   useEffect(() => {
@@ -79,7 +89,7 @@ function PasteTab() {
     if (shared && !autoRan.current) {
       autoRan.current = true;
       setText(shared);
-      if (shared.trim().length >= 15) extract.mutate({ text: shared });
+      if (shared.trim().length >= 15) run(shared);
     }
   }, [params]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -88,11 +98,13 @@ function PasteTab() {
       <div className="rounded-xl border bg-white p-5">
         <Label>Paste any job text — WhatsApp message, email, PDF text, any format</Label>
         <Textarea className="mt-2 min-h-[180px]" value={text} onChange={(e) => setText(e.target.value)} placeholder="Paste the raw job text here…" />
-        <Button className="mt-3" onClick={() => extract.mutate({ text })} disabled={extract.isPending || text.trim().length < 15}>
+        <Button className="mt-3 w-full sm:w-auto" onClick={() => run(text)} disabled={extract.isPending || text.trim().length < 15}>
           {extract.isPending ? <Loader2 className="animate-spin" /> : <Sparkles />} Extract & Fill
         </Button>
+        {aiFailed && <p className="mt-2 text-sm text-navy-700/60">AI auto-fill unavailable, please fill manually.</p>}
       </div>
-      {draft && <AdminJobReviewForm draft={draft} source="paste" onReset={() => { setDraft(null); setText(''); }} />}
+      {draft && <AdminJobReviewForm draft={draft} source="paste" onReset={() => { setDraft(null); setText(''); setAiFailed(false); }} />}
+      {!draft && aiFailed && <AdminJobReviewForm source="paste" />}
     </div>
   );
 }

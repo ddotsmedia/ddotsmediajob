@@ -47,6 +47,17 @@ const JOB_EXTRACT_SYSTEM =
   'Know all 7 UAE emirates, common job categories, WPS salary norms (monthly AED), visa terminology, free zones, and standard UAE benefits. ' +
   'Map locations to the correct emirate slug. If salary is unstated use 0. Set each confidence field to high/medium/low based on how certain the value is from the source.';
 
+/** Empty draft returned when AI extraction fails — lets the admin fill the form manually. */
+function emptyJobDraft(): JobDraft {
+  return {
+    title: '', company: '', emirate: 'dubai', area: '', categorySlug: 'admin', jobType: 'full-time',
+    salaryMin: 0, salaryMax: 0, visaProvided: false, accommodation: false, freshersWelcome: false,
+    remote: false, urgent: false, freeZone: false, description: '', requirements: '', benefits: [], tags: [],
+    contactWhatsapp: '', contactEmail: '', deadline: '', vacancies: 1,
+    confidence: { title: 'low', company: 'low', emirate: 'low', category: 'low', salary: 'low', jobType: 'low' },
+  };
+}
+
 async function loadProfileText(db: any, userId: string): Promise<string> {
   const p = await db.query.jobseekerProfiles.findFirst({ where: eq(jobseekerProfiles.userId, userId) });
   if (!p) return 'No profile on file.';
@@ -222,24 +233,30 @@ export const aiRouter = router({
   }),
 
   // ── Admin job ingestion (Haiku) ──────────────────────────────────
+  /**
+   * Extract a job draft from pasted text. NON-BLOCKING: retries 429s with
+   * exponential backoff (2s, 4s, 8s) then returns an EMPTY draft instead of
+   * throwing, so the admin form always works (manual fill) even when AI is down.
+   */
   extractJobFromText: adminProcedure
     .input(z.object({ text: z.string().min(15).max(15000) }).strict())
     .mutation(async ({ ctx, input }): Promise<JobDraft> => {
       await guardAi(ctx, input.text);
-      try {
-        return await structured<JobDraft>(JOB_EXTRACT_SYSTEM, `Extract a job posting from this text:\n\n${wrapUserContent(input.text)}`, JOB_DRAFT_TOOL, {
-          model: MODEL_FAST,
-          maxTokens: 1800,
-        });
-      } catch (err) {
-        console.error('[extractJobFromText]', err);
-        const over = err instanceof Error && /\b429\b|quota|rate limit/i.test(err.message);
-        throw new TRPCError({
-          code: over ? 'TOO_MANY_REQUESTS' : 'INTERNAL_SERVER_ERROR',
-          message: over
-            ? 'AI is over its quota right now — please wait ~60 seconds and try again, or fill the form manually.'
-            : 'AI extraction is unavailable right now. Please try again, or fill the form manually.',
-        });
+      const prompt = `Extract a job posting from this text:\n\n${wrapUserContent(input.text)}`;
+      const backoff = [2000, 4000, 8000]; // 3 retries on 429
+      for (let attempt = 0; ; attempt++) {
+        try {
+          return await structured<JobDraft>(JOB_EXTRACT_SYSTEM, prompt, JOB_DRAFT_TOOL, { model: MODEL_FAST, maxTokens: 1800 });
+        } catch (err) {
+          const over = err instanceof Error && /\b429\b|quota|rate.?limit|overloaded|too many/i.test(err.message);
+          if (over && attempt < backoff.length) {
+            await new Promise((r) => setTimeout(r, backoff[attempt]));
+            continue;
+          }
+          // Retries exhausted, or a non-429 failure → empty fallback (never throw).
+          console.error(`[extractJobFromText] giving up after ${attempt} retr${attempt === 1 ? 'y' : 'ies'}:`, err instanceof Error ? err.message : err);
+          return emptyJobDraft();
+        }
       }
     }),
 
