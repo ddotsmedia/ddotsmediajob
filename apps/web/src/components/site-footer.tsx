@@ -38,6 +38,7 @@ export function SiteFooter() {
           <FooterLink href="/salary-guide">Salary Guide</FooterLink>
           <FooterLink href="/assessments">Skill Assessments</FooterLink>
           <FooterLink href="/compare">Compare Jobs</FooterLink>
+          <FooterLink href="/swipe">Swipe Jobs</FooterLink>
           <FooterLink href="/success-stories">Success Stories</FooterLink>
           <FooterLink href="/market-insights">Market Insights</FooterLink>
         </FooterCol>

@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { Share2, Copy, Link2, QrCode, X, Check, Loader2 } from 'lucide-react';
+import QRCode from 'qrcode';
+import { Share2, Copy, Link2, QrCode, X, Download, Loader2 } from 'lucide-react';
 import { trpc } from '@/trpc/react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -37,7 +38,18 @@ export function ShareMenu({
   const [open, setOpen] = useState(false);
   const [shortUrl, setShortUrl] = useState<string | null>(null);
   const [showQr, setShowQr] = useState(false);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const link = trpc.links.forJob.useMutation();
+
+  function toggleQr() {
+    const next = !showQr;
+    setShowQr(next);
+    if (next) {
+      QRCode.toDataURL(shareUrl, { width: 220, margin: 1, color: { dark: '#0f172a', light: '#ffffff' } })
+        .then(setQrDataUrl)
+        .catch(() => toast.error('Could not generate QR code'));
+    }
+  }
 
   const shareUrl = shortUrl ?? url;
   const enc = encodeURIComponent;
@@ -115,13 +127,22 @@ export function ShareMenu({
               <div className="flex gap-2">
                 <Button variant="outline" className="flex-1" onClick={nativeShare}><Share2 /> Share…</Button>
                 <Button variant="outline" className="flex-1" onClick={() => copy(url, 'Full link copied')}><Copy /> Full link</Button>
-                <Button variant="outline" size="icon" title="QR code" onClick={() => setShowQr((v) => !v)}><QrCode /></Button>
+                <Button variant="outline" size="icon" title="QR code" onClick={toggleQr}><QrCode /></Button>
               </div>
 
               {showQr && (
                 <div className="flex flex-col items-center gap-2 rounded-lg border bg-white p-4">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${enc(shareUrl)}`} alt="QR code" width={180} height={180} />
+                  {qrDataUrl ? (
+                    <>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={qrDataUrl} alt="QR code for this job" width={200} height={200} />
+                      <a href={qrDataUrl} download={`job-qr.png`} className="inline-flex items-center gap-1.5 text-xs font-semibold text-teal-700 hover:underline">
+                        <Download className="h-3.5 w-3.5" /> Download PNG
+                      </a>
+                    </>
+                  ) : (
+                    <Loader2 className="h-6 w-6 animate-spin text-teal-500" />
+                  )}
                   <span className="text-xs text-navy-700/50">Scan to open the job</span>
                 </div>
               )}
