@@ -24,10 +24,12 @@ export const QUEUE = {
   search: 'search-sync',
   aiScoring: 'ai-scoring',
   maintenance: 'maintenance',
+  jobEvents: 'job-events',
 } as const;
 
 export type AiScoringJob = { applicationId: string };
 export type MaintenanceJob = { task: 'cv-cleanup' | 'trending-skills' };
+export type JobEventJob = { jobId: string; event: 'approved' | 'submitted' };
 
 export type EmailJob =
   | { type: 'welcome'; to: string; name: string; role: 'jobseeker' | 'employer' }
@@ -63,6 +65,7 @@ export const searchQueue = () => makeQueue<SearchSyncJob>(QUEUE.search);
 export const jobAlertsQueue = () => makeQueue<AlertScanJob>(QUEUE.jobAlerts);
 export const aiScoringQueue = () => makeQueue<AiScoringJob>(QUEUE.aiScoring);
 export const maintenanceQueue = () => makeQueue<MaintenanceJob>(QUEUE.maintenance);
+export const jobEventsQueue = () => makeQueue<JobEventJob>(QUEUE.jobEvents);
 
 const defaultOpts: JobsOptions = {
   attempts: 3,
@@ -81,4 +84,8 @@ export async function enqueueSearchSync(job: SearchSyncJob): Promise<void> {
 
 export async function enqueueAiScoring(job: AiScoringJob): Promise<void> {
   await aiScoringQueue().add('score', job, { ...defaultOpts, attempts: 2 });
+}
+
+export async function enqueueJobEvent(job: JobEventJob): Promise<void> {
+  await jobEventsQueue().add(job.event, job, { ...defaultOpts, attempts: 2 });
 }

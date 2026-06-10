@@ -26,7 +26,7 @@ import { slugify } from '@ddots/shared';
 import { createJobFromWhatsApp, type ParsedJob } from '../lib/whatsapp';
 import { router, adminProcedure } from '../trpc';
 import { audit, notify, uniqueJobSlug } from '../lib/helpers';
-import { enqueueEmail, enqueueSearchSync } from '../lib/queue';
+import { enqueueEmail, enqueueSearchSync, enqueueJobEvent } from '../lib/queue';
 import { sanitizeHtml } from '../lib/security';
 
 /** Shared shape for admin-created jobs (from any of the 6 ingestion methods). */
@@ -172,6 +172,7 @@ export const adminRouter = router({
       link: `/jobs/${job.slug}`,
     });
     await audit(ctx.session.user.id, 'job.approve', 'job', input.id);
+    await enqueueJobEvent({ jobId: input.id, event: 'approved' }).catch(() => {});
     return { ok: true };
   }),
 
@@ -338,6 +339,7 @@ export const adminRouter = router({
         .where(eq(jobs.id, input.id));
       await enqueueSearchSync({ type: input.status === 'active' ? 'upsert' : 'delete', jobId: input.id });
       await audit(ctx.session.user.id, 'admin.job.status', 'job', input.id, { status: input.status });
+      if (input.status === 'active') await enqueueJobEvent({ jobId: input.id, event: 'approved' }).catch(() => {});
       return { ok: true };
     }),
 

@@ -21,7 +21,7 @@ import {
 import { jobFilterSchema, jobInputSchema, jobFieldsSchema, aiQuickPostSchema, communityPostSchema } from '@ddots/shared';
 import { router, publicProcedure, employerProcedure, protectedProcedure } from '../trpc';
 import { uniqueJobSlug, audit } from '../lib/helpers';
-import { enqueueSearchSync } from '../lib/queue';
+import { enqueueSearchSync, enqueueJobEvent } from '../lib/queue';
 import { generateJobFromPrompt } from '../lib/anthropic';
 
 export const jobsRouter = router({
@@ -170,7 +170,11 @@ export const jobsRouter = router({
       .returning();
 
     await audit(ctx.session.user.id, 'job.create', 'job', job!.id);
-    if (job!.status === 'active') await enqueueSearchSync({ type: 'upsert', jobId: job!.id });
+    await enqueueJobEvent({ jobId: job!.id, event: 'submitted' }).catch(() => {});
+    if (job!.status === 'active') {
+      await enqueueSearchSync({ type: 'upsert', jobId: job!.id });
+      await enqueueJobEvent({ jobId: job!.id, event: 'approved' }).catch(() => {});
+    }
     return job;
   }),
 

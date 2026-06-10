@@ -10,6 +10,7 @@ import {
   applications,
   jobseekerProfiles,
   siteSettings,
+  notifications,
   users,
   eq,
   and,
@@ -22,7 +23,7 @@ import {
   isNotNull,
 } from '@ddots/db';
 import { formatSalary, CATEGORIES } from '@ddots/shared';
-import { QUEUE, bullConnection, enqueueEmail, jobAlertsQueue, maintenanceQueue, type EmailJob, type SearchSyncJob, type AlertScanJob, type AiScoringJob, type MaintenanceJob } from './lib/queue';
+import { QUEUE, bullConnection, enqueueEmail, jobAlertsQueue, maintenanceQueue, type EmailJob, type SearchSyncJob, type AlertScanJob, type AiScoringJob, type MaintenanceJob, type JobEventJob } from './lib/queue';
 import { expireStaleJobs } from './lib/helpers';
 import { sendEmailJob } from './lib/email';
 import { ensureJobsCollection, upsertJobDocument, deleteJobDocument, jobToDocument } from './lib/typesense';
@@ -239,6 +240,74 @@ new Worker<MaintenanceJob>(
   },
   { connection, concurrency: 1 },
 ).on('failed', (job, err) => console.error(`[maintenance] ${job?.id} failed:`, err.message));
+
+// ── Job-events worker (proactive-match + bias-scan) ──────
+const BIAS_TOOL = {
+  name: 'bias',
+  description: 'Flag biased or discriminatory language in a UAE job description.',
+  input_schema: {
+    type: 'object' as const,
+    properties: {
+      score: { type: 'integer', description: '0 (inclusive) - 100 (heavily biased)' },
+      flags: { type: 'array', items: { type: 'string' } },
+    },
+    required: ['score', 'flags'],
+  },
+};
+
+new Worker<JobEventJob>(
+  QUEUE.jobEvents,
+  async (job) => {
+    const j = await db.query.jobs.findFirst({ where: eq(jobs.id, job.data.jobId) });
+    if (!j) return;
+
+    if (job.data.event === 'approved') {
+      if (j.status !== 'active') return;
+      const seekers = await db.query.jobseekerProfiles.findMany({
+        where: eq(jobseekerProfiles.categorySlug, j.categorySlug),
+        columns: { userId: true },
+        limit: 200,
+      });
+      if (seekers.length) {
+        await db.insert(notifications).values(
+          seekers.map((s) => ({
+            userId: s.userId,
+            type: 'job-match',
+            title: `New role: ${j.title}`,
+            body: 'A new job matching your field was just posted.',
+            link: `/jobs/${j.slug}`,
+          })),
+        );
+      }
+      console.log(`[proactive-match] notified ${seekers.length} seeker(s) for job ${j.id}`);
+      return;
+    }
+
+    // submitted → bias scan
+    const bias = await structured<{ score: number; flags: string[] }>(
+      'You audit UAE job descriptions for biased, discriminatory or non-inclusive language. Call bias.',
+      j.description.slice(0, 4000),
+      BIAS_TOOL as never,
+      { model: MODEL_FAST, maxTokens: 400 },
+    ).catch(() => null);
+    if (bias && bias.score > 50) {
+      const admins = await db.query.users.findMany({ where: eq(users.role, 'admin'), columns: { id: true }, limit: 20 });
+      if (admins.length) {
+        await db.insert(notifications).values(
+          admins.map((a) => ({
+            userId: a.id,
+            type: 'bias-flag',
+            title: `Possible biased language: "${j.title}"`,
+            body: bias.flags.slice(0, 2).join('; ') || 'Review recommended.',
+            link: `/admin/jobs/${j.id}/edit`,
+          })),
+        );
+      }
+      console.log(`[bias-scan] flagged job ${j.id} (score ${bias.score})`);
+    }
+  },
+  { connection, concurrency: 2 },
+).on('failed', (job, err) => console.error(`[job-events] ${job?.id} failed:`, err.message));
 
 // ── Auto-expire stale jobs (in-process hourly tick) ──────
 async function expireTick() {
