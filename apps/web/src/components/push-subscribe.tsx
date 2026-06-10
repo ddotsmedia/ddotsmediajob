@@ -22,8 +22,13 @@ export function PushSubscribe() {
 
   useEffect(() => {
     if (!key.data) return;
-    if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) return;
-    if (Notification.permission === 'default') setShow(true);
+    // Some mobile webviews expose PushManager but not Notification — guard all three.
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return;
+    try {
+      if (Notification.permission === 'default') setShow(true);
+    } catch {
+      /* Notification API unavailable — skip the prompt. */
+    }
   }, [key.data]);
 
   if (!show || !key.data) return null;
