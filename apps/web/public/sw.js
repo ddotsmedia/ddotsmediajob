@@ -1,5 +1,5 @@
 // DdotsMediaJobs service worker — lightweight offline shell.
-const CACHE = 'ddots-v1';
+const CACHE = 'ddotsjobs-v2';
 const PRECACHE = ['/', '/jobs', '/offline'];
 
 self.addEventListener('install', (event) => {
