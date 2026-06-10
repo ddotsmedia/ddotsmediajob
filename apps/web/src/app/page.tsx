@@ -54,7 +54,7 @@ export default async function HomePage() {
           <span className="inline-flex items-center gap-2 rounded-full border border-teal-400/30 bg-teal-400/10 px-4 py-1.5 text-sm font-medium text-teal-300">
             <CheckCircle2 className="h-4 w-4" /> {stats.totalActive.toLocaleString('en-AE')}+ live jobs across the UAE
           </span>
-          <h1 className="mt-6 font-display text-4xl font-extrabold leading-tight md:text-6xl">
+          <h1 className="mt-6 font-display text-3xl font-extrabold leading-tight sm:text-4xl md:text-6xl">
             Find Your Next Job
             <br />
             in the <span className="text-teal-400">UAE</span>
@@ -65,10 +65,10 @@ export default async function HomePage() {
           <div className="mx-auto mt-8 max-w-3xl">
             <JobSearchBar />
           </div>
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-sm text-navy-100/70">
-            <span>Popular:</span>
+          <div className="mt-6 flex flex-nowrap items-center gap-2 overflow-x-auto scrollbar-hide px-1 text-sm text-navy-100/70 sm:flex-wrap sm:justify-center sm:gap-x-3">
+            <span className="shrink-0">Popular:</span>
             {['Driver', 'Accountant', 'Nurse', 'Sales', 'Receptionist'].map((t) => (
-              <Link key={t} href={`/jobs?q=${t}`} className="rounded-full bg-white/10 px-3 py-1 hover:bg-white/20">
+              <Link key={t} href={`/jobs?q=${t}`} className="shrink-0 rounded-full bg-white/10 px-3 py-1 hover:bg-white/20">
                 {t}
               </Link>
             ))}
@@ -94,9 +94,9 @@ export default async function HomePage() {
             <Link
               key={c.slug}
               href={`/category/${c.slug}`}
-              className="group flex items-center gap-3 rounded-xl border bg-white p-4 transition-all hover:-translate-y-0.5 hover:border-teal-300 hover:shadow-md"
+              className="group flex items-center gap-3 rounded-xl border bg-white p-3 transition-all hover:-translate-y-0.5 hover:border-teal-300 hover:shadow-md sm:p-4"
             >
-              <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-teal-50 text-teal-600 transition-colors group-hover:bg-teal-500 group-hover:text-white">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-600 transition-colors group-hover:bg-teal-500 group-hover:text-white sm:h-11 sm:w-11">
                 <CategoryIcon name={c.icon} className="h-5 w-5" />
               </span>
               <span>
@@ -154,8 +154,8 @@ export default async function HomePage() {
               <li>✓ Reach thousands of UAE jobseekers</li>
             </ul>
           </div>
-          <div className="shrink-0 text-center">
-            <Button asChild variant="accent" size="lg">
+          <div className="w-full shrink-0 text-center sm:w-auto">
+            <Button asChild variant="accent" size="lg" className="w-full sm:w-auto">
               <Link href="/employer/post">
                 Post a Job Free <ArrowRight />
               </Link>

@@ -48,7 +48,7 @@ export function JobSearchBar({ size = 'lg' }: { size?: 'lg' | 'md' }) {
           ))}
         </select>
       </div>
-      <Button type="submit" size={size === 'lg' ? 'lg' : 'default'} className="sm:px-10">
+      <Button type="submit" size={size === 'lg' ? 'lg' : 'default'} className="h-12 w-full sm:h-auto sm:w-auto sm:px-10">
         Search Jobs
       </Button>
     </form>
