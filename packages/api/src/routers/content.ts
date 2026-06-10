@@ -29,6 +29,20 @@ const blogInput = z.object({
 });
 
 export const contentRouter = router({
+  /** Public market-insights data: trending skills (from worker) + live counts. */
+  marketInsights: publicProcedure.query(async ({ ctx }) => {
+    const [trendingRow, byCat, byEm, total] = await Promise.all([
+      ctx.db.query.siteSettings.findFirst({ where: eq(siteSettings.key, 'trending_skills') }),
+      ctx.db.select({ key: jobs.categorySlug, n: count() }).from(jobs).where(eq(jobs.status, 'active')).groupBy(jobs.categorySlug),
+      ctx.db.select({ key: jobs.emirateSlug, n: count() }).from(jobs).where(eq(jobs.status, 'active')).groupBy(jobs.emirateSlug),
+      ctx.db.select({ n: count() }).from(jobs).where(eq(jobs.status, 'active')),
+    ]);
+    const trending = (trendingRow?.value ?? {}) as Record<string, string[]>;
+    const map = (rows: { key: string | null; n: number }[]) =>
+      rows.map((r) => ({ label: r.key ?? 'unknown', value: Number(r.n) })).sort((a, b) => b.value - a.value);
+    return { trending, byCategory: map(byCat), byEmirate: map(byEm), total: Number(total[0]?.n ?? 0) };
+  }),
+
   // ── Blog ───────────────────────────────────────────────
   blogList: publicProcedure
     .input(z.object({ page: z.number().min(1).default(1) }).optional())

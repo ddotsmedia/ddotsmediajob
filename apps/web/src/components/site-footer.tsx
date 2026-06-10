@@ -39,6 +39,7 @@ export function SiteFooter() {
           <FooterLink href="/assessments">Skill Assessments</FooterLink>
           <FooterLink href="/compare">Compare Jobs</FooterLink>
           <FooterLink href="/success-stories">Success Stories</FooterLink>
+          <FooterLink href="/market-insights">Market Insights</FooterLink>
         </FooterCol>
 
         <FooterCol title="For Employers">
