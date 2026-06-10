@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { db, directMessages, applications, notifications, users, eq, and, or, inArray, desc, asc, count } from '@ddots/db';
 import { router, protectedProcedure } from '../trpc';
+import { sendPush } from '../lib/push';
 
 type Db = typeof db;
 
@@ -103,6 +104,7 @@ export const messagesRouter = router({
       await ctx.db.insert(notifications).values({
         userId: input.toUserId, type: 'message', title: 'New message', body: input.body.slice(0, 120), link: '/dashboard/messages',
       });
+      await sendPush(input.toUserId, { title: 'New message', body: input.body.slice(0, 120), url: '/dashboard/messages' }).catch(() => {});
       return msg;
     }),
 });

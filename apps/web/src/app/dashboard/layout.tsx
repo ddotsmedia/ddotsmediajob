@@ -2,6 +2,7 @@
 
 import { LayoutDashboard, FileText, Bookmark, Bell, User, FileSpreadsheet, Sparkles, Megaphone, Target, MessageSquare, Award } from 'lucide-react';
 import { DashboardSidebar, MobileTabs, type NavItem } from '@/components/dashboard/sidebar';
+import { PushSubscribe } from '@/components/push-subscribe';
 
 const NAV: NavItem[] = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
@@ -23,7 +24,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <DashboardSidebar items={NAV} title="Jobseeker" />
       <div className="min-w-0 flex-1">
         <MobileTabs items={NAV} />
-        <div className="p-4 md:p-8">{children}</div>
+        <div className="p-4 md:p-8"><PushSubscribe />{children}</div>
       </div>
     </div>
   );

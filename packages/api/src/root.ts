@@ -22,6 +22,7 @@ import { eventsRouter } from './routers/events';
 import { teamRouter } from './routers/team';
 import { videoInterviewsRouter } from './routers/video-interviews';
 import { successStoriesRouter } from './routers/success-stories';
+import { pushRouter } from './routers/push';
 
 export const appRouter = router({
   auth: authRouter,
@@ -47,6 +48,7 @@ export const appRouter = router({
   team: teamRouter,
   videoInterviews: videoInterviewsRouter,
   successStories: successStoriesRouter,
+  push: pushRouter,
 });
 
 export type AppRouter = typeof appRouter;
