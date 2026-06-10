@@ -16,7 +16,7 @@ const ipOf = (ctx: { headers?: Headers }) => ctx.headers?.get('x-forwarded-for')
 export const authRouter = router({
   /** Register a jobseeker or employer with email + password. */
   register: publicProcedure.input(registerSchema).mutation(async ({ ctx, input }) => {
-    await enforceRateLimit(`register:${ipOf(ctx)}`, 10, 900);
+    await enforceRateLimit(`register:${ipOf(ctx)}`, 20, 3600); // CGNAT-friendly: 20/hr per IP
     const existing = await ctx.db.query.users.findFirst({ where: eq(users.email, input.email) });
     if (existing) throw new TRPCError({ code: 'CONFLICT', message: 'An account with this email already exists.' });
 
@@ -59,7 +59,7 @@ export const authRouter = router({
   requestPasswordReset: publicProcedure
     .input(z.object({ email: z.string().email().toLowerCase() }))
     .mutation(async ({ ctx, input }) => {
-      await enforceRateLimit(`pwreset:${ipOf(ctx)}`, 3, 3600);
+      await enforceRateLimit(`pwreset:${ipOf(ctx)}`, 5, 3600); // CGNAT-friendly: 5/hr per IP
       const user = await ctx.db.query.users.findFirst({ where: eq(users.email, input.email) });
       if (user) {
         const t = token();
