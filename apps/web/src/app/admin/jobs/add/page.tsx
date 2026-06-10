@@ -74,7 +74,7 @@ function PasteTab() {
   // Non-blocking: AI failure (or empty fallback) never errors — the form opens for manual fill.
   const extract = trpc.ai.extractJobFromText.useMutation({
     onSuccess: (d) => {
-      if (d.title && d.title.trim()) { setDraft(d); setAiFailed(false); }
+      if (d && d.title && d.title.trim()) { setDraft(d); setAiFailed(false); }
       else { setDraft(null); setAiFailed(true); toast.info('AI auto-fill unavailable - please fill manually'); }
     },
     onError: () => { setDraft(null); setAiFailed(true); toast.info('AI auto-fill unavailable - please fill manually'); },

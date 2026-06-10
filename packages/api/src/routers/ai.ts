@@ -240,15 +240,15 @@ export const aiRouter = router({
    */
   extractJobFromText: adminProcedure
     .input(z.object({ text: z.string().min(15).max(15000) }).strict())
-    .mutation(async ({ ctx, input }): Promise<JobDraft> => {
+    .mutation(async ({ ctx, input }): Promise<JobDraft | null> => {
       await guardAi(ctx, input.text);
       try {
-        // The SDK retries 429s with exponential backoff (maxRetries: 4); on final
-        // failure we fall back to an empty draft so the form still works.
+        // SDK retries 429s with exponential backoff (maxRetries: 4); on final
+        // failure return null (never throw) so job posting still works manually.
         return await structured<JobDraft>(JOB_EXTRACT_SYSTEM, `Extract a job posting from this text:\n\n${wrapUserContent(input.text)}`, JOB_DRAFT_TOOL, { model: MODEL_FAST, maxTokens: 1800 });
       } catch (err) {
         console.error('[extractJobFromText]', err instanceof Error ? err.message : err);
-        return emptyJobDraft();
+        return null;
       }
     }),
 
