@@ -14,6 +14,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     '/salary-guide',
     '/whatsapp-groups',
     '/community',
+    '/events',
+    '/assessments',
     '/blog',
     '/login',
     '/register',

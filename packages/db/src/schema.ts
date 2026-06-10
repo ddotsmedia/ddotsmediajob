@@ -749,3 +749,27 @@ export const interviewScorecardsRelations = relations(interviewScorecards, ({ on
   employer: one(users, { fields: [interviewScorecards.employerId], references: [users.id] }),
   job: one(jobs, { fields: [interviewScorecards.jobId], references: [jobs.id] }),
 }));
+
+// ─── Virtual hiring events ───────────────────────────────
+export const hiringEvents = pgTable(
+  'hiring_events',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    employerId: uuid('employer_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    title: varchar('title', { length: 200 }).notNull(),
+    description: text('description'),
+    emirate: varchar('emirate', { length: 40 }),
+    rolesText: text('roles_text'),
+    startsAt: timestamp('starts_at', { withTimezone: true }).notNull(),
+    durationMin: integer('duration_min').default(60).notNull(),
+    meetingUrl: text('meeting_url'),
+    maxAttendees: integer('max_attendees'),
+    isPublished: boolean('is_published').default(false).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index('event_employer_idx').on(t.employerId), index('event_starts_idx').on(t.startsAt)],
+);
+
+export const hiringEventsRelations = relations(hiringEvents, ({ one }) => ({
+  employer: one(users, { fields: [hiringEvents.employerId], references: [users.id] }),
+}));

@@ -18,6 +18,7 @@ import { linksRouter } from './routers/links';
 import { assessmentsRouter } from './routers/assessments';
 import { messagesRouter } from './routers/messages';
 import { scorecardsRouter } from './routers/scorecards';
+import { eventsRouter } from './routers/events';
 
 export const appRouter = router({
   auth: authRouter,
@@ -39,6 +40,7 @@ export const appRouter = router({
   assessments: assessmentsRouter,
   messages: messagesRouter,
   scorecards: scorecardsRouter,
+  events: eventsRouter,
 });
 
 export type AppRouter = typeof appRouter;
