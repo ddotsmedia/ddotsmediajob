@@ -4,6 +4,7 @@ import { jobFilterSchema } from '@ddots/shared';
 import { getApi } from '@/trpc/server';
 import { JobCard } from '@/components/job-card';
 import { JobFilters } from '@/components/job-filters';
+import { MobileFilterSheet } from '@/components/mobile-filter-sheet';
 import { JobSearchBar } from '@/components/job-search-bar';
 import { Pagination } from '@/components/pagination';
 import { Select } from '@/components/ui/primitives';
@@ -40,12 +41,15 @@ export default async function JobsPage({ searchParams }: { searchParams: Promise
       </div>
 
       <div className="mx-auto grid max-w-7xl gap-6 px-4 py-8 lg:grid-cols-[280px_1fr]">
-        <div className="lg:sticky lg:top-20 lg:self-start">
+        <div className="hidden lg:sticky lg:top-20 lg:block lg:self-start">
           <JobFilters />
         </div>
 
         <div>
-          <div className="mb-4 flex items-center justify-between">
+          <div className="mb-4 lg:hidden">
+            <MobileFilterSheet />
+          </div>
+          <div className="mb-4 flex items-center justify-between gap-2">
             <p className="text-sm text-navy-700/70">
               <span className="font-semibold text-navy-900">{total.toLocaleString('en-AE')}</span> jobs found
             </p>
