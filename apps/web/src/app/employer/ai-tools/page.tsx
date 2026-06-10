@@ -26,9 +26,9 @@ export default function EmployerAiToolsPage() {
     <div>
       <div className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-teal-500" /><h1 className="font-display text-2xl font-bold text-navy-900">AI Hiring Tools</h1></div>
       <p className="text-navy-700/60">Claude-powered tools for UAE employers.</p>
-      <div className="mt-6 flex flex-wrap gap-2">
+      <div className="mt-6 flex gap-2 overflow-x-auto scrollbar-hide pb-1 sm:flex-wrap">
         {TABS.map((t) => (
-          <button key={t.key} onClick={() => setTab(t.key)} className={cn('inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium', tab === t.key ? 'border-teal-500 bg-teal-50 text-teal-700' : 'bg-white text-navy-700 hover:bg-navy-50')}>
+          <button key={t.key} onClick={() => setTab(t.key)} className={cn('inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg border px-4 py-2 text-sm font-medium', tab === t.key ? 'border-teal-500 bg-teal-50 text-teal-700' : 'bg-white text-navy-700 hover:bg-navy-50')}>
             <t.icon className="h-4 w-4" /> {t.label}
           </button>
         ))}

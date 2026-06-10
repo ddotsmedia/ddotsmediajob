@@ -34,13 +34,13 @@ export default function AiToolsPage() {
       </div>
       <p className="text-navy-700/60">Powered by Claude — tailored to the UAE market.</p>
 
-      <div className="mt-6 flex flex-wrap gap-2">
+      <div className="mt-6 flex gap-2 overflow-x-auto scrollbar-hide pb-1 sm:flex-wrap">
         {TABS.map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
             className={cn(
-              'inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium',
+              'inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg border px-4 py-2 text-sm font-medium',
               tab === t.key ? 'border-teal-500 bg-teal-50 text-teal-700' : 'bg-white text-navy-700 hover:bg-navy-50',
             )}
           >
