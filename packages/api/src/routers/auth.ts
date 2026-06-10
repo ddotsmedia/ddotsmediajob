@@ -1,13 +1,13 @@
 import { randomBytes } from 'node:crypto';
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
-import { users, employerProfiles, jobseekerProfiles, verificationTokens, eq, and } from '@ddots/db';
+import { users, employerProfiles, jobseekerProfiles, verificationTokens, sessions, eq, and } from '@ddots/db';
 import { registerSchema, passwordSchema } from '@ddots/shared';
 import { hashPassword } from '@ddots/auth/password';
 import { router, publicProcedure, protectedProcedure } from '../trpc';
 import { enqueueEmail } from '../lib/queue';
 import { audit } from '../lib/helpers';
-import { enforceRateLimit } from '../lib/security';
+import { enforceRateLimit, isPwnedPassword } from '../lib/security';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://ddotsmediajobs.com';
 const token = () => randomBytes(32).toString('hex');
@@ -19,6 +19,10 @@ export const authRouter = router({
     await enforceRateLimit(`register:${ipOf(ctx)}`, 10, 900);
     const existing = await ctx.db.query.users.findFirst({ where: eq(users.email, input.email) });
     if (existing) throw new TRPCError({ code: 'CONFLICT', message: 'An account with this email already exists.' });
+
+    if (await isPwnedPassword(input.password)) {
+      throw new TRPCError({ code: 'BAD_REQUEST', message: 'This password has appeared in a known data breach. Please choose a different one.' });
+    }
 
     const passwordHash = await hashPassword(input.password);
     const [user] = await ctx.db
@@ -89,7 +93,10 @@ export const authRouter = router({
       }
       const email = vt.identifier.slice('reset:'.length);
       const passwordHash = await hashPassword(input.password);
+      const target = await ctx.db.query.users.findFirst({ where: eq(users.email, email), columns: { id: true } });
       await ctx.db.update(users).set({ passwordHash }).where(eq(users.email, email));
+      // Session rotation: invalidate all existing sessions after a password change.
+      if (target) await ctx.db.delete(sessions).where(eq(sessions.userId, target.id));
       await ctx.db
         .delete(verificationTokens)
         .where(and(eq(verificationTokens.identifier, vt.identifier), eq(verificationTokens.token, vt.token)));

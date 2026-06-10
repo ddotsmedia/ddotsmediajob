@@ -1,8 +1,35 @@
 import { lookup } from 'node:dns/promises';
-import { createHmac, timingSafeEqual } from 'node:crypto';
+import { createHmac, createHash, timingSafeEqual } from 'node:crypto';
 import DOMPurify from 'isomorphic-dompurify';
 import { TRPCError } from '@trpc/server';
 import { getRedis } from './queue';
+
+/**
+ * HaveIBeenPwned breached-password check using k-anonymity (only a SHA-1
+ * prefix leaves the server). Fail-open: if the API is unreachable, allow the
+ * password rather than block registration.
+ */
+export async function isPwnedPassword(password: string): Promise<boolean> {
+  try {
+    const hash = createHash('sha1').update(password, 'utf-8').digest('hex').toUpperCase();
+    const prefix = hash.slice(0, 5);
+    const suffix = hash.slice(5);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 3000);
+    const res = await fetch(`https://api.pwnedpasswords.com/range/${prefix}`, {
+      headers: { 'Add-Padding': 'true' },
+      signal: controller.signal,
+    }).finally(() => clearTimeout(timer));
+    if (!res.ok) return false;
+    const body = await res.text();
+    return body.split('\n').some((line) => {
+      const [hashSuffix, count] = line.trim().split(':');
+      return hashSuffix === suffix && Number(count) > 0;
+    });
+  } catch {
+    return false; // fail-open
+  }
+}
 
 // ─── Twilio webhook signature verification (X-Twilio-Signature) ─────
 export function verifyTwilioSignature(

@@ -182,7 +182,7 @@ export const jobsRouter = router({
 
   /** Employer: update own job. */
   update: employerProcedure
-    .input(z.object({ id: z.string().uuid(), data: jobFieldsSchema.partial() }))
+    .input(z.object({ id: z.string().uuid(), data: jobFieldsSchema.partial().strict() }))
     .mutation(async ({ ctx, input }) => {
       const existing = await ctx.db.query.jobs.findFirst({ where: eq(jobs.id, input.id) });
       if (!existing) throw new TRPCError({ code: 'NOT_FOUND' });
