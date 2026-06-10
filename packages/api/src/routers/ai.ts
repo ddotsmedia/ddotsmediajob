@@ -242,21 +242,13 @@ export const aiRouter = router({
     .input(z.object({ text: z.string().min(15).max(15000) }).strict())
     .mutation(async ({ ctx, input }): Promise<JobDraft> => {
       await guardAi(ctx, input.text);
-      const prompt = `Extract a job posting from this text:\n\n${wrapUserContent(input.text)}`;
-      const backoff = [2000, 4000, 8000]; // 3 retries on 429
-      for (let attempt = 0; ; attempt++) {
-        try {
-          return await structured<JobDraft>(JOB_EXTRACT_SYSTEM, prompt, JOB_DRAFT_TOOL, { model: MODEL_FAST, maxTokens: 1800 });
-        } catch (err) {
-          const over = err instanceof Error && /\b429\b|quota|rate.?limit|overloaded|too many/i.test(err.message);
-          if (over && attempt < backoff.length) {
-            await new Promise((r) => setTimeout(r, backoff[attempt]));
-            continue;
-          }
-          // Retries exhausted, or a non-429 failure → empty fallback (never throw).
-          console.error(`[extractJobFromText] giving up after ${attempt} retr${attempt === 1 ? 'y' : 'ies'}:`, err instanceof Error ? err.message : err);
-          return emptyJobDraft();
-        }
+      try {
+        // The SDK retries 429s with exponential backoff (maxRetries: 4); on final
+        // failure we fall back to an empty draft so the form still works.
+        return await structured<JobDraft>(JOB_EXTRACT_SYSTEM, `Extract a job posting from this text:\n\n${wrapUserContent(input.text)}`, JOB_DRAFT_TOOL, { model: MODEL_FAST, maxTokens: 1800 });
+      } catch (err) {
+        console.error('[extractJobFromText]', err instanceof Error ? err.message : err);
+        return emptyJobDraft();
       }
     }),
 
@@ -275,22 +267,29 @@ export const aiRouter = router({
         .trim()
         .slice(0, 9000);
       if (text.length < 40) throw new TRPCError({ code: 'BAD_REQUEST', message: 'No readable job content found at that URL.' });
-      return structured<JobDraft>(JOB_EXTRACT_SYSTEM, `Extract the job posting from this scraped page text:\n\n${wrapUserContent(text)}`, JOB_DRAFT_TOOL, {
-        model: MODEL_FAST,
-        maxTokens: 1800,
-      });
+      try {
+        return await structured<JobDraft>(JOB_EXTRACT_SYSTEM, `Extract the job posting from this scraped page text:\n\n${wrapUserContent(text)}`, JOB_DRAFT_TOOL, { model: MODEL_FAST, maxTokens: 1800 });
+      } catch (err) {
+        console.error('[extractJobFromUrl]', err instanceof Error ? err.message : err);
+        return emptyJobDraft();
+      }
     }),
 
   generateFromQuickForm: adminProcedure
     .input(z.object({ title: z.string().min(2).max(160), emirate: z.string().max(40), whatsapp: z.string().max(30).optional() }).strict())
     .mutation(async ({ ctx, input }): Promise<JobDraft> => {
       await guardAi(ctx, input.title);
-      return structured<JobDraft>(
-        JOB_EXTRACT_SYSTEM,
-        `Generate a complete, realistic UAE job posting for: title="${input.title}", emirate="${input.emirate}". ${input.whatsapp ? `Contact WhatsApp: ${input.whatsapp}.` : ''} Invent sensible responsibilities, requirements, benefits and a realistic AED salary range. Set confidence to "medium" since this is generated, not extracted.`,
-        JOB_DRAFT_TOOL,
-        { model: MODEL_FAST, maxTokens: 1800 },
-      );
+      try {
+        return await structured<JobDraft>(
+          JOB_EXTRACT_SYSTEM,
+          `Generate a complete, realistic UAE job posting for: title="${input.title}", emirate="${input.emirate}". ${input.whatsapp ? `Contact WhatsApp: ${input.whatsapp}.` : ''} Invent sensible responsibilities, requirements, benefits and a realistic AED salary range. Set confidence to "medium" since this is generated, not extracted.`,
+          JOB_DRAFT_TOOL,
+          { model: MODEL_FAST, maxTokens: 1800 },
+        );
+      } catch (err) {
+        console.error('[generateFromQuickForm]', err instanceof Error ? err.message : err);
+        return emptyJobDraft();
+      }
     }),
 
   /** Cover letter generator (Haiku). */
@@ -500,14 +499,19 @@ export const aiRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       await guardAi(ctx);
-      return structuredFromImage<JobDraft>(
-        JOB_EXTRACT_SYSTEM,
-        'Read this UAE job poster and extract the job posting. Capture salary, contact number/email, location/emirate, visa & accommodation, and requirements exactly as shown. If a field is absent, omit it.',
-        input.imageBase64,
-        input.mediaType,
-        JOB_DRAFT_TOOL,
-        { model: MODEL_SMART, maxTokens: 1800 },
-      );
+      try {
+        return await structuredFromImage<JobDraft>(
+          JOB_EXTRACT_SYSTEM,
+          'Read this UAE job poster and extract the job posting. Capture salary, contact number/email, location/emirate, visa & accommodation, and requirements exactly as shown. If a field is absent, omit it.',
+          input.imageBase64,
+          input.mediaType,
+          JOB_DRAFT_TOOL,
+          { model: MODEL_SMART, maxTokens: 1800 },
+        );
+      } catch (err) {
+        console.error('[extractJobFromImage]', err instanceof Error ? err.message : err);
+        return emptyJobDraft();
+      }
     }),
 
   // Smart Expiry Suggestion

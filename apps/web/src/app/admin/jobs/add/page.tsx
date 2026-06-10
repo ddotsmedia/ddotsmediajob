@@ -75,9 +75,9 @@ function PasteTab() {
   const extract = trpc.ai.extractJobFromText.useMutation({
     onSuccess: (d) => {
       if (d.title && d.title.trim()) { setDraft(d); setAiFailed(false); }
-      else { setDraft(null); setAiFailed(true); }
+      else { setDraft(null); setAiFailed(true); toast.info('AI auto-fill unavailable - please fill manually'); }
     },
-    onError: () => { setDraft(null); setAiFailed(true); },
+    onError: () => { setDraft(null); setAiFailed(true); toast.info('AI auto-fill unavailable - please fill manually'); },
   });
   const autoRan = useRef(false);
 
@@ -216,7 +216,7 @@ const POSTER_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'
 function PosterTab() {
   const [preview, setPreview] = useState<{ url: string; name: string; isPdf: boolean } | null>(null);
   const [draft, setDraft] = useState<DraftInit | null>(null);
-  const extract = trpc.ai.extractJobFromImage.useMutation({ onSuccess: (d) => setDraft(d as DraftInit), onError: (e) => toast.error(e.message) });
+  const extract = trpc.ai.extractJobFromImage.useMutation({ onSuccess: (d) => { setDraft(d as DraftInit); if (!d.title?.trim()) toast.info('AI auto-fill unavailable - please fill manually'); }, onError: () => toast.info('AI auto-fill unavailable - please fill manually') });
 
   function onFile(file: File) {
     if (!(POSTER_TYPES as readonly string[]).includes(file.type)) return toast.error('Upload a JPG, PNG, WebP or PDF poster.');
@@ -261,7 +261,7 @@ function PosterTab() {
 function UrlTab() {
   const [url, setUrl] = useState('');
   const [draft, setDraft] = useState<DraftInit | null>(null);
-  const extract = trpc.ai.extractJobFromUrl.useMutation({ onSuccess: (d) => setDraft(d), onError: (e) => toast.error(e.message) });
+  const extract = trpc.ai.extractJobFromUrl.useMutation({ onSuccess: (d) => { setDraft(d); if (!d.title?.trim()) toast.info('AI auto-fill unavailable - please fill manually'); }, onError: () => toast.info('AI auto-fill unavailable - please fill manually') });
   return (
     <div>
       <div className="flex flex-col gap-2 rounded-xl border bg-white p-5 sm:flex-row sm:items-end">
@@ -276,7 +276,7 @@ function UrlTab() {
 function QuickTab() {
   const [form, setForm] = useState({ title: '', emirate: 'dubai', whatsapp: '' });
   const [draft, setDraft] = useState<DraftInit | null>(null);
-  const gen = trpc.ai.generateFromQuickForm.useMutation({ onSuccess: (d) => setDraft(d), onError: (e) => toast.error(e.message) });
+  const gen = trpc.ai.generateFromQuickForm.useMutation({ onSuccess: (d) => { setDraft(d); if (!d.title?.trim()) toast.info('AI auto-fill unavailable - please fill manually'); }, onError: () => toast.info('AI auto-fill unavailable - please fill manually') });
   return (
     <div>
       <div className="grid gap-3 rounded-xl border bg-white p-5 sm:grid-cols-3 sm:items-end">

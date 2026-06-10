@@ -22,7 +22,7 @@ export function getAnthropic(): Anthropic {
   if (anthropic) return anthropic;
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not set.');
-  anthropic = new Anthropic({ apiKey, timeout: 30_000, maxRetries: 1 });
+  anthropic = new Anthropic({ apiKey, timeout: 30_000, maxRetries: 4 });
   return anthropic;
 }
 
