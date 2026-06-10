@@ -6,9 +6,9 @@ import { Button } from '@/components/ui/button';
 import { CareerAdvisorChat } from './career-advisor-client';
 
 export const metadata: Metadata = {
-  title: 'AI Career Advisor — UAE Jobs, Visas & Salaries | DdotsMediaJobs',
+  title: { absolute: 'AI Career Coach UAE — Free AI Career Advisor | DdotsMediaJobs' },
   description:
-    'Free AI career advisor for the UAE job market. Get localized advice on finding jobs in Dubai and Abu Dhabi, visa types, salary expectations in AED, and writing a UAE CV.',
+    'Get free AI career advice for UAE job market. Salary negotiation, career switching, interview prep. Powered by Claude AI.',
   alternates: { canonical: '/career-advisor' },
 };
 

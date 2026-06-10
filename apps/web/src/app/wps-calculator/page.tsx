@@ -4,7 +4,7 @@ import { ToolHero } from '@/components/tools/tool-hero';
 import { WpsTools } from '@/components/tools/wps-tools';
 
 export const metadata: Metadata = {
-  title: 'UAE WPS Salary & Gratuity Calculator',
+  title: 'UAE Salary Calculator 2026 — WPS, Gratuity & Take Home Pay',
   description: 'Break down your UAE salary into basic, housing and transport allowances, and calculate your end-of-service gratuity. Free WPS calculator.',
   alternates: { canonical: `${SITE.url}/wps-calculator` },
 };

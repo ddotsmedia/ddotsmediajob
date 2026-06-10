@@ -9,10 +9,16 @@ import { JobSearchBar } from '@/components/job-search-bar';
 import { Pagination } from '@/components/pagination';
 import { Select } from '@/components/ui/primitives';
 
-export const metadata: Metadata = {
-  title: 'Browse Jobs in the UAE',
-  description: 'Search thousands of jobs across Dubai, Abu Dhabi, Sharjah and all emirates. Filter by category, salary, visa status and more.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const api = await getApi();
+  const stats = await api.jobs.stats().catch(() => ({ totalActive: 0 }));
+  const n = stats.totalActive;
+  return {
+    title: { absolute: `UAE Jobs 2026 — ${n ? n.toLocaleString('en-AE') + ' ' : ''}Live Vacancies in Dubai & All Emirates | DdotsMediaJobs` },
+    description:
+      'Search UAE jobs by category, emirate, salary. Driver, nurse, accountant, IT, engineering jobs. Urgent hiring, walk-in interviews, visa provided jobs UAE.',
+  };
+}
 
 type SP = Record<string, string | string[] | undefined>;
 

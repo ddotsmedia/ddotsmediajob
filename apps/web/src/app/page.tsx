@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight, Building2, Users, BriefcaseBusiness, CheckCircle2 } from 'lucide-react';
 import { CATEGORIES, EMIRATES, SITE } from '@ddots/shared';
@@ -10,6 +11,13 @@ import { GridPattern } from '@/components/magic/grid-pattern';
 import { Button } from '@/components/ui/button';
 
 export const revalidate = 300; // ISR — refresh stats/featured every 5 min
+
+export const metadata: Metadata = {
+  title: { absolute: 'UAE Jobs 2026 — Find Jobs in Dubai, Abu Dhabi & All Emirates | DdotsMediaJobs' },
+  description:
+    'Browse thousands of verified UAE jobs. Driver jobs Dubai, Nurse jobs UAE, IT jobs, Accountant jobs and more. Free job portal. Apply in one click.',
+  keywords: ['UAE Jobs', 'Dubai Jobs', 'Jobs in UAE', 'Gulf Jobs', 'UAE Careers', 'UAE Vacancies'],
+};
 
 const EMPTY_STATS = { byCategory: {} as Record<string, number>, byEmirate: {} as Record<string, number>, totalActive: 0, totalSeekers: 0 };
 

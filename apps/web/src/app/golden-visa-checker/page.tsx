@@ -4,7 +4,7 @@ import { ToolHero } from '@/components/tools/tool-hero';
 import { GoldenVisaChecker } from '@/components/tools/golden-visa-checker';
 
 export const metadata: Metadata = {
-  title: 'UAE Golden Visa & Blue Visa Eligibility Checker 2026',
+  title: 'UAE Golden Visa Checker 2026 — Check Your Eligibility Free',
   description: 'Check if you qualify for a UAE Golden Visa (10-year) or the new Blue Visa. Free instant eligibility checker based on salary, degree and role.',
   alternates: { canonical: `${SITE.url}/golden-visa-checker` },
 };
