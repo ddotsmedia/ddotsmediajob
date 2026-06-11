@@ -30,6 +30,11 @@ export function TRPCProvider({ children }: { children: React.ReactNode }) {
         httpBatchLink({
           url: `${getBaseUrl()}/api/trpc`,
           transformer: superjson,
+          // Always send the auth/session cookie with tRPC calls (mutations like
+          // admin Extract & Fill) — including any cross-origin/proxy edge case.
+          fetch(url, options) {
+            return fetch(url, { ...options, credentials: 'include' });
+          },
         }),
       ],
     }),

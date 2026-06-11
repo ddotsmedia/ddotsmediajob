@@ -23,6 +23,7 @@ export const publicProcedure = t.procedure;
 /** Requires an authenticated user. */
 export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
   if (!ctx.session?.user) {
+    console.error('[auth] protectedProcedure: no session on request — cookie not received or token invalid.');
     throw new TRPCError({ code: 'UNAUTHORIZED', message: 'You must be signed in.' });
   }
   return next({ ctx: { ...ctx, session: { ...ctx.session, user: ctx.session.user } } });

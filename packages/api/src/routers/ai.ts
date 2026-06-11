@@ -287,6 +287,7 @@ export const aiRouter = router({
   extractJobFromText: adminProcedure
     .input(z.object({ text: z.string().min(15).max(15000) }).strict())
     .mutation(async ({ ctx, input }): Promise<JobDraft | null> => {
+      console.log('[extractJobFromText] session user:', ctx.session?.user?.id ?? 'none', 'role:', ctx.session?.user?.role ?? 'none');
       await guardAi(ctx, input.text);
       // Primary: structured tool-call (Claude/Gemini function calling, no markdown).
       try {
