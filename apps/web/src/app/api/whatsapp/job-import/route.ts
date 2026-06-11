@@ -77,7 +77,7 @@ export async function POST(req: Request) {
       emirateSlug: draft.emirate,
       location: draft.area || null,
       jobType: draft.jobType as never,
-      experienceLevel: '1-3-years' as never,
+      experienceLevel: 'fresher' as never,
       salaryMin: draft.salaryMin || null,
       salaryMax: draft.salaryMax || null,
       visaProvided: draft.visaProvided,

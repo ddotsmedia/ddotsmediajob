@@ -4,7 +4,7 @@ import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Loader2, Save, ArrowLeft } from 'lucide-react';
+import { Loader2, Save, ArrowLeft, Trash2 } from 'lucide-react';
 import { CATEGORIES, EMIRATES, JOB_TYPES } from '@ddots/shared';
 import { trpc } from '@/trpc/react';
 import { Button } from '@/components/ui/button';
@@ -35,6 +35,10 @@ export default function AdminJobEditPage({ params }: { params: Promise<{ id: str
 
   const update = trpc.admin.updateJob.useMutation({
     onSuccess: () => { toast.success('Job updated — live immediately'); router.push('/admin/jobs'); },
+    onError: (e) => toast.error(e.message),
+  });
+  const del = trpc.admin.deleteJob.useMutation({
+    onSuccess: () => { toast.success('Job deleted successfully'); router.push('/admin/jobs'); },
     onError: (e) => toast.error(e.message),
   });
 
@@ -103,8 +107,16 @@ export default function AdminJobEditPage({ params }: { params: Promise<{ id: str
           ))}
         </div>
 
-        <div className="border-t pt-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
           <Button variant="accent" onClick={save} disabled={update.isPending}>{update.isPending ? <Loader2 className="animate-spin" /> : <Save />} Save changes</Button>
+          <Button
+            variant="outline"
+            className="border-red-300 text-red-600 hover:bg-red-50"
+            onClick={() => { if (prompt('Type DELETE to permanently remove this job:') === 'DELETE') del.mutate({ id }); }}
+            disabled={del.isPending}
+          >
+            {del.isPending ? <Loader2 className="animate-spin" /> : <Trash2 className="h-4 w-4" />} Delete Job
+          </Button>
         </div>
       </div>
     </div>

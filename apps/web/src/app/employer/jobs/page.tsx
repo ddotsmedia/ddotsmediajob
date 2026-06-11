@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { toast } from 'sonner';
-import { Eye, Users, Loader2, ExternalLink, Pencil, RefreshCw } from 'lucide-react';
+import { Eye, Users, Loader2, ExternalLink, Pencil, RefreshCw, Trash2 } from 'lucide-react';
 import { formatSalary } from '@ddots/shared';
 import { trpc } from '@/trpc/react';
 import { Button } from '@/components/ui/button';
@@ -33,6 +33,13 @@ export default function ManageJobsPage() {
     onSuccess: () => {
       utils.jobs.mine.invalidate();
       toast.success('Job renewed for 30 days');
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const del = trpc.jobs.deleteOwn.useMutation({
+    onSuccess: () => {
+      utils.jobs.mine.invalidate();
+      toast.success('Job deleted successfully');
     },
     onError: (e) => toast.error(e.message),
   });
@@ -93,6 +100,9 @@ export default function ManageJobsPage() {
                   Close
                 </Button>
               )}
+              <Button variant="ghost" size="icon" title="Delete" onClick={() => { if (confirm('Are you sure you want to delete this job? This cannot be undone.')) del.mutate({ id: job.id }); }} disabled={del.isPending}>
+                <Trash2 className="text-red-500" />
+              </Button>
             </div>
           </div>
         ))}

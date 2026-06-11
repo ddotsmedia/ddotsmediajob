@@ -9,6 +9,7 @@ import {
   timeAgo,
   emirateBySlug,
   categoryBySlug,
+  expLabel,
   SITE,
 } from '@ddots/shared';
 import { getApi } from '@/trpc/server';
@@ -171,7 +172,7 @@ export default async function JobDetailPage({ params }: Props) {
                 <div className="mt-6 grid grid-cols-2 gap-4 border-t pt-6 sm:grid-cols-4">
                   <Fact icon={MapPin} label="Location" value={job.location ?? emirate?.name ?? 'UAE'} />
                   <Fact icon={Clock} label="Job Type" value={job.jobType.replace('-', ' ')} />
-                  <Fact icon={GraduationCap} label="Experience" value={job.experienceLevel.replace(/-/g, ' ')} />
+                  <Fact icon={GraduationCap} label="Experience" value={expLabel(job.experienceLevel)} />
                   <Fact icon={Banknote} label="Salary" value={formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod, job.salaryHidden)} />
                 </div>
               </CardContent>

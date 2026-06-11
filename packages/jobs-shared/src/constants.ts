@@ -65,6 +65,24 @@ export type VisaStatus = (typeof VISA_STATUS)[number];
 export const EXPERIENCE_LEVELS = ['fresher', 'junior', '1-3-years', '3-5-years', '5-10-years', '10-plus-years'] as const;
 export type ExperienceLevel = (typeof EXPERIENCE_LEVELS)[number];
 
+/** Human-readable experience labels (raw slugs like "1-3-years" otherwise render as "1 3 years"). */
+export const EXPERIENCE_LABELS: Record<string, string> = {
+  fresher: 'No experience required',
+  junior: 'Less than 1 year',
+  '1-3-years': '1-3 years',
+  '3-5-years': '3-5 years',
+  '5-10-years': '5-10 years',
+  '10-plus-years': '10+ years',
+  '1': '1 year',
+  '2': '2 years',
+  '3': '3 years',
+  '13': 'Not specified',
+};
+export function expLabel(v: string | null | undefined): string {
+  if (!v) return 'Not specified';
+  return EXPERIENCE_LABELS[v] ?? v.replace(/-/g, ' ');
+}
+
 export const SALARY_PERIODS = ['monthly', 'yearly', 'hourly', 'daily'] as const;
 export type SalaryPeriod = (typeof SALARY_PERIODS)[number];
 

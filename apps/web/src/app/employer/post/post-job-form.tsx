@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 import { Sparkles, Loader2, Send, ArrowRight, ArrowLeft, Check } from 'lucide-react';
-import { CATEGORIES, EMIRATES, JOB_TYPES, EXPERIENCE_LEVELS, formatSalary } from '@ddots/shared';
+import { CATEGORIES, EMIRATES, JOB_TYPES, EXPERIENCE_LEVELS, expLabel, formatSalary } from '@ddots/shared';
 import { trpc } from '@/trpc/react';
 import { Button } from '@/components/ui/button';
 import { Input, Label, Select, Textarea, Badge } from '@/components/ui/primitives';
@@ -22,20 +22,10 @@ type Draft = {
 
 const EMPTY: Draft = {
   title: '', description: '', categorySlug: 'it', emirateSlug: '', jobType: 'full-time',
-  experienceLevel: 'fresher', salaryMin: null, salaryMax: null, skills: [], benefits: [],
+  experienceLevel: '', salaryMin: null, salaryMax: null, skills: [], benefits: [],
   isRemote: false, isFresher: false, isUrgent: false,
   freeZone: false, isAnonymous: false, visaProvided: false, accommodationProvided: false,
   contactWhatsapp: '', applyEmail: '',
-};
-
-// Readable experience labels (the raw slugs like "1-3-years" render as "1 3 years").
-const EXP_LABELS: Record<string, string> = {
-  fresher: 'No experience required',
-  junior: 'Less than 1 year',
-  '1-3-years': '1-3 years',
-  '3-5-years': '3-5 years',
-  '5-10-years': '5-10 years',
-  '10-plus-years': '10+ years',
 };
 
 const STEPS = ['Basics', 'Description', 'Compensation', 'Review'] as const;
@@ -64,7 +54,7 @@ export function PostJobForm() {
   });
 
   const canNext =
-    step === 0 ? draft.title.trim().length >= 3 && Boolean(draft.emirateSlug) :
+    step === 0 ? draft.title.trim().length >= 3 && Boolean(draft.emirateSlug) && Boolean(draft.experienceLevel) :
     step === 1 ? draft.description.trim().length >= 30 :
     step === 2 ? draft.salaryMin == null || draft.salaryMax == null || draft.salaryMax >= draft.salaryMin : true;
 
@@ -119,7 +109,7 @@ export function PostJobForm() {
               <Field label="Category"><Select value={draft.categorySlug} onChange={(e) => set('categorySlug', e.target.value)}>{CATEGORIES.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}</Select></Field>
               <Field label="Emirate"><Select value={draft.emirateSlug} onChange={(e) => set('emirateSlug', e.target.value)}><option value="">Select emirate</option>{EMIRATES.map((e) => <option key={e.slug} value={e.slug}>{e.name}</option>)}</Select></Field>
               <Field label="Job type"><Select value={draft.jobType} onChange={(e) => set('jobType', e.target.value)}>{JOB_TYPES.map((t) => <option key={t} value={t} className="capitalize">{t.replace('-', ' ')}</option>)}</Select></Field>
-              <Field label="Experience"><Select value={draft.experienceLevel} onChange={(e) => set('experienceLevel', e.target.value)}>{EXPERIENCE_LEVELS.map((l) => <option key={l} value={l}>{EXP_LABELS[l] ?? l}</option>)}</Select></Field>
+              <Field label="Experience"><Select value={draft.experienceLevel} onChange={(e) => set('experienceLevel', e.target.value)}><option value="">Select experience</option>{EXPERIENCE_LEVELS.map((l) => <option key={l} value={l}>{expLabel(l)}</option>)}</Select></Field>
             </div>
           </>
         )}

@@ -225,6 +225,19 @@ export const jobsRouter = router({
     return { ok: true };
   }),
 
+  /** Employer: permanently delete own job (admins may delete any). IDOR-checked. */
+  deleteOwn: employerProcedure.input(z.object({ id: z.string().uuid() })).mutation(async ({ ctx, input }) => {
+    const existing = await ctx.db.query.jobs.findFirst({ where: eq(jobs.id, input.id) });
+    if (!existing) throw new TRPCError({ code: 'NOT_FOUND' });
+    if (existing.employerId !== ctx.session.user.id && ctx.session.user.role !== 'admin') {
+      throw new TRPCError({ code: 'FORBIDDEN' });
+    }
+    await ctx.db.delete(jobs).where(eq(jobs.id, input.id));
+    await enqueueSearchSync({ type: 'delete', jobId: input.id });
+    await audit(ctx.session.user.id, 'job.delete', 'job', input.id);
+    return { ok: true };
+  }),
+
   /** Employer: load one of their own jobs for editing. */
   byId: employerProcedure.input(z.object({ id: z.string().uuid() })).query(async ({ ctx, input }) => {
     const job = await ctx.db.query.jobs.findFirst({ where: eq(jobs.id, input.id) });
