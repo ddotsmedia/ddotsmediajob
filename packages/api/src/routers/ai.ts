@@ -45,7 +45,7 @@ const messages = z
 const JOB_EXTRACT_SYSTEM =
   'You are a UAE recruitment expert. Extract or generate structured job data and call the job_draft function. ' +
   'Know all 7 UAE emirates, common job categories, WPS salary norms (monthly AED), visa terminology, free zones, and standard UAE benefits. ' +
-  'Map locations to the correct emirate slug. If salary is unstated use 0. Set each confidence field to high/medium/low based on how certain the value is from the source.';
+  'Map locations to the correct emirate slug ONLY when stated — if the emirate/location is not in the text, omit emirate (do not guess or default to Dubai). If salary is unstated use 0. Set each confidence field to high/medium/low based on how certain the value is from the source.';
 
 // Lenient schema for the JSON-fallback path (title required, everything else optional).
 const jsonDraftSchema = z
@@ -96,7 +96,7 @@ function parseJobDraftJson(raw: string): JobDraft | null {
 /** Empty draft returned when AI extraction fails — lets the admin fill the form manually. */
 function emptyJobDraft(): JobDraft {
   return {
-    title: '', company: '', emirate: 'dubai', area: '', categorySlug: 'admin', jobType: 'full-time',
+    title: '', company: '', emirate: '', area: '', categorySlug: 'admin', jobType: 'full-time',
     salaryMin: 0, salaryMax: 0, visaProvided: false, accommodation: false, freshersWelcome: false,
     remote: false, urgent: false, freeZone: false, description: '', requirements: '', benefits: [], tags: [],
     contactWhatsapp: '', contactEmail: '', deadline: '', vacancies: 1,

@@ -21,11 +21,21 @@ type Draft = {
 };
 
 const EMPTY: Draft = {
-  title: '', description: '', categorySlug: 'it', emirateSlug: 'dubai', jobType: 'full-time',
-  experienceLevel: '1-3-years', salaryMin: null, salaryMax: null, skills: [], benefits: [],
+  title: '', description: '', categorySlug: 'it', emirateSlug: '', jobType: 'full-time',
+  experienceLevel: 'fresher', salaryMin: null, salaryMax: null, skills: [], benefits: [],
   isRemote: false, isFresher: false, isUrgent: false,
   freeZone: false, isAnonymous: false, visaProvided: false, accommodationProvided: false,
   contactWhatsapp: '', applyEmail: '',
+};
+
+// Readable experience labels (the raw slugs like "1-3-years" render as "1 3 years").
+const EXP_LABELS: Record<string, string> = {
+  fresher: 'No experience required',
+  junior: 'Less than 1 year',
+  '1-3-years': '1-3 years',
+  '3-5-years': '3-5 years',
+  '5-10-years': '5-10 years',
+  '10-plus-years': '10+ years',
 };
 
 const STEPS = ['Basics', 'Description', 'Compensation', 'Review'] as const;
@@ -54,7 +64,7 @@ export function PostJobForm() {
   });
 
   const canNext =
-    step === 0 ? draft.title.trim().length >= 3 :
+    step === 0 ? draft.title.trim().length >= 3 && Boolean(draft.emirateSlug) :
     step === 1 ? draft.description.trim().length >= 30 :
     step === 2 ? draft.salaryMin == null || draft.salaryMax == null || draft.salaryMax >= draft.salaryMin : true;
 
@@ -107,9 +117,9 @@ export function PostJobForm() {
             <Field label="Job title"><Input value={draft.title} onChange={(e) => set('title', e.target.value)} placeholder="e.g. Senior Accountant" /></Field>
             <div className="grid gap-5 sm:grid-cols-2">
               <Field label="Category"><Select value={draft.categorySlug} onChange={(e) => set('categorySlug', e.target.value)}>{CATEGORIES.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}</Select></Field>
-              <Field label="Emirate"><Select value={draft.emirateSlug} onChange={(e) => set('emirateSlug', e.target.value)}>{EMIRATES.map((e) => <option key={e.slug} value={e.slug}>{e.name}</option>)}</Select></Field>
+              <Field label="Emirate"><Select value={draft.emirateSlug} onChange={(e) => set('emirateSlug', e.target.value)}><option value="">Select emirate</option>{EMIRATES.map((e) => <option key={e.slug} value={e.slug}>{e.name}</option>)}</Select></Field>
               <Field label="Job type"><Select value={draft.jobType} onChange={(e) => set('jobType', e.target.value)}>{JOB_TYPES.map((t) => <option key={t} value={t} className="capitalize">{t.replace('-', ' ')}</option>)}</Select></Field>
-              <Field label="Experience"><Select value={draft.experienceLevel} onChange={(e) => set('experienceLevel', e.target.value)}>{EXPERIENCE_LEVELS.map((l) => <option key={l} value={l} className="capitalize">{l.replace(/-/g, ' ')}</option>)}</Select></Field>
+              <Field label="Experience"><Select value={draft.experienceLevel} onChange={(e) => set('experienceLevel', e.target.value)}>{EXPERIENCE_LEVELS.map((l) => <option key={l} value={l}>{EXP_LABELS[l] ?? l}</option>)}</Select></Field>
             </div>
           </>
         )}

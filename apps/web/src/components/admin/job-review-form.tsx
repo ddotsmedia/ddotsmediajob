@@ -21,7 +21,7 @@ export type DraftInit = {
 };
 
 const blank = {
-  title: '', companyName: '', categorySlug: 'admin', emirateSlug: 'dubai', location: '',
+  title: '', companyName: '', categorySlug: 'admin', emirateSlug: '', location: '',
   jobType: 'full-time', salaryMin: '', salaryMax: '', salaryHidden: false,
   visaProvided: false, accommodationProvided: false, isFresher: false, isRemote: false, isUrgent: false,
   freeZone: false, isAnonymous: false, isFeatured: false, contactWhatsapp: '', applyEmail: '', skills: '', benefits: '',
@@ -68,7 +68,7 @@ export function AdminJobReviewForm({ draft, source = 'manual', onReset }: { draf
     setF({
       ...blank,
       title: draft.title ?? '', companyName: draft.company ?? '',
-      categorySlug: draft.categorySlug ?? 'admin', emirateSlug: draft.emirate ?? 'dubai',
+      categorySlug: draft.categorySlug ?? 'admin', emirateSlug: draft.emirate ?? '',
       location: draft.area ?? '', jobType: draft.jobType ?? 'full-time',
       salaryMin: draft.salaryMin ? String(draft.salaryMin) : '', salaryMax: draft.salaryMax ? String(draft.salaryMax) : '',
       visaProvided: !!draft.visaProvided, accommodationProvided: !!draft.accommodation,
@@ -127,7 +127,7 @@ export function AdminJobReviewForm({ draft, source = 'manual', onReset }: { draf
         <Field label={<>Company <Conf level={conf.company} /></>}><Input value={f.companyName} onChange={(e) => set('companyName', e.target.value)} placeholder="Leave blank for confidential" /></Field>
         <Field label={<>Category <Conf level={conf.category} /></>}><Select value={f.categorySlug} onChange={(e) => set('categorySlug', e.target.value)}>{CATEGORIES.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}</Select></Field>
         <Field label={<>Job type <Conf level={conf.jobType} /></>}><Select value={f.jobType} onChange={(e) => set('jobType', e.target.value)}>{JOB_TYPES.map((t) => <option key={t} value={t} className="capitalize">{t.replace('-', ' ')}</option>)}</Select></Field>
-        <Field label={<>Emirate <Conf level={conf.emirate} /></>}><Select value={f.emirateSlug} onChange={(e) => set('emirateSlug', e.target.value)}>{EMIRATES.map((e) => <option key={e.slug} value={e.slug}>{e.name}</option>)}</Select></Field>
+        <Field label={<>Emirate <Conf level={conf.emirate} /></>}><Select value={f.emirateSlug} onChange={(e) => set('emirateSlug', e.target.value)}><option value="">Select emirate</option>{EMIRATES.map((e) => <option key={e.slug} value={e.slug}>{e.name}</option>)}</Select></Field>
         <Field label="Area"><Input value={f.location} onChange={(e) => set('location', e.target.value)} placeholder="e.g. Deira, Business Bay" /></Field>
         <Field label={<>Salary min (AED) <Conf level={conf.salary} /></>}><Input type="number" value={f.salaryMin} onChange={(e) => set('salaryMin', e.target.value)} /></Field>
         <Field label="Salary max (AED)"><Input type="number" value={f.salaryMax} onChange={(e) => set('salaryMax', e.target.value)} /></Field>

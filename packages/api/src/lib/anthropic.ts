@@ -311,7 +311,7 @@ export const JOB_DRAFT_TOOL: Anthropic.Tool = {
     properties: {
       title: { type: 'string' },
       company: { type: 'string', description: 'Hiring company name, or empty string if unknown' },
-      emirate: { type: 'string', enum: ['dubai', 'abu-dhabi', 'sharjah', 'ajman', 'ras-al-khaimah', 'fujairah', 'umm-al-quwain'] },
+      emirate: { type: 'string', enum: ['dubai', 'abu-dhabi', 'sharjah', 'ajman', 'ras-al-khaimah', 'fujairah', 'umm-al-quwain'], description: 'UAE emirate slug — OMIT entirely if the location is not stated in the source. Do not guess or default to Dubai.' },
       area: { type: 'string' },
       categorySlug: { type: 'string', enum: ['it', 'healthcare', 'finance', 'sales', 'construction', 'hospitality', 'driving', 'education', 'admin', 'manufacturing', 'security', 'beauty'] },
       jobType: { type: 'string', enum: ['full-time', 'part-time', 'contract', 'temporary', 'internship', 'freelance'] },
@@ -345,6 +345,6 @@ export const JOB_DRAFT_TOOL: Anthropic.Tool = {
         required: ['title', 'company', 'emirate', 'category', 'salary', 'jobType'],
       },
     },
-    required: ['title', 'company', 'emirate', 'area', 'categorySlug', 'jobType', 'salaryMin', 'salaryMax', 'visaProvided', 'accommodation', 'freshersWelcome', 'remote', 'urgent', 'freeZone', 'description', 'requirements', 'benefits', 'tags', 'contactWhatsapp', 'contactEmail', 'deadline', 'vacancies', 'confidence'],
+    required: ['title', 'company', 'area', 'categorySlug', 'jobType', 'salaryMin', 'salaryMax', 'visaProvided', 'accommodation', 'freshersWelcome', 'remote', 'urgent', 'freeZone', 'description', 'requirements', 'benefits', 'tags', 'contactWhatsapp', 'contactEmail', 'deadline', 'vacancies', 'confidence'],
   },
 };
