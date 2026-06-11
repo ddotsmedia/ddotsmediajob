@@ -47,6 +47,52 @@ const JOB_EXTRACT_SYSTEM =
   'Know all 7 UAE emirates, common job categories, WPS salary norms (monthly AED), visa terminology, free zones, and standard UAE benefits. ' +
   'Map locations to the correct emirate slug. If salary is unstated use 0. Set each confidence field to high/medium/low based on how certain the value is from the source.';
 
+// Lenient schema for the JSON-fallback path (title required, everything else optional).
+const jsonDraftSchema = z
+  .object({
+    title: z.string().min(1),
+    company: z.string().optional(),
+    emirate: z.string().optional(),
+    area: z.string().optional(),
+    categorySlug: z.string().optional(),
+    jobType: z.string().optional(),
+    salaryMin: z.coerce.number().int().nonnegative().optional(),
+    salaryMax: z.coerce.number().int().nonnegative().optional(),
+    description: z.string().optional(),
+    requirements: z.string().optional(),
+    benefits: z.array(z.string()).optional(),
+    tags: z.array(z.string()).optional(),
+    contactWhatsapp: z.string().optional(),
+    contactEmail: z.string().optional(),
+    visaProvided: z.boolean().optional(),
+    accommodation: z.boolean().optional(),
+    freshersWelcome: z.boolean().optional(),
+    remote: z.boolean().optional(),
+    urgent: z.boolean().optional(),
+    freeZone: z.boolean().optional(),
+    deadline: z.string().optional(),
+    vacancies: z.coerce.number().int().optional(),
+  })
+  .passthrough();
+
+/** Strip markdown fences / surrounding prose, parse JSON, validate, and merge with defaults. */
+function parseJobDraftJson(raw: string): JobDraft | null {
+  const clean = raw.replace(/```json\n?/gi, '').replace(/```\n?/g, '').trim();
+  // Some models wrap the JSON in prose — grab the outermost {...}.
+  const start = clean.indexOf('{');
+  const end = clean.lastIndexOf('}');
+  const slice = start >= 0 && end > start ? clean.slice(start, end + 1) : clean;
+  try {
+    const parsed = JSON.parse(slice) as { job_draft?: unknown } & Record<string, unknown>;
+    const obj = (parsed.job_draft ?? parsed) as Record<string, unknown>;
+    const v = jsonDraftSchema.parse(obj);
+    return { ...emptyJobDraft(), ...v } as JobDraft;
+  } catch (err) {
+    console.error('[parseJobDraftJson] failed:', err instanceof Error ? err.message : err);
+    return null;
+  }
+}
+
 /** Empty draft returned when AI extraction fails — lets the admin fill the form manually. */
 function emptyJobDraft(): JobDraft {
   return {
@@ -242,12 +288,23 @@ export const aiRouter = router({
     .input(z.object({ text: z.string().min(15).max(15000) }).strict())
     .mutation(async ({ ctx, input }): Promise<JobDraft | null> => {
       await guardAi(ctx, input.text);
+      // Primary: structured tool-call (Claude/Gemini function calling, no markdown).
       try {
-        // SDK retries 429s with exponential backoff (maxRetries: 4); on final
-        // failure return null (never throw) so job posting still works manually.
         return await structured<JobDraft>(JOB_EXTRACT_SYSTEM, `Extract a job posting from this text:\n\n${wrapUserContent(input.text)}`, JOB_DRAFT_TOOL, { model: MODEL_FAST, maxTokens: 1800 });
       } catch (err) {
-        console.error('[extractJobFromText]', err instanceof Error ? err.message : err);
+        console.error('[extractJobFromText] tool-call failed, trying JSON fallback:', err instanceof Error ? err.message : err);
+      }
+      // Fallback: ask for raw JSON, strip ```fences```, parse + Zod-validate.
+      try {
+        const raw = await chat(
+          'You extract UAE job postings. Return ONLY valid JSON — no markdown, no backticks, no commentary. Use a single root key "job_draft". Required: title. Optional: company, emirate (UAE slug e.g. dubai/abu-dhabi/sharjah), area, categorySlug (one of it/healthcare/finance/sales/construction/hospitality/driving/education/admin/manufacturing/security/beauty), jobType (full-time/part-time/contract/temporary/internship/freelance), salaryMin, salaryMax (monthly AED integers, 0 if unknown), description, requirements, benefits (array), tags (array), contactWhatsapp, contactEmail, visaProvided, accommodation, freshersWelcome, remote, urgent, freeZone, deadline, vacancies. Omit fields you cannot determine.',
+          [{ role: 'user', content: wrapUserContent(input.text) }],
+          { model: MODEL_FAST, maxTokens: 1500 },
+        );
+        console.log('[extractJobFromText] JSON fallback raw (first 400):', raw.slice(0, 400));
+        return parseJobDraftJson(raw);
+      } catch (err) {
+        console.error('[extractJobFromText] JSON fallback failed:', err instanceof Error ? err.message : err);
         return null;
       }
     }),

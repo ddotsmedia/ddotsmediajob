@@ -8,7 +8,11 @@ export function getRedis(): IORedis {
   if (connection) return connection;
   connection = new IORedis(process.env.REDIS_URL ?? 'redis://localhost:6379', {
     maxRetriesPerRequest: null,
+    retryStrategy: (times) => Math.min(times * 50, 2000),
   });
+  // Without an 'error' listener, ioredis emits an unhandled error (AggregateError)
+  // that can crash the process. Log and let retryStrategy reconnect.
+  connection.on('error', (err) => console.error('[redis] error:', err instanceof Error ? err.message : err));
   return connection;
 }
 
