@@ -13,6 +13,7 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx src/seed.ts",
+    "db:seed:demo": "tsx src/seed-demo.ts",
     "lint": "eslint src",
     "typecheck": "tsc --noEmit"
   },

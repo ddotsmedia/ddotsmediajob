@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Users, Loader2, FileText, MapPin, Download } from 'lucide-react';
-import { CATEGORIES, EMIRATES, EXPERIENCE_LEVELS, emirateBySlug } from '@ddots/shared';
+import { CATEGORIES, EMIRATES, EXPERIENCE_LEVELS, emirateBySlug, formatExperience } from '@ddots/shared';
 import { trpc } from '@/trpc/react';
 import { Input, Label, Select, Badge } from '@/components/ui/primitives';
 import { Button } from '@/components/ui/button';
@@ -73,7 +73,7 @@ export default function CandidateSearchPage() {
             </div>
             <div className="mt-3 flex flex-wrap gap-1.5">
               {c.emirateSlug && <Badge variant="outline"><MapPin className="mr-1 h-3 w-3" />{emirateBySlug(c.emirateSlug)?.name}</Badge>}
-              {c.experienceLevel && <Badge variant="muted">{c.experienceLevel.replace(/-/g, ' ')}</Badge>}
+              {c.experienceLevel && <Badge variant="muted">{formatExperience(c.experienceLevel)}</Badge>}
             </div>
             <div className="mt-2 flex flex-wrap gap-1">
               {(c.skills ?? []).slice(0, 5).map((s) => <Badge key={s} variant="default">{s}</Badge>)}

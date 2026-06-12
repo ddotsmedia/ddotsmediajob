@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { Menu, X, LayoutDashboard, LogOut, Briefcase, MessageCircle } from 'lucide-react';
 import { Logo } from './logo';
@@ -26,8 +26,16 @@ export function SiteHeader() {
   const role = session?.user?.role;
   const dashHref = role === 'admin' ? '/admin' : role === 'employer' ? '/employer' : '/dashboard';
 
+  // Lock background scroll while the mobile menu is open.
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    document.body.style.overflow = open ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [open]);
+
   return (
-    <header className="sticky top-0 z-50 border-b bg-white/90 backdrop-blur">
+    <>
+      <header className="sticky top-0 z-50 border-b bg-white/90 backdrop-blur">
       <div className="bg-navy-900 text-white">
         <div className="mx-auto flex max-w-7xl items-center justify-center gap-2 px-4 py-2 text-sm font-semibold sm:justify-end">
           <a href="https://wa.me/971509379212" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 hover:text-[#25D366]">
@@ -81,14 +89,17 @@ export function SiteHeader() {
           )}
         </div>
 
-        <button className="flex h-11 w-11 items-center justify-center md:hidden" onClick={() => setOpen((v) => !v)} aria-label="Toggle menu">
+        <button type="button" className="flex h-11 w-11 items-center justify-center md:hidden" onClick={() => setOpen((v) => !v)} aria-label="Toggle menu">
           {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
       </div>
+      </header>
 
-      {/* Full-screen mobile menu overlay */}
+      {/* Mobile menu overlay — MUST render OUTSIDE <header>: the header's
+          backdrop-blur establishes a containing block that traps a fixed-position
+          child inside the header box, which is why the menu previously did not open. */}
       {open && (
-        <div className="fixed inset-0 z-[60] flex flex-col bg-white md:hidden">
+        <div className="fixed inset-0 z-[100] flex flex-col bg-white md:hidden">
           <div className="flex h-16 shrink-0 items-center justify-between border-b px-4">
             <Logo />
             <button onClick={() => setOpen(false)} aria-label="Close menu" className="flex h-11 w-11 items-center justify-center">
@@ -133,6 +144,6 @@ export function SiteHeader() {
           </nav>
         </div>
       )}
-    </header>
+    </>
   );
 }

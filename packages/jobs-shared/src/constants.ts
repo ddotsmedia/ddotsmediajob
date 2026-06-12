@@ -78,10 +78,13 @@ export const EXPERIENCE_LABELS: Record<string, string> = {
   '3': '3 years',
   '13': 'Not specified',
 };
-export function expLabel(v: string | null | undefined): string {
-  if (!v) return 'Not specified';
-  return EXPERIENCE_LABELS[v] ?? v.replace(/-/g, ' ');
+/** Canonical experience-label formatter. Use everywhere a raw slug would otherwise render (e.g. "1-3-years" → "1 3 years"). */
+export function formatExperience(val: string | null | undefined): string {
+  if (!val) return 'Not specified';
+  return EXPERIENCE_LABELS[val] ?? val.replace(/-/g, ' ');
 }
+/** @deprecated alias kept for existing imports — use {@link formatExperience}. */
+export const expLabel = formatExperience;
 
 export const SALARY_PERIODS = ['monthly', 'yearly', 'hourly', 'daily'] as const;
 export type SalaryPeriod = (typeof SALARY_PERIODS)[number];

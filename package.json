@@ -18,6 +18,7 @@
     "db:migrate": "pnpm --filter @ddots/db db:migrate",
     "db:push": "pnpm --filter @ddots/db db:push",
     "db:seed": "pnpm --filter @ddots/db db:seed",
+    "db:seed:demo": "pnpm --filter @ddots/db db:seed:demo",
     "db:studio": "pnpm --filter @ddots/db db:studio",
     "worker": "pnpm --filter @ddots/api worker",
     "search:sync": "pnpm --filter @ddots/api search:sync",

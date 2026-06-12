@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Loader2, ArrowLeft, Save } from 'lucide-react';
-import { CATEGORIES, EMIRATES, JOB_TYPES, EXPERIENCE_LEVELS } from '@ddots/shared';
+import { CATEGORIES, EMIRATES, JOB_TYPES, EXPERIENCE_LEVELS, formatExperience } from '@ddots/shared';
 import { trpc } from '@/trpc/react';
 import { Button } from '@/components/ui/button';
 import { Input, Label, Select, Textarea } from '@/components/ui/primitives';
@@ -65,7 +65,7 @@ export default function EditJobPage({ params }: { params: Promise<{ id: string }
           <Field label="Category"><Select value={s('categorySlug')} onChange={(e) => set('categorySlug', e.target.value)}>{CATEGORIES.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}</Select></Field>
           <Field label="Emirate"><Select value={s('emirateSlug')} onChange={(e) => set('emirateSlug', e.target.value)}>{EMIRATES.map((e) => <option key={e.slug} value={e.slug}>{e.name}</option>)}</Select></Field>
           <Field label="Job type"><Select value={s('jobType')} onChange={(e) => set('jobType', e.target.value)}>{JOB_TYPES.map((t) => <option key={t} value={t} className="capitalize">{t.replace('-', ' ')}</option>)}</Select></Field>
-          <Field label="Experience"><Select value={s('experienceLevel')} onChange={(e) => set('experienceLevel', e.target.value)}>{EXPERIENCE_LEVELS.map((l) => <option key={l} value={l} className="capitalize">{l.replace(/-/g, ' ')}</option>)}</Select></Field>
+          <Field label="Experience"><Select value={s('experienceLevel')} onChange={(e) => set('experienceLevel', e.target.value)}>{EXPERIENCE_LEVELS.map((l) => <option key={l} value={l}>{formatExperience(l)}</option>)}</Select></Field>
           <Field label="Salary min"><Input type="number" value={String(form.salaryMin ?? '')} onChange={(e) => set('salaryMin', e.target.value)} /></Field>
           <Field label="Salary max"><Input type="number" value={String(form.salaryMax ?? '')} onChange={(e) => set('salaryMax', e.target.value)} /></Field>
         </div>

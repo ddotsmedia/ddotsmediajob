@@ -95,6 +95,16 @@ export const contentRouter = router({
       return created;
     }),
 
+  /** Admin: publish every unpublished blog post in one shot (fixes an empty /blog). */
+  blogPublishAll: adminProcedure.mutation(async ({ ctx }) => {
+    const rows = await ctx.db
+      .update(blogPosts)
+      .set({ isPublished: true, publishedAt: new Date() })
+      .where(eq(blogPosts.isPublished, false))
+      .returning({ id: blogPosts.id });
+    return { published: rows.length };
+  }),
+
   // ── Companies ──────────────────────────────────────────
   companiesList: publicProcedure.query(async ({ ctx }) => {
     const rows = await ctx.db
