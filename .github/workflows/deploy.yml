@@ -64,7 +64,7 @@ jobs:
           command_timeout: 20m
           script: |
             set -e
-            cd /var/www/ddotsmediajobs
+            cd /opt/ddotsmediajobs
             git fetch --all --prune
             git reset --hard origin/main
             bash deploy/deploy-prod.sh

@@ -4,11 +4,11 @@
 # Tailored to the live box: shared host, Node 20, app on port 3050,
 # reuses host Postgres/Redis, fronted by existing host nginx.
 # The CI workflow does `git pull` first, then runs this. Safe to run by hand:
-#   bash /var/www/ddotsmediajobs/deploy/deploy-prod.sh
+#   bash /opt/ddotsmediajobs/deploy/deploy-prod.sh
 # ───────────────────────────────────────────────────────────────────
 set -Eeuo pipefail
 
-APP_DIR="${APP_DIR:-/var/www/ddotsmediajobs}"
+APP_DIR="${APP_DIR:-/opt/ddotsmediajobs}"
 PORT="${PORT:-3050}"
 cd "$APP_DIR"
 
