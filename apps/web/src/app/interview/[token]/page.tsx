@@ -42,6 +42,10 @@ export default function InterviewRecordPage() {
   }, [phase, idx, blobs]);
 
   async function startCamera() {
+    if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
+      toast.error('Camera is not available on this browser. Open the link in Chrome or Safari.');
+      return;
+    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       streamRef.current = stream;
@@ -73,6 +77,7 @@ export default function InterviewRecordPage() {
   useEffect(() => { if (recording && secs === 0) stopRecording(); }, [recording, secs, stopRecording]);
 
   function startRecording() {
+    if (typeof MediaRecorder === 'undefined') { toast.error('Video recording is not supported on this browser.'); return; }
     if (!streamRef.current) { void startCamera(); return; }
     chunksRef.current = [];
     const mr = new MediaRecorder(streamRef.current, { mimeType: 'video/webm' });

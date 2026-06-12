@@ -9,6 +9,7 @@ import { AnnouncementBanner } from '@/components/announcement-banner';
 import { MobileBottomNav } from '@/components/mobile-bottom-nav';
 import { AccessibilityWidget } from '@/components/accessibility-widget';
 import { CompareBar } from '@/components/compare-bar';
+import { ErrorBoundary } from '@/components/error-boundary';
 import './globals.css';
 
 const sora = Sora({ subsets: ['latin'], variable: '--font-sora', display: 'swap' });
@@ -53,7 +54,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Providers>
           <AnnouncementBanner />
           <SiteHeader />
-          <main className="flex-1 pb-16 md:pb-0">{children}</main>
+          <main className="flex-1 pb-16 md:pb-0"><ErrorBoundary>{children}</ErrorBoundary></main>
           <SiteFooter />
           <MobileBottomNav />
           <PostJobFab />

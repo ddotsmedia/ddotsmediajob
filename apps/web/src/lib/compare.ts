@@ -16,8 +16,13 @@ export function getCompare(): CompareItem[] {
 }
 
 function save(list: CompareItem[]) {
-  localStorage.setItem(KEY, JSON.stringify(list));
-  window.dispatchEvent(new Event('compare-change'));
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(KEY, JSON.stringify(list));
+    window.dispatchEvent(new Event('compare-change'));
+  } catch {
+    /* storage unavailable (private mode / restricted webview) — ignore */
+  }
 }
 
 /** Add/remove a job. Returns { full: true } if the list is already at MAX. */
