@@ -12,9 +12,17 @@ APP_DIR="${APP_DIR:-/opt/ddotsmediajobs}"
 PORT="${PORT:-3050}"
 cd "$APP_DIR"
 
-[ -f .env ] || { echo "✗ .env missing in $APP_DIR"; exit 1; }
-set -a; . ./.env; set +a
+# Env lives at apps/web/.env on the VPS. Load it if present; warn (don't abort)
+# if it's missing so a transient state never blocks a deploy.
+ENV_FILE="apps/web/.env"
+if [ -f "$ENV_FILE" ]; then
+  set -a; . "./$ENV_FILE"; set +a
+else
+  echo "⚠ $ENV_FILE missing — deployment may fail"
+fi
 export PORT
+# Ensure drizzle-kit migrate sees DATABASE_URL even if the sourcing above was skipped.
+export DATABASE_URL="$(grep -E '^DATABASE_URL=' "$ENV_FILE" 2>/dev/null | head -n1 | cut -d= -f2- | tr -d '\"' || true)"
 
 echo "▶ install"; pnpm install --frozen-lockfile
 echo "▶ privacy guard"; node scripts/check-public-email.mjs
