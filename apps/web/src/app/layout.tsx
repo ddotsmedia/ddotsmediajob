@@ -34,6 +34,7 @@ export const metadata: Metadata = {
   },
   twitter: { card: 'summary_large_image', title: SITE.name, description: SITE.description },
   robots: { index: true, follow: true },
+  verification: { google: 'fiL1uWQdtfFe_yEmZhYLeak6z02DmgRo_FKjPcl_q3o' },
   alternates: { canonical: SITE.url },
   manifest: '/manifest.webmanifest',
   appleWebApp: { capable: true, statusBarStyle: 'black-translucent', title: 'DdotsJobs' },
