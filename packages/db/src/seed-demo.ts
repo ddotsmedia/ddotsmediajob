@@ -2,17 +2,21 @@
  * Additive demo seed for DdotsMediaJobs — SAFE to run against the live DB.
  * Run: pnpm db:seed:demo   (requires DATABASE_URL + a migrated schema)
  *
- * Unlike seed.ts this NEVER deletes anything. It only:
- *   1. publishes every unpublished blog post (and inserts the 20 SEO articles
- *      if the blog table is completely empty),
- *   2. seeds salary_reports for 10 core roles × 7 emirates (skips pairs that
- *      already exist),
- *   3. inserts 10 realistic demo jobs with status=active (skips slugs that
- *      already exist).
- * Re-running is idempotent.
+ * Guarantees:
+ *   • NEVER deletes any row.
+ *   • Never touches existing users, employers, or applications.
+ *   • Only INSERTS, and only when thresholds say data is missing:
+ *       - 10 demo jobs (status=active = approved/live) if < 5 active jobs exist
+ *       - salary_reports (10 roles × 7 emirates) if the table is empty
+ *       - publish blog posts if 0 published exist (insert 20 articles if none at all)
+ *   • All inserts use ON CONFLICT DO NOTHING.
+ * Idempotent: re-running once data exists is a no-op.
+ *
+ * NOTE: the job status enum has no 'approved' value — 'active' IS the
+ * approved/live state queried by the public site.
  */
 import bcrypt from 'bcryptjs';
-import { db, eq, inArray, users, jobs, salaryReports, blogPosts } from './index';
+import { db, eq, count, users, jobs, salaryReports, blogPosts } from './index';
 import { BLOG_ARTICLES, renderArticle } from './blog-seed';
 import { EMIRATES, slugify } from '@ddots/shared';
 
@@ -62,12 +66,14 @@ const DEMO_JOBS = [
     desc: 'A facilities management firm in Dubai is hiring Security Guards for residential and commercial sites. Duties include access control, patrolling, incident reporting, and ensuring the safety of residents and visitors. A valid SIRA card is an advantage; freshers are welcome to apply.' },
   { title: 'Head Chef', category: 'hospitality', emirate: 'dubai', exp: '5-10-years', min: 8000, max: 12000,
     desc: 'A premium restaurant in Dubai is looking for a Head Chef to lead the kitchen, design seasonal menus, control food cost, and maintain the highest hygiene standards. Proven leadership in a high-volume kitchen and strong knowledge of international cuisine are required.' },
+  { title: 'Warehouse Associate', category: 'driving', emirate: 'sharjah', exp: 'junior', min: 2800, max: 3800,
+    desc: 'A distribution centre in Sharjah is hiring a Warehouse Associate to receive, store, pick and pack goods, operate basic equipment, and keep accurate stock records. Physical fitness and attention to detail are required. Forklift certification is an advantage.' },
 ] as const;
 
 async function main() {
-  console.log('🌱 Demo seed (additive)…');
+  console.log('🌱 Demo seed (additive, non-destructive)…');
 
-  // ── Actor: reuse an existing employer/admin, else create a demo employer ──
+  // ── Actor: reuse an existing employer/admin; never modify existing users ──
   let actor =
     (await db.query.users.findFirst({ where: eq(users.role, 'employer') })) ??
     (await db.query.users.findFirst({ where: eq(users.role, 'admin') }));
@@ -81,86 +87,100 @@ async function main() {
         role: 'employer',
         emailVerified: new Date(),
       })
+      .onConflictDoNothing()
       .returning();
+    if (!actor) actor = await db.query.users.findFirst({ where: eq(users.email, 'demo-employer@ddotsmediajobs.com') });
   }
   const actorId = actor!.id;
 
-  // ── 1. Blog: publish unpublished, seed articles if table is empty ────────
-  const published = await db
-    .update(blogPosts)
-    .set({ isPublished: true, publishedAt: new Date() })
-    .where(eq(blogPosts.isPublished, false))
-    .returning({ id: blogPosts.id });
-  const allBlog = await db.select({ id: blogPosts.id }).from(blogPosts);
-  if (allBlog.length === 0) {
-    await db.insert(blogPosts).values(
-      BLOG_ARTICLES.map((a) => ({
-        slug: a.slug,
-        title: a.title,
-        excerpt: a.excerpt,
-        content: renderArticle(a),
-        authorId: actorId,
-        category: a.category,
-        tags: a.tags,
-        isPublished: true,
-        publishedAt: new Date(),
-      })),
-    );
-    console.log(`   blog: inserted ${BLOG_ARTICLES.length} articles`);
+  // ── 1. Jobs: insert 10 demo jobs only if < 5 active (approved/live) jobs ──
+  const activeJobs = Number(
+    (await db.select({ n: count() }).from(jobs).where(eq(jobs.status, 'active')))[0]?.n ?? 0,
+  );
+  if (activeJobs < 5) {
+    const jobRows = DEMO_JOBS.map((j) => ({
+      slug: `${slugify(j.title)}-${j.emirate}-demo`,
+      employerId: actorId,
+      title: j.title,
+      description: j.desc,
+      categorySlug: j.category,
+      emirateSlug: j.emirate,
+      location: `${EMIRATES.find((e) => e.slug === j.emirate)?.name ?? j.emirate}, UAE`,
+      jobType: 'full-time' as const,
+      experienceLevel: j.exp,
+      visaStatus: 'any' as const,
+      salaryMin: j.min,
+      salaryMax: j.max,
+      salaryPeriod: 'monthly' as const,
+      isFresher: j.exp === 'fresher',
+      skills: ['Communication', 'Teamwork'],
+      benefits: ['Visa', 'Medical insurance', 'Annual ticket'],
+      status: 'active' as const,
+      source: 'manual',
+      publishedAt: new Date(),
+      expiresAt: new Date(Date.now() + 30 * 86_400_000),
+    }));
+    await db.insert(jobs).values(jobRows).onConflictDoNothing();
+    console.log(`   jobs: ${activeJobs} active (< 5) → inserted ${jobRows.length} demo jobs`);
   } else {
-    console.log(`   blog: published ${published.length} previously-draft posts`);
+    console.log(`   jobs: ${activeJobs} active jobs already (≥ 5) — skipped`);
   }
 
-  // ── 2. Salary reports: 10 roles × 7 emirates (skip existing pairs) ───────
-  const salaryRows = SALARY_ROLES.flatMap((r) =>
-    EMIRATES.map((e) => ({
-      jobTitle: r.title,
-      categorySlug: r.category,
-      emirateSlug: e.slug,
-      experienceLevel: '3-5-years' as const,
-      salaryMonthly: Math.round(r.base * (EMIRATE_FACTOR[e.slug] ?? 1)),
-      yearsExperience: 4,
-      isVerified: true,
-    })),
-  );
-  const existingSal = await db
-    .select({ jobTitle: salaryReports.jobTitle, emirateSlug: salaryReports.emirateSlug })
-    .from(salaryReports);
-  const salKey = new Set(existingSal.map((r) => `${r.jobTitle}|${r.emirateSlug ?? ''}`));
-  const newSal = salaryRows.filter((r) => !salKey.has(`${r.jobTitle}|${r.emirateSlug}`));
-  if (newSal.length) await db.insert(salaryReports).values(newSal);
-  console.log(`   salary: inserted ${newSal.length}/${salaryRows.length} rows`);
+  // ── 2. Salary reports: insert only if the table is empty ─────────────────
+  const salaryTotal = Number((await db.select({ n: count() }).from(salaryReports))[0]?.n ?? 0);
+  if (salaryTotal === 0) {
+    const salaryRows = SALARY_ROLES.flatMap((r) =>
+      EMIRATES.map((e) => ({
+        jobTitle: r.title,
+        categorySlug: r.category,
+        emirateSlug: e.slug,
+        experienceLevel: '3-5-years' as const,
+        salaryMonthly: Math.round(r.base * (EMIRATE_FACTOR[e.slug] ?? 1)),
+        yearsExperience: 4,
+        isVerified: true,
+      })),
+    );
+    await db.insert(salaryReports).values(salaryRows).onConflictDoNothing();
+    console.log(`   salary: empty → inserted ${salaryRows.length} rows`);
+  } else {
+    console.log(`   salary: ${salaryTotal} rows already — skipped`);
+  }
 
-  // ── 3. Demo jobs (status=active, skip existing slugs) ────────────────────
-  const jobRows = DEMO_JOBS.map((j) => ({
-    slug: `${slugify(j.title)}-${j.emirate}-demo`,
-    employerId: actorId,
-    title: j.title,
-    description: j.desc,
-    categorySlug: j.category,
-    emirateSlug: j.emirate,
-    location: `${EMIRATES.find((e) => e.slug === j.emirate)?.name ?? j.emirate}, UAE`,
-    jobType: 'full-time' as const,
-    experienceLevel: j.exp,
-    visaStatus: 'any' as const,
-    salaryMin: j.min,
-    salaryMax: j.max,
-    salaryPeriod: 'monthly' as const,
-    isFresher: j.exp === 'fresher',
-    skills: ['Communication', 'Teamwork'],
-    benefits: ['Visa', 'Medical insurance', 'Annual ticket'],
-    status: 'active' as const,
-    source: 'manual',
-    publishedAt: new Date(),
-    expiresAt: new Date(Date.now() + 30 * 86_400_000),
-  }));
-  const wantedSlugs = jobRows.map((r) => r.slug);
-  const haveSlugs = new Set(
-    (await db.select({ slug: jobs.slug }).from(jobs).where(inArray(jobs.slug, wantedSlugs))).map((r) => r.slug),
+  // ── 3. Blog: publish only if 0 published posts exist ─────────────────────
+  const publishedCount = Number(
+    (await db.select({ n: count() }).from(blogPosts).where(eq(blogPosts.isPublished, true)))[0]?.n ?? 0,
   );
-  const newJobs = jobRows.filter((r) => !haveSlugs.has(r.slug));
-  if (newJobs.length) await db.insert(jobs).values(newJobs);
-  console.log(`   jobs: inserted ${newJobs.length}/${jobRows.length} demo jobs`);
+  if (publishedCount === 0) {
+    const promoted = await db
+      .update(blogPosts)
+      .set({ isPublished: true, publishedAt: new Date() })
+      .where(eq(blogPosts.isPublished, false))
+      .returning({ id: blogPosts.id });
+    if (promoted.length === 0) {
+      // No posts at all — seed the 20 SEO articles, published.
+      await db
+        .insert(blogPosts)
+        .values(
+          BLOG_ARTICLES.map((a) => ({
+            slug: a.slug,
+            title: a.title,
+            excerpt: a.excerpt,
+            content: renderArticle(a),
+            authorId: actorId,
+            category: a.category,
+            tags: a.tags,
+            isPublished: true,
+            publishedAt: new Date(),
+          })),
+        )
+        .onConflictDoNothing();
+      console.log(`   blog: empty → inserted ${BLOG_ARTICLES.length} published articles`);
+    } else {
+      console.log(`   blog: published ${promoted.length} draft posts`);
+    }
+  } else {
+    console.log(`   blog: ${publishedCount} published already — skipped`);
+  }
 
   console.log('✅ Demo seed complete.');
   process.exit(0);
