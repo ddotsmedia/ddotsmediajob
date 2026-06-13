@@ -18,6 +18,11 @@ export default function AdminSettingsPage() {
   const utils = trpc.useUtils();
   const settings = trpc.admin.getSettings.useQuery();
   const integrations = trpc.content.integrations.useQuery(undefined, { staleTime: 60_000 });
+  const searchStatus = trpc.admin.searchStatus.useQuery(undefined, { staleTime: 30_000 });
+  const reindex = trpc.admin.reindexJobs.useMutation({
+    onSuccess: (r) => { searchStatus.refetch(); toast.success(r.configured ? `Re-indexed ${r.indexed} jobs` : 'Meilisearch not configured'); },
+    onError: (e) => toast.error(e.message),
+  });
   const setSetting = trpc.admin.setSetting.useMutation({
     onSuccess: () => { utils.admin.getSettings.invalidate(); toast.success('Saved'); },
     onError: (e) => toast.error(e.message),
@@ -95,10 +100,20 @@ export default function AdminSettingsPage() {
                   <p className="font-medium text-navy-900">{row.label}</p>
                   {!on && <p className="text-xs text-navy-700/50">{row.offHint}</p>}
                 </div>
-                <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${on ? 'bg-green-50 text-green-700' : 'bg-navy-50 text-navy-500'}`}>
-                  <span className={`h-2 w-2 rounded-full ${on ? 'bg-green-500' : 'bg-navy-300'}`} />
-                  {on ? 'Connected' : 'Not configured'}
-                </span>
+                <div className="flex shrink-0 items-center gap-2">
+                  {row.key === 'search' && on && (
+                    <>
+                      <span className="text-xs text-navy-700/50">{searchStatus.data?.count ?? '—'} indexed</span>
+                      <Button size="sm" variant="outline" onClick={() => reindex.mutate()} disabled={reindex.isPending}>
+                        {reindex.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Re-index'}
+                      </Button>
+                    </>
+                  )}
+                  <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${on ? 'bg-green-50 text-green-700' : 'bg-navy-50 text-navy-500'}`}>
+                    <span className={`h-2 w-2 rounded-full ${on ? 'bg-green-500' : 'bg-navy-300'}`} />
+                    {on ? 'Connected' : 'Not configured'}
+                  </span>
+                </div>
               </div>
             );
           })}

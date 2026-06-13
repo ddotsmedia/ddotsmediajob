@@ -30,6 +30,7 @@ import { enqueueEmail, enqueueSearchSync, enqueueJobEvent } from '../lib/queue';
 import { extractAndSaveDraft } from '../lib/import';
 import { enforceRateLimit } from '../lib/security';
 import { sanitizeHtml } from '../lib/security';
+import { isSearchConfigured, ensureJobsIndex, bulkUpsert, ping as searchPing, indexCount, jobRowToDoc } from '../lib/meili';
 
 /** Shared shape for admin-created jobs (from any of the 6 ingestion methods). */
 const adminJobInput = z.object({
@@ -717,4 +718,25 @@ export const adminRouter = router({
       await audit(ctx.session.user.id, 'admin.wabot.bulkCreate', 'job', undefined, { posted, total: input.jobs.length });
       return { posted, failed: input.jobs.length - posted, results };
     }),
+
+  // ── Search (Meilisearch) ──────────────────────────────────
+  /** Status for the Integrations panel: configured? reachable? how many docs? */
+  searchStatus: adminProcedure.query(async () => ({
+    configured: isSearchConfigured(),
+    ok: await searchPing(),
+    count: await indexCount(),
+  })),
+
+  /** Re-index every active job into Meilisearch. No-op (indexed 0) when unconfigured. */
+  reindexJobs: adminProcedure.mutation(async ({ ctx }) => {
+    if (!isSearchConfigured()) return { indexed: 0, configured: false };
+    await ensureJobsIndex();
+    const rows = await ctx.db.query.jobs.findMany({
+      where: eq(jobs.status, 'active'),
+      with: { company: { columns: { name: true } } },
+    });
+    await bulkUpsert(rows.map((r) => jobRowToDoc(r, r.company?.name)));
+    await audit(ctx.session.user.id, 'admin.search.reindex', 'job', undefined, { indexed: rows.length });
+    return { indexed: rows.length, configured: true };
+  }),
 });

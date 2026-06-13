@@ -27,6 +27,7 @@ import { QUEUE, bullConnection, enqueueEmail, jobAlertsQueue, maintenanceQueue, 
 import { expireStaleJobs } from './lib/helpers';
 import { sendEmailJob } from './lib/email';
 import { ensureJobsCollection, upsertJobDocument, deleteJobDocument, jobToDocument } from './lib/typesense';
+import { ensureJobsIndex as ensureMeiliIndex, upsertJob as meiliUpsert, deleteJob as meiliDelete, jobRowToDoc } from './lib/meili';
 import { structured, MATCH_TOOL, MODEL_SMART, MODEL_FAST, type MatchResult } from './lib/anthropic';
 import { deleteObjectByUrl } from './lib/r2';
 
@@ -47,8 +48,10 @@ new Worker<SearchSyncJob>(
   QUEUE.search,
   async (job) => {
     await ensureJobsCollection();
+    await ensureMeiliIndex();
     if (job.data.type === 'delete') {
       await deleteJobDocument(job.data.jobId);
+      await meiliDelete(job.data.jobId);
       return;
     }
     const row = await db.query.jobs.findFirst({
@@ -57,9 +60,11 @@ new Worker<SearchSyncJob>(
     });
     if (!row || row.status !== 'active') {
       await deleteJobDocument(job.data.jobId);
+      await meiliDelete(job.data.jobId);
       return;
     }
     await upsertJobDocument(jobToDocument(row, row.company?.name));
+    await meiliUpsert(jobRowToDoc(row, row.company?.name));
   },
   { connection, concurrency: 5 },
 ).on('failed', (job, err) => console.error(`[search] ${job?.id} failed:`, err.message));

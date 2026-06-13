@@ -23,6 +23,7 @@ import { router, publicProcedure, employerProcedure, protectedProcedure } from '
 import { uniqueJobSlug, audit } from '../lib/helpers';
 import { enqueueSearchSync, enqueueJobEvent } from '../lib/queue';
 import { generateJobFromPrompt } from '../lib/anthropic';
+import { isSearchConfigured, searchJobs, suggest as meiliSuggest } from '../lib/meili';
 
 export const jobsRouter = router({
   /** Public: fetch up to 3 active jobs by slug for side-by-side comparison. */
@@ -34,8 +35,39 @@ export const jobsRouter = router({
     }),
   ),
 
+  /** Autocomplete suggestions for the search bar (Meilisearch; [] when unconfigured). */
+  suggest: publicProcedure
+    .input(z.object({ q: z.string().max(80) }))
+    .query(async ({ input }) => (input.q.trim() ? meiliSuggest(input.q) : [])),
+
   /** Public paginated, filtered job listing. */
   list: publicProcedure.input(jobFilterSchema).query(async ({ ctx, input }) => {
+    const companyCols = { name: true, slug: true, logoUrl: true, isVerified: true } as const;
+
+    // Fast path: full-text search via Meilisearch when configured + a query is present.
+    if (input.q && isSearchConfigured()) {
+      const filters: string[] = [];
+      if (input.category) filters.push(`category = "${input.category}"`);
+      if (input.emirate) filters.push(`emirate = "${input.emirate}"`);
+      if (input.jobType) filters.push(`jobType = "${input.jobType}"`);
+      if (input.salaryMin) filters.push(`salaryMax >= ${input.salaryMin}`);
+      if (input.isFresher) filters.push('freshersWelcome = true');
+      if (input.isUrgent) filters.push('urgent = true');
+      if (input.visaProvided) filters.push('visaProvided = true');
+      const sort =
+        input.sort === 'salary' ? ['salaryMax:desc'] : input.sort === 'newest' ? ['createdAt:desc'] : undefined;
+      const hit = await searchJobs({ q: input.q, filters, sort, limit: input.perPage, offset: (input.page - 1) * input.perPage });
+      if (hit) {
+        const rows = hit.ids.length
+          ? await ctx.db.query.jobs.findMany({ where: inArray(jobs.id, hit.ids), with: { company: { columns: companyCols } } })
+          : [];
+        const byId = new Map(rows.map((r) => [r.id, r]));
+        const ordered = hit.ids.map((id) => byId.get(id)).filter((r): r is (typeof rows)[number] => !!r);
+        return { jobs: ordered, total: hit.total, page: input.page, perPage: input.perPage, totalPages: Math.ceil(hit.total / input.perPage) };
+      }
+      // null → fall through to DB search
+    }
+
     // Active and not past expiry (lazy-expire guard — never show stale listings even if cron lags).
     const conds = [eq(jobs.status, 'active'), or(sql`${jobs.expiresAt} IS NULL`, gte(jobs.expiresAt, sql`now()`))!];
     if (input.q) {
