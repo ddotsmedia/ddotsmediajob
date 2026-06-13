@@ -9,6 +9,7 @@ import {
   VerifyEmail,
 } from '@ddots/email';
 import type { EmailJob } from './queue';
+import { isEmailConfigured } from './integrations';
 
 let resend: Resend | null = null;
 function getResend(): Resend {
@@ -60,6 +61,15 @@ async function renderEmail(job: EmailJob): Promise<{ subject: string; html: stri
 }
 
 export async function sendEmailJob(job: EmailJob): Promise<void> {
-  const { subject, html } = await renderEmail(job);
-  await getResend().emails.send({ from: FROM, to: job.to, subject, html });
+  if (!isEmailConfigured()) {
+    console.log('Email skipped — RESEND_API_KEY not configured');
+    return;
+  }
+  // Never throw on a send failure — email is best-effort and must not crash callers/workers.
+  try {
+    const { subject, html } = await renderEmail(job);
+    await getResend().emails.send({ from: FROM, to: job.to, subject, html });
+  } catch (err) {
+    console.error('[email] send failed:', err instanceof Error ? err.message : err);
+  }
 }

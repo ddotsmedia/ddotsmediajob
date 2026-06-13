@@ -1,5 +1,9 @@
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { TRPCError } from '@trpc/server';
+import { isR2Configured } from './integrations';
+
+export { isR2Configured };
 
 let s3: S3Client | null = null;
 
@@ -26,6 +30,12 @@ export async function presignUpload(
   key: string,
   contentType: string,
 ): Promise<{ uploadUrl: string; publicUrl: string }> {
+  if (!isR2Configured()) {
+    throw new TRPCError({
+      code: 'PRECONDITION_FAILED',
+      message: 'File uploads are disabled — configure Cloudflare R2 in settings to enable uploads.',
+    });
+  }
   const command = new PutObjectCommand({ Bucket: BUCKET, Key: key, ContentType: contentType });
   const uploadUrl = await getSignedUrl(getClient(), command, { expiresIn: 600 });
   return { uploadUrl, publicUrl: `${PUBLIC_URL}/${key}` };

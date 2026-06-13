@@ -6,9 +6,18 @@ import { trpc } from '@/trpc/react';
 import { Button } from '@/components/ui/button';
 import { Input, Label } from '@/components/ui/primitives';
 
+const INTEGRATIONS: { key: 'email' | 'storage' | 'search' | 'realtime' | 'analytics'; label: string; offHint: string }[] = [
+  { key: 'email', label: 'Email (Resend)', offHint: 'Set RESEND_API_KEY (re_…) — emails are skipped until configured.' },
+  { key: 'storage', label: 'File storage (Cloudflare R2)', offHint: 'Set R2_ACCOUNT_ID + keys — uploads are disabled until configured.' },
+  { key: 'search', label: 'Search (Meilisearch)', offHint: 'Set MEILISEARCH_URL — search falls back to the database until configured.' },
+  { key: 'realtime', label: 'Real-time (Pusher)', offHint: 'Set PUSHER_APP_ID/KEY/SECRET — notifications fall back to polling.' },
+  { key: 'analytics', label: 'Analytics (Umami)', offHint: 'Set NEXT_PUBLIC_UMAMI_ID — analytics are disabled until configured.' },
+];
+
 export default function AdminSettingsPage() {
   const utils = trpc.useUtils();
   const settings = trpc.admin.getSettings.useQuery();
+  const integrations = trpc.content.integrations.useQuery(undefined, { staleTime: 60_000 });
   const setSetting = trpc.admin.setSetting.useMutation({
     onSuccess: () => { utils.admin.getSettings.invalidate(); toast.success('Saved'); },
     onError: (e) => toast.error(e.message),
@@ -71,6 +80,28 @@ export default function AdminSettingsPage() {
               <Save /> Save
             </Button>
           </div>
+        </div>
+      </div>
+
+      <div className="mt-6 rounded-xl border bg-white p-6">
+        <h2 className="font-display text-lg font-bold text-navy-900">Integrations</h2>
+        <p className="text-sm text-navy-700/60">Optional services. The site works without them — each has a built-in fallback.</p>
+        <div className="mt-4 divide-y">
+          {INTEGRATIONS.map((row) => {
+            const on = integrations.data?.[row.key] ?? false;
+            return (
+              <div key={row.key} className="flex items-start justify-between gap-4 py-3">
+                <div>
+                  <p className="font-medium text-navy-900">{row.label}</p>
+                  {!on && <p className="text-xs text-navy-700/50">{row.offHint}</p>}
+                </div>
+                <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${on ? 'bg-green-50 text-green-700' : 'bg-navy-50 text-navy-500'}`}>
+                  <span className={`h-2 w-2 rounded-full ${on ? 'bg-green-500' : 'bg-navy-300'}`} />
+                  {on ? 'Connected' : 'Not configured'}
+                </span>
+              </div>
+            );
+          })}
         </div>
       </div>
 

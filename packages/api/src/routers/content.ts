@@ -17,6 +17,7 @@ import {
 import { slugify } from '@ddots/shared';
 import { router, publicProcedure, adminProcedure, protectedProcedure } from '../trpc';
 import { sanitizeHtml } from '../lib/security';
+import { integrationStatus } from '../lib/integrations';
 
 const blogInput = z.object({
   title: z.string().min(3).max(200),
@@ -196,6 +197,9 @@ export const contentRouter = router({
     const map = new Map(rows.map((r) => [r.key, r.value]));
     return Object.fromEntries(KEYS.map((k) => [k, map.get(k) !== false])) as Record<(typeof KEYS)[number], boolean>;
   }),
+
+  /** Which optional integrations are configured — drives graceful-degradation UI. */
+  integrations: publicProcedure.query(() => integrationStatus()),
 
   /** Public announcement banner config (site_settings key: announcement_banner). */
   announcement: publicProcedure.query(async ({ ctx }) => {
