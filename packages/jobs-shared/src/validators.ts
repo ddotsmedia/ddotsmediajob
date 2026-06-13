@@ -171,5 +171,21 @@ export const employerProfileSchema = z.object({
   emirateSlug: z.enum(EMIRATE_SLUGS as [string, ...string[]]).optional(),
   logoUrl: z.string().url().optional(),
   size: z.enum(['1-10', '11-50', '51-200', '201-500', '500-1000', '1000-plus']).optional(),
+  // Enhanced company-page fields (Phase 6)
+  officePhotos: z.array(z.string().url()).max(6).optional(),
+  cultureVideo: z.string().trim().max(500).optional(),
+  ceoMessage: z.string().trim().max(3000).optional(),
+  ceoName: z.string().trim().max(120).optional(),
+  ceoPhoto: z.string().url().optional(),
+  cultureDescription: z.string().trim().max(3000).optional(),
+  benefits: z.array(z.string().trim().max(80)).max(20).optional(),
+  workingHours: z.string().trim().max(120).optional(),
+  teamSize: z.string().trim().max(60).optional(),
+  founded: z.string().trim().max(20).optional(),
+  companyType: z.string().trim().max(40).optional(),
+  linkedin: z.string().trim().max(300).optional(),
+  instagram: z.string().trim().max(300).optional(),
+  glassdoorUrl: z.string().trim().max(300).optional(),
+  tourImageUrl: z.string().url().optional(),
 });
 export type EmployerProfileInput = z.infer<typeof employerProfileSchema>;

@@ -5,6 +5,8 @@ import {
   whatsappGroups,
   salaryReports,
   companies,
+  employerProfiles,
+  companyFollowers,
   jobs,
   siteSettings,
   eq,
@@ -130,12 +132,39 @@ export const contentRouter = router({
   companyBySlug: publicProcedure.input(z.object({ slug: z.string() })).query(async ({ ctx, input }) => {
     const company = await ctx.db.query.companies.findFirst({ where: eq(companies.slug, input.slug) });
     if (!company) throw new TRPCError({ code: 'NOT_FOUND' });
-    const openJobs = await ctx.db.query.jobs.findMany({
-      where: and(eq(jobs.companyId, company.id), eq(jobs.status, 'active')),
-      orderBy: [desc(jobs.publishedAt)],
-      limit: 20,
-    });
-    return { company, openJobs };
+    const [openJobs, extras, followerRow, similarRaw] = await Promise.all([
+      ctx.db.query.jobs.findMany({
+        where: and(eq(jobs.companyId, company.id), eq(jobs.status, 'active')),
+        orderBy: [desc(jobs.publishedAt)],
+        limit: 20,
+      }),
+      ctx.db.query.employerProfiles.findFirst({ where: eq(employerProfiles.companyId, company.id) }),
+      ctx.db.select({ n: count() }).from(companyFollowers).where(eq(companyFollowers.companyId, company.id)),
+      company.industry
+        ? ctx.db.query.companies.findMany({ where: eq(companies.industry, company.industry), columns: { slug: true, name: true, logoUrl: true, industry: true, emirateSlug: true }, limit: 4 })
+        : Promise.resolve([]),
+    ]);
+    let isFollowing = false;
+    if (ctx.session?.user?.id) {
+      const f = await ctx.db.query.companyFollowers.findFirst({
+        where: and(eq(companyFollowers.companyId, company.id), eq(companyFollowers.seekerId, ctx.session.user.id)),
+      });
+      isFollowing = !!f;
+    }
+    const similar = similarRaw.filter((c) => c.slug !== company.slug).slice(0, 3);
+    return { company, openJobs, extras: extras ?? null, followerCount: Number(followerRow[0]?.n ?? 0), isFollowing, similar };
+  }),
+
+  /** Seeker follows a company (idempotent). */
+  followCompany: protectedProcedure.input(z.object({ companyId: z.string().uuid() })).mutation(async ({ ctx, input }) => {
+    await ctx.db.insert(companyFollowers).values({ companyId: input.companyId, seekerId: ctx.session.user.id }).onConflictDoNothing();
+    return { following: true };
+  }),
+
+  /** Seeker unfollows a company. */
+  unfollowCompany: protectedProcedure.input(z.object({ companyId: z.string().uuid() })).mutation(async ({ ctx, input }) => {
+    await ctx.db.delete(companyFollowers).where(and(eq(companyFollowers.companyId, input.companyId), eq(companyFollowers.seekerId, ctx.session.user.id)));
+    return { following: false };
   }),
 
   // ── WhatsApp groups ────────────────────────────────────

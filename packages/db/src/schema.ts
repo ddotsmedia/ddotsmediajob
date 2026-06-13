@@ -147,6 +147,23 @@ export const employerProfiles = pgTable('employer_profiles', {
   verificationDocUrl: text('verification_doc_url'),
   verificationNote: text('verification_note'),
   tradeLicenseNo: varchar('trade_license_no', { length: 80 }),
+  // ── Enhanced company-page fields (Phase 6) ──
+  officePhotos: jsonb('office_photos').$type<string[]>().default([]).notNull(),
+  cultureVideo: varchar('culture_video', { length: 500 }),
+  ceoMessage: text('ceo_message'),
+  ceoName: varchar('ceo_name', { length: 120 }),
+  ceoPhoto: text('ceo_photo'),
+  cultureDescription: text('culture_description'),
+  benefits: jsonb('benefits').$type<string[]>().default([]).notNull(),
+  workingHours: varchar('working_hours', { length: 120 }),
+  teamSize: varchar('team_size', { length: 60 }),
+  founded: varchar('founded', { length: 20 }),
+  companyType: varchar('company_type', { length: 40 }), // LLC | Free Zone | Branch | Government
+  linkedin: varchar('linkedin', { length: 300 }),
+  instagram: varchar('instagram', { length: 300 }),
+  glassdoorUrl: varchar('glassdoor_url', { length: 300 }),
+  tourImageUrl: text('tour_image_url'), // Phase 15: 360° office tour
+  cultureProfileAi: jsonb('culture_profile_ai').$type<Record<string, unknown>>(), // Phase 10 employer culture summary
   ...timestamps,
 });
 
@@ -871,4 +888,108 @@ export const pushSubscriptions = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [uniqueIndex('push_endpoint_idx').on(t.endpoint), index('push_user_idx').on(t.userId)],
+);
+
+// ─── Company followers (Phase 6) ─────────────────────────
+export const companyFollowers = pgTable(
+  'company_followers',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    seekerId: uuid('seeker_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    companyId: uuid('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    uniqueIndex('company_follow_unique_idx').on(t.seekerId, t.companyId),
+    index('company_follow_company_idx').on(t.companyId),
+  ],
+);
+
+// ─── AMA sessions (Phase 8) ──────────────────────────────
+export const amaSessions = pgTable(
+  'ama_sessions',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    slug: varchar('slug', { length: 160 }).notNull(),
+    expertName: varchar('expert_name', { length: 160 }).notNull(),
+    expertTitle: varchar('expert_title', { length: 200 }),
+    expertCompany: varchar('expert_company', { length: 160 }),
+    expertPhoto: text('expert_photo'),
+    topic: varchar('topic', { length: 240 }).notNull(),
+    description: text('description'),
+    scheduledAt: timestamp('scheduled_at', { withTimezone: true }),
+    durationMin: integer('duration_min').default(60).notNull(),
+    recordingUrl: text('recording_url'),
+    summary: text('summary'),
+    status: varchar('status', { length: 20 }).default('upcoming').notNull(), // upcoming | live | past
+    ...timestamps,
+  },
+  (t) => [uniqueIndex('ama_slug_idx').on(t.slug), index('ama_status_idx').on(t.status)],
+);
+
+export const amaQuestions = pgTable(
+  'ama_questions',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    sessionId: uuid('session_id').notNull().references(() => amaSessions.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+    question: text('question').notNull(),
+    upvotes: integer('upvotes').default(0).notNull(),
+    answered: boolean('answered').default(false).notNull(),
+    answer: text('answer'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index('ama_q_session_idx').on(t.sessionId)],
+);
+
+// ─── Seeker credentials (Phase 9) ────────────────────────
+export const seekerCredentials = pgTable(
+  'seeker_credentials',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    seekerId: uuid('seeker_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    credentialType: varchar('credential_type', { length: 80 }).notNull(), // degree | certificate | license
+    issuer: varchar('issuer', { length: 200 }).notNull(),
+    title: varchar('title', { length: 200 }),
+    year: varchar('year', { length: 10 }),
+    fileUrl: text('file_url'),
+    verificationHash: varchar('verification_hash', { length: 64 }),
+    status: varchar('status', { length: 20 }).default('pending').notNull(), // pending | verified | rejected
+    verifiedAt: timestamp('verified_at', { withTimezone: true }),
+    verifiedBy: uuid('verified_by').references(() => users.id, { onDelete: 'set null' }),
+    ...timestamps,
+  },
+  (t) => [
+    index('cred_seeker_idx').on(t.seekerId),
+    uniqueIndex('cred_hash_idx').on(t.verificationHash),
+    index('cred_status_idx').on(t.status),
+  ],
+);
+
+// ─── Culture profiles (Phase 10) ─────────────────────────
+export const cultureProfiles = pgTable(
+  'culture_profiles',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    userType: varchar('user_type', { length: 20 }).notNull(), // seeker | employer
+    answers: jsonb('answers').$type<Record<string, string>>().default({}).notNull(),
+    aiSummary: jsonb('ai_summary').$type<Record<string, unknown>>(),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex('culture_user_idx').on(t.userId)],
+);
+
+// ─── Course affiliate clicks (Phase 13) ──────────────────
+export const courseClicks = pgTable(
+  'course_clicks',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+    courseId: varchar('course_id', { length: 120 }).notNull(),
+    provider: varchar('provider', { length: 120 }),
+    url: text('url'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index('course_click_course_idx').on(t.courseId)],
 );
