@@ -162,6 +162,13 @@
       "when": 1781361103129,
       "tag": "0022_busy_reptil",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1781375390522,
+      "tag": "0023_vengeful_shooting_star",
+      "breakpoints": true
     }
   ]
 }

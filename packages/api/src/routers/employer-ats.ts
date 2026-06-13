@@ -10,6 +10,8 @@ import {
   scorecards,
   scorecardResults,
   talentPool,
+  skillAssessments,
+  skillsAssessmentsResults,
   interviewSlots,
   interviewBookings,
   offerLetters,
@@ -23,6 +25,7 @@ import {
   asc,
   gte,
 } from '@ddots/db';
+import { slugify } from '@ddots/shared';
 import { router, employerProcedure, publicProcedure } from '../trpc';
 import { audit, notify } from '../lib/helpers';
 import { chat, structured, MODEL_FAST, MODEL_SMART } from '../lib/anthropic';
@@ -400,6 +403,60 @@ export const employerAtsRouter = router({
     await notify(slot.employerId, 'interview-booked', 'Interview booked', { body: `A candidate booked ${new Date(slot.startTime).toLocaleString('en-AE')}`, link: '/employer/calendar' });
     return { ok: true };
   }),
+
+  // ── Phase 3: skills assessments ─────────────────────────
+  generateTestQuestions: employerProcedure
+    .input(z.object({ jobTitle: z.string().min(2).max(160), skills: z.string().max(300).optional() }))
+    .mutation(async ({ input }) => {
+      const TOOL = { name: 'quiz', description: 'Generate multiple-choice screening questions.', input_schema: { type: 'object' as const, properties: { questions: { type: 'array', items: { type: 'object', properties: { q: { type: 'string' }, options: { type: 'array', items: { type: 'string' } }, correct: { type: 'integer' } }, required: ['q', 'options', 'correct'] } } }, required: ['questions'] } };
+      const out = await structured<{ questions: { q: string; options: string[]; correct: number }[] }>(
+        'You write fair UAE job screening quizzes. Return 10 multiple-choice questions, each with exactly 4 options and the index (0-3) of the correct one.',
+        wrapUserContent(`Role: ${input.jobTitle}\nSkills: ${input.skills ?? ''}`), TOOL as never, { model: MODEL_FAST, maxTokens: 1500 },
+      );
+      return out.questions.filter((q) => q.options.length === 4 && q.correct >= 0 && q.correct <= 3).slice(0, 10);
+    }),
+
+  createSkillsTest: employerProcedure
+    .input(z.object({
+      title: z.string().min(2).max(160), categorySlug: z.string().max(40).default('admin'), jobId: z.string().uuid().optional(),
+      timeLimitSec: z.number().int().min(60).max(3600).default(900), passScore: z.number().int().min(0).max(100).default(60),
+      questions: z.array(z.object({ q: z.string().min(2).max(500), options: z.array(z.string().min(1).max(200)).length(4), correct: z.number().int().min(0).max(3) })).min(1).max(50),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      if (input.jobId) await assertJobOwner(ctx, input.jobId);
+      const slug = `${slugify(input.title)}-${randomUUID().slice(0, 6)}`;
+      const [row] = await ctx.db.insert(skillAssessments).values({
+        slug, title: input.title, categorySlug: input.categorySlug, questions: input.questions,
+        timeLimitSec: input.timeLimitSec, passScore: input.passScore, badgeName: input.title, badgeColor: '#2a9aa4',
+        employerId: ctx.session.user.id, jobId: input.jobId ?? null,
+      }).returning();
+      return row;
+    }),
+
+  listMyTests: employerProcedure.query(({ ctx }) =>
+    ctx.db.query.skillAssessments.findMany({ where: eq(skillAssessments.employerId, ctx.session.user.id), orderBy: [desc(skillAssessments.createdAt)] }),
+  ),
+
+  testResults: employerProcedure.input(z.object({ jobId: z.string().uuid() })).query(async ({ ctx, input }) => {
+    await assertJobOwner(ctx, input.jobId);
+    return ctx.db.query.skillsAssessmentsResults.findMany({ where: eq(skillsAssessmentsResults.jobId, input.jobId), orderBy: [desc(skillsAssessmentsResults.createdAt)] });
+  }),
+
+  /** Public: candidate submits a test attempt (graded server-side). */
+  submitTestResult: publicProcedure
+    .input(z.object({ assessmentId: z.string().uuid(), applicationId: z.string().uuid().optional(), answers: z.array(z.number().int()), timeTaken: z.number().int().optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const test = await ctx.db.query.skillAssessments.findFirst({ where: eq(skillAssessments.id, input.assessmentId) });
+      if (!test) throw new TRPCError({ code: 'NOT_FOUND' });
+      const qs = test.questions;
+      const correct = qs.reduce((n, q, i) => n + (input.answers[i] === q.correct ? 1 : 0), 0);
+      const score = qs.length ? Math.round((correct / qs.length) * 100) : 0;
+      await ctx.db.insert(skillsAssessmentsResults).values({
+        assessmentId: input.assessmentId, applicationId: input.applicationId ?? null, jobId: test.jobId, score,
+        passed: score >= test.passScore, answers: { answers: input.answers }, timeTaken: input.timeTaken ?? null, completedAt: new Date(),
+      });
+      return { score, passed: score >= test.passScore };
+    }),
 
   // ── Phase 8: compliance calculators (pure) ──────────────
   gratuity: employerProcedure

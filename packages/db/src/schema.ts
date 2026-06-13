@@ -668,9 +668,11 @@ export const skillAssessments = pgTable(
     badgeName: varchar('badge_name', { length: 60 }).notNull(),
     badgeColor: varchar('badge_color', { length: 20 }).default('#2a9aa4').notNull(),
     isActive: boolean('is_active').default(true).notNull(),
+    employerId: uuid('employer_id').references(() => users.id, { onDelete: 'cascade' }), // null = platform test
+    jobId: uuid('job_id').references(() => jobs.id, { onDelete: 'set null' }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [uniqueIndex('assessment_slug_idx').on(t.slug), index('assessment_category_idx').on(t.categorySlug)],
+  (t) => [uniqueIndex('assessment_slug_idx').on(t.slug), index('assessment_category_idx').on(t.categorySlug), index('assessment_employer_idx').on(t.employerId)],
 );
 
 export const assessmentResults = pgTable(
