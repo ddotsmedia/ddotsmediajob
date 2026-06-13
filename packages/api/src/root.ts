@@ -25,6 +25,7 @@ import { successStoriesRouter } from './routers/success-stories';
 import { pushRouter } from './routers/push';
 import { amaRouter } from './routers/ama';
 import { credentialsRouter } from './routers/credentials';
+import { cultureRouter } from './routers/culture';
 
 export const appRouter = router({
   auth: authRouter,
@@ -53,6 +54,7 @@ export const appRouter = router({
   push: pushRouter,
   ama: amaRouter,
   credentials: credentialsRouter,
+  culture: cultureRouter,
 });
 
 export type AppRouter = typeof appRouter;
