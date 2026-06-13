@@ -3,20 +3,23 @@ import type { ParsedJob } from './parser';
 
 const BASE = process.env.NEXT_PUBLIC_BASE_URL ?? SITE.url;
 
-export const HELP_MESSAGE = `👋 *DdotsMediaJobs Bot*
+export const HELP_MESSAGE = `👋 Hi, I'm *Zainab* — your DdotsMediaJobs assistant.
 
-Send a job in any format and I'll post it to the site instantly!
+*🔍 Find jobs* — e.g. "Find nurse jobs in Dubai"
+*💰 Salary check* — e.g. "Salary for accountant in UAE"
+*💬 Career advice* — ask me anything about UAE jobs, visas or interviews
+*📝 Post a job* — just send the details and I'll publish it
 
-*Example:*
+*Example job post:*
 Sales Executive, ABC Trading, Dubai, 5000-7000 AED, visa provided, contact 0501234567
 
 *Commands:*
-📋 *status* — see your recent posts
+📋 *status* — your recent posts
 📊 *list* — total jobs on site
 ❌ *cancel* — cancel current action
-❓ *help* — show this menu
+❓ *menu* — show this menu
 
-Just send the job details and I'll handle the rest! 🚀`;
+How can I help? 🚀`;
 
 export const ERROR_MESSAGE = `⚠️ Something went wrong posting your job.
 Please try again or contact support.`;

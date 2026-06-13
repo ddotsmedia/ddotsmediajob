@@ -3,6 +3,7 @@ import { SITE, EMIRATE_SLUGS } from '@ddots/shared';
 import { parseJobMessage, parseJobFromImage, type ParsedJob } from './parser';
 import { createJobFromWhatsApp } from './createJob';
 import { HELP_MESSAGE, ERROR_MESSAGE, confirmationMessage, successMessage } from './messages';
+import { conciergeReply } from './concierge';
 
 const BASE = process.env.NEXT_PUBLIC_BASE_URL ?? SITE.url;
 const YES = new Set(['yes', 'y', 'post']);
@@ -149,11 +150,14 @@ export async function handleBotMessage(phone: string, message: string): Promise<
     return 'Reply *yes* to post or *no* to cancel.';
   }
 
-  // idle: try to parse a job.
+  // idle: try to parse a job posting first.
   const parsed = await parseJobMessage(text);
-  if (!parsed) return HELP_MESSAGE;
-  await setSession(phone, 'awaiting_confirm', parsed as unknown as Record<string, unknown>);
-  return confirmationMessage(parsed);
+  if (parsed) {
+    await setSession(phone, 'awaiting_confirm', parsed as unknown as Record<string, unknown>);
+    return confirmationMessage(parsed);
+  }
+  // Not a job posting → hand off to the AI concierge (Zainab).
+  return conciergeReply(text);
 }
 
 const POSTER_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']);
