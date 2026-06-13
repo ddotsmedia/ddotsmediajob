@@ -20,7 +20,7 @@ export function QaHub() {
   const [filter, setFilter] = useState<'recent' | 'unanswered' | 'top'>('recent');
   const [asking, setAsking] = useState(false);
   const [qText, setQText] = useState('');
-  const [qCat, setQCat] = useState(CATEGORIES[0]!.slug);
+  const [qCat, setQCat] = useState<string>(CATEGORIES[0]!.slug);
 
   const list = trpc.communityHub.getQuestions.useQuery({ category: cat || undefined, filter });
   const create = trpc.communityHub.createQuestion.useMutation({
