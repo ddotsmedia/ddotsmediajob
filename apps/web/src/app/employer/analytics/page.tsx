@@ -9,6 +9,8 @@ import { Badge } from '@/components/ui/primitives';
 export default function EmployerAnalyticsPage() {
   const analytics = trpc.employers.analytics.useQuery();
   const series = trpc.employers.analyticsSeries.useQuery();
+  const insight = trpc.employerAts.weeklyInsight.useQuery();
+  const funnel = trpc.employerAts.funnel.useQuery();
 
   if (analytics.isLoading || !analytics.data) return <Loader2 className="animate-spin text-teal-500" />;
   const { perJob, totals } = analytics.data;
@@ -25,6 +27,17 @@ export default function EmployerAnalyticsPage() {
         <StatCard icon={Eye} label="Total Views" value={totals.views} />
         <StatCard icon={FileText} label="Applications" value={totals.applications} />
         <StatCard icon={TrendingUp} label="Avg Conversion" value={`${totals.avgConversion}%`} />
+      </div>
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <div className="rounded-xl border bg-white p-5">
+          <h2 className="mb-3 font-display text-sm font-bold text-navy-900">Hiring funnel</h2>
+          {funnel.data ? <HBars data={funnel.data} /> : <Loader2 className="animate-spin text-teal-500" />}
+        </div>
+        <div className="rounded-xl border bg-gradient-to-br from-teal-50 to-white p-5">
+          <h2 className="mb-2 flex items-center gap-2 font-display text-sm font-bold text-navy-900"><TrendingUp className="h-4 w-4 text-teal-600" /> AI weekly insight</h2>
+          {insight.isLoading ? <Loader2 className="animate-spin text-teal-500" /> : <p className="whitespace-pre-line text-sm text-navy-700/80">{insight.data?.insight}</p>}
+        </div>
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">

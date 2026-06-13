@@ -498,6 +498,49 @@ export const employerAtsRouter = router({
     );
   }),
 
+  // ── Phase 12: analytics — AI weekly insight ─────────────
+  weeklyInsight: employerProcedure.query(async ({ ctx }) => {
+    const myJobs = await ctx.db.query.jobs.findMany({ where: eq(jobs.employerId, ctx.session.user.id), columns: { title: true, status: true, applicationCount: true, viewCount: true, emirateSlug: true } });
+    if (!myJobs.length) return { insight: 'Post your first job to start getting hiring insights.' };
+    const summary = myJobs.map((j) => `${j.title} (${j.emirateSlug}, ${j.status}): ${j.viewCount} views, ${j.applicationCount} applications`).join('\n');
+    try {
+      const insight = await chat(
+        'You are a UAE hiring analyst. Give 2-3 short, specific, actionable insights about this employer\'s job performance. Mention concrete numbers. Keep under 90 words.',
+        [{ role: 'user', content: wrapUserContent(summary) }],
+        { model: MODEL_FAST, maxTokens: 300 },
+      );
+      return { insight };
+    } catch {
+      return { insight: 'Insights are temporarily unavailable.' };
+    }
+  }),
+
+  /** Aggregate hiring funnel across the employer's jobs (from stage history). */
+  funnel: employerProcedure.query(async ({ ctx }) => {
+    const myJobs = await ctx.db.query.jobs.findMany({ where: eq(jobs.employerId, ctx.session.user.id), columns: { id: true, viewCount: true, applicationCount: true } });
+    const views = myJobs.reduce((s, j) => s + j.viewCount, 0);
+    const applied = myJobs.reduce((s, j) => s + j.applicationCount, 0);
+    const jobIds = myJobs.map((j) => j.id);
+    let interviewed = 0, offered = 0, hired = 0;
+    if (jobIds.length) {
+      const stages = await ctx.db.query.applicationStages.findMany({ where: inArray(applicationStages.jobId, jobIds), columns: { applicationId: true, stageId: true } });
+      const latestByApp = new Map<string, string>();
+      for (const s of stages) latestByApp.set(s.applicationId, s.stageId); // findMany default order; good enough for counts
+      for (const st of latestByApp.values()) {
+        if (['interview', 'phone'].includes(st)) interviewed++;
+        else if (st === 'offer') offered++;
+        else if (st === 'hired') hired++;
+      }
+    }
+    return [
+      { label: 'Views', value: views },
+      { label: 'Applied', value: applied },
+      { label: 'Interviewed', value: interviewed },
+      { label: 'Offered', value: offered },
+      { label: 'Hired', value: hired },
+    ];
+  }),
+
   // ── Phase 8: compliance calculators (pure) ──────────────
   gratuity: employerProcedure
     .input(z.object({ monthlySalary: z.number().positive(), years: z.number().min(0).max(50), unlimited: z.boolean().default(true) }))
