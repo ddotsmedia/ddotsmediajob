@@ -73,6 +73,7 @@ export default async function CompanyPage({ params }: { params: Promise<{ slug: 
               {extras?.linkedin && <a href={extras.linkedin} target="_blank" rel="noopener noreferrer" className="text-teal-300 hover:text-white"><Linkedin className="h-4 w-4" /></a>}
               {extras?.instagram && <a href={extras.instagram} target="_blank" rel="noopener noreferrer" className="text-teal-300 hover:text-white"><Instagram className="h-4 w-4" /></a>}
               {extras?.glassdoorUrl && <a href={extras.glassdoorUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm text-teal-300 hover:underline"><Star className="h-4 w-4" /> Glassdoor</a>}
+              {extras?.tourImageUrl && <Link href={`/companies/${slug}/tour`} className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-sm font-semibold text-teal-200 hover:bg-white/20">🏢 Virtual office tour</Link>}
             </div>
           </div>
           <FollowCompanyButton companyId={company.id} initialFollowing={isFollowing} followerCount={followerCount} />
