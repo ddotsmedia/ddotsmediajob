@@ -1,6 +1,7 @@
 'use client';
 
 import { MessageCircle } from 'lucide-react';
+import { track as umamiTrack } from '@/lib/analytics';
 import { cn } from '@/lib/utils';
 
 const ADMIN_WA = process.env.NEXT_PUBLIC_ADMIN_WHATSAPP ?? '971501234567';
@@ -28,6 +29,7 @@ export function WhatsappApplyButton({
   const href = `https://wa.me/${number}?text=${encodeURIComponent(msg)}`;
 
   function track() {
+    umamiTrack('apply-click', { jobId: slug, source: 'whatsapp' });
     try {
       const body = JSON.stringify({ action: 'whatsapp_apply' });
       if (navigator.sendBeacon) navigator.sendBeacon(`/api/jobs/${slug}/track`, new Blob([body], { type: 'application/json' }));

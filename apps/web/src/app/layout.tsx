@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import Script from 'next/script';
 import { Sora, DM_Sans } from 'next/font/google';
 import { SITE } from '@ddots/shared';
 import { Providers } from './providers';
@@ -62,6 +63,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <CompareBar />
           <AccessibilityWidget />
         </Providers>
+        {process.env.NEXT_PUBLIC_UMAMI_ID && (
+          <Script
+            src={`${process.env.NEXT_PUBLIC_UMAMI_URL ?? 'https://analytics.ddotsmediajobs.com'}/script.js`}
+            data-website-id={process.env.NEXT_PUBLIC_UMAMI_ID}
+            strategy="afterInteractive"
+          />
+        )}
       </body>
     </html>
   );
