@@ -86,6 +86,22 @@ export function formatExperience(val: string | null | undefined): string {
 /** @deprecated alias kept for existing imports — use {@link formatExperience}. */
 export const expLabel = formatExperience;
 
+/**
+ * Infer an experience level from free job text. Returns null when nothing matches
+ * (caller should leave the field empty). Ranges are checked most-specific first.
+ */
+export function inferExperienceLevel(text: string | null | undefined): ExperienceLevel | null {
+  if (!text) return null;
+  const t = text.toLowerCase();
+  if (/\bfresher\b|no experience|fresh graduate|freshers?\s*welcome/.test(t)) return 'fresher';
+  if (/less than 1 ?year|under 1 ?year|0\s*-\s*1\s*year|0 to 1 ?year/.test(t)) return 'junior';
+  if (/10\s*\+|10 ?years? and (above|over)|more than 10 ?years?|over 10 ?years?|10\s*years?\s*\+/.test(t)) return '10-plus-years';
+  if (/5\s*-\s*10|5 to 10|5\s*\+\s*years?|5 ?years?\s*\+|more than 5 ?years?|minimum (of )?5|at least 5/.test(t)) return '5-10-years';
+  if (/3\s*-\s*5|3 to 5|minimum (of )?3|at least 3/.test(t)) return '3-5-years';
+  if (/1\s*-\s*3|1 to 3|minimum (of )?1|at least 1\b|\b1 ?year|\b2 ?years?\b/.test(t)) return '1-3-years';
+  return null;
+}
+
 export const SALARY_PERIODS = ['monthly', 'yearly', 'hourly', 'daily'] as const;
 export type SalaryPeriod = (typeof SALARY_PERIODS)[number];
 

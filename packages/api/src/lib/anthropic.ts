@@ -284,6 +284,7 @@ export type JobDraft = {
   area: string;
   categorySlug: string;
   jobType: string;
+  experienceLevel?: string | null;
   salaryMin: number;
   salaryMax: number;
   visaProvided: boolean;

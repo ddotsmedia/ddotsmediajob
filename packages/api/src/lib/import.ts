@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { db, jobs, users, companies, notifications, eq } from '@ddots/db';
-import { slugify } from '@ddots/shared';
+import { slugify, inferExperienceLevel } from '@ddots/shared';
 import { structured, JOB_DRAFT_TOOL, MODEL_FAST, type JobDraft } from './anthropic';
 import { wrapUserContent } from './security';
 
@@ -57,7 +57,7 @@ export async function extractAndSaveDraft(text: string, source: string, sourceMe
     emirateSlug: draft.emirate,
     location: draft.area || null,
     jobType: draft.jobType as never,
-    experienceLevel: null as never, // AI imports don't infer experience — leave empty for admin review
+    experienceLevel: inferExperienceLevel(`${text} ${draft.requirements ?? ''}`) as never, // inferred from text, null if absent
     salaryMin: draft.salaryMin || null,
     salaryMax: draft.salaryMax || null,
     visaProvided: draft.visaProvided,

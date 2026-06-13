@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { jobs, jobseekerProfiles, eq, and, gte, ne, isNotNull } from '@ddots/db';
-import { formatSalary } from '@ddots/shared';
+import { formatSalary, inferExperienceLevel } from '@ddots/shared';
 import { router, publicProcedure, protectedProcedure, employerProcedure, adminProcedure } from '../trpc';
 import {
   chat,
@@ -289,9 +289,11 @@ export const aiRouter = router({
     .mutation(async ({ ctx, input }): Promise<JobDraft | null> => {
       console.log('[extractJobFromText] session user:', ctx.session?.user?.id ?? 'none', 'role:', ctx.session?.user?.role ?? 'none');
       await guardAi(ctx, input.text);
+      const exp = inferExperienceLevel(input.text); // deterministic; null when unstated
       // Primary: structured tool-call (Claude/Gemini function calling, no markdown).
       try {
-        return await structured<JobDraft>(JOB_EXTRACT_SYSTEM, `Extract a job posting from this text:\n\n${wrapUserContent(input.text)}`, JOB_DRAFT_TOOL, { model: MODEL_FAST, maxTokens: 1800 });
+        const draft = await structured<JobDraft>(JOB_EXTRACT_SYSTEM, `Extract a job posting from this text:\n\n${wrapUserContent(input.text)}`, JOB_DRAFT_TOOL, { model: MODEL_FAST, maxTokens: 1800 });
+        return { ...draft, experienceLevel: draft.experienceLevel ?? exp };
       } catch (err) {
         console.error('[extractJobFromText] tool-call failed, trying JSON fallback:', err instanceof Error ? err.message : err);
       }
@@ -303,7 +305,8 @@ export const aiRouter = router({
           { model: MODEL_FAST, maxTokens: 1500 },
         );
         console.log('[extractJobFromText] JSON fallback raw (first 400):', raw.slice(0, 400));
-        return parseJobDraftJson(raw);
+        const draft = parseJobDraftJson(raw);
+        return draft ? { ...draft, experienceLevel: draft.experienceLevel ?? exp } : null;
       } catch (err) {
         console.error('[extractJobFromText] JSON fallback failed:', err instanceof Error ? err.message : err);
         return null;
