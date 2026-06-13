@@ -405,4 +405,28 @@ export const communityHubRouter = router({
     await ctx.db.update(groupSuccessStories).set({ approved: input.approved, featured: input.featured ?? false }).where(eq(groupSuccessStories.id, input.id));
     return { ok: true };
   }),
+
+  // ── Phase 13: weekly newsletter generator ───────────────
+  generateNewsletter: adminProcedure.query(async ({ ctx }) => {
+    const site = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ddotsmediajobs.com';
+    const [topJobs, topQa, events, story] = await Promise.all([
+      ctx.db.query.jobs.findMany({ where: eq(jobs.status, 'active'), orderBy: [desc(jobs.publishedAt)], limit: 5, with: { company: { columns: { name: true } } } }),
+      ctx.db.query.communityQa.findMany({ where: eq(communityQa.isApproved, true), orderBy: [desc(communityQa.upvotes)], limit: 3 }),
+      ctx.db.query.communityEvents.findMany({ where: eq(communityEvents.status, 'upcoming'), orderBy: [desc(communityEvents.scheduledAt)], limit: 3 }),
+      ctx.db.query.groupSuccessStories.findFirst({ where: eq(groupSuccessStories.approved, true), orderBy: [desc(groupSuccessStories.createdAt)] }),
+    ]);
+    const jobLines = topJobs.map((j) => `• ${j.title}${j.company?.name ? ` — ${j.company.name}` : ''} (${formatSalary(j.salaryMin, j.salaryMax, j.salaryPeriod, j.salaryHidden)})`);
+    const waText = [
+      '📰 *DdotsMedia Jobs Weekly*',
+      '',
+      '🔥 *Top Jobs This Week:*',
+      ...jobLines,
+      '',
+      topQa[0] ? `💡 *Community Q&A:*\nQ: ${topQa[0].question}\nRead more: ${site}/community/qa/${topQa[0].slug}` : '',
+      story ? `\n⭐ *Success Story:*\n${story.title} — ${site}/success-stories` : '',
+      '',
+      `🔔 Get instant alerts: ${site}`,
+    ].filter(Boolean).join('\n');
+    return { topJobs: jobLines, topQa: topQa.map((q) => ({ slug: q.slug, question: q.question })), events: events.map((e) => ({ slug: e.slug, title: e.title, scheduledAt: e.scheduledAt })), story: story ? { title: story.title } : null, waText };
+  }),
 });
