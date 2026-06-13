@@ -12,7 +12,7 @@ export default function VolunteerPage() {
   const stats = trpc.communityHub.myVolunteerStats.useQuery();
   const groups = trpc.communityHub.myGroups.useQuery();
   const board = trpc.communityHub.volunteerLeaderboard.useQuery({ period: 'month' });
-  const [cat, setCat] = useState(CATEGORIES[0]!.slug);
+  const [cat, setCat] = useState<string>(CATEGORIES[0]!.slug);
   const [jobId, setJobId] = useState('');
   const [groupId, setGroupId] = useState('');
   const jobsQ = trpc.jobs.list.useQuery({ category: cat as never, perPage: 20, page: 1 });
