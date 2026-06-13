@@ -3,7 +3,7 @@
 import { use, useState } from 'react';
 import Link from 'next/link';
 import { toast } from 'sonner';
-import { Loader2, ArrowLeft, Mail, Download, GripVertical, Sparkles } from 'lucide-react';
+import { Loader2, ArrowLeft, Mail, Download, GripVertical, Sparkles, EyeOff, Eye } from 'lucide-react';
 import { timeAgo } from '@ddots/shared';
 import { trpc } from '@/trpc/react';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,9 @@ export default function PipelinePage({ params }: { params: Promise<{ id: string 
   const apps = trpc.applications.forJob.useQuery({ jobId: id });
   const [dragId, setDragId] = useState<string | null>(null);
   const [over, setOver] = useState<Status | null>(null);
+  const [blind, setBlind] = useState(false);
+  // Identity is revealed once a candidate is shortlisted or further.
+  const REVEALED: Status[] = ['shortlisted', 'interview', 'offered', 'hired'];
 
   const updateStatus = trpc.applications.updateStatus.useMutation({
     onMutate: async ({ applicationId, status }) => {
@@ -78,6 +81,9 @@ export default function PipelinePage({ params }: { params: Promise<{ id: string 
           <p className="text-navy-700/60">{apps.data?.length ?? 0} candidates · drag cards between stages.</p>
         </div>
         <div className="flex gap-2">
+          <Button variant={blind ? 'accent' : 'outline'} size="sm" onClick={() => setBlind((b) => !b)} title="Hide names, emails, photos until shortlist to reduce bias">
+            {blind ? <EyeOff /> : <Eye />} Blind review
+          </Button>
           <Button variant="outline" size="sm" onClick={() => rank.mutate({ jobId: id })} disabled={rank.isPending}>
             {rank.isPending ? <Loader2 className="animate-spin" /> : <Sparkles />} AI Rank
           </Button>
@@ -99,7 +105,9 @@ export default function PipelinePage({ params }: { params: Promise<{ id: string 
               <span className="rounded-full bg-navy-100 px-2 py-0.5 text-xs font-semibold text-navy-700">{byStatus(col).length}</span>
             </div>
             <div className={cn('min-h-[120px] space-y-2 rounded-xl border-2 border-dashed p-2 transition-colors', over === col ? 'border-teal-400 bg-teal-50/60' : 'border-transparent bg-navy-50/60')}>
-              {byStatus(col).map((app) => (
+              {byStatus(col).map((app) => {
+                const hidden = blind && !REVEALED.includes(col);
+                return (
                 <div
                   key={app.id}
                   draggable
@@ -111,21 +119,26 @@ export default function PipelinePage({ params }: { params: Promise<{ id: string 
                     <GripVertical className="mt-0.5 h-4 w-4 shrink-0 text-navy-300" />
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
-                        <p className="truncate font-semibold text-navy-900">{app.seeker?.name ?? app.guestName ?? 'Candidate'}</p>
+                        <p className="truncate font-semibold text-navy-900">{hidden ? `Candidate #${app.id.slice(0, 4).toUpperCase()}` : (app.seeker?.name ?? app.guestName ?? 'Candidate')}</p>
                         {typeof app.matchScore === 'number' && (
                           <Badge variant={app.matchScore >= 70 ? 'success' : app.matchScore >= 40 ? 'gold' : 'muted'}>{app.matchScore}</Badge>
                         )}
                       </div>
-                      <a href={`mailto:${app.seeker?.email ?? app.guestEmail}`} className="flex items-center gap-1 text-xs text-teal-600 hover:underline" onClick={(e) => e.stopPropagation()}>
-                        <Mail className="h-3 w-3" /> <span className="truncate">{app.seeker?.email ?? app.guestEmail}</span>
-                      </a>
+                      {hidden ? (
+                        <p className="flex items-center gap-1 text-xs text-navy-700/40"><EyeOff className="h-3 w-3" /> Hidden until shortlist</p>
+                      ) : (
+                        <a href={`mailto:${app.seeker?.email ?? app.guestEmail}`} className="flex items-center gap-1 text-xs text-teal-600 hover:underline" onClick={(e) => e.stopPropagation()}>
+                          <Mail className="h-3 w-3" /> <span className="truncate">{app.seeker?.email ?? app.guestEmail}</span>
+                        </a>
+                      )}
                       <p className="mt-1 text-xs text-navy-700/50">{timeAgo(app.createdAt)}{app.seekerId ? '' : ' · guest'}</p>
                       {app.aiSummary && <p className="mt-1 line-clamp-2 text-xs font-medium text-teal-700">{app.aiSummary}</p>}
                       {app.coverLetter && <p className="mt-1 line-clamp-2 text-xs text-navy-700/70">{app.coverLetter}</p>}
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
               {byStatus(col).length === 0 && <p className="px-2 py-4 text-center text-xs text-navy-700/40">Drop here</p>}
             </div>
           </div>

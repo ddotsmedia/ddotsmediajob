@@ -117,6 +117,7 @@ export function PostJobForm() {
         {step === 1 && (
           <Field label="Description">
             <Textarea className="min-h-[280px]" value={draft.description} onChange={(e) => set('description', e.target.value)} placeholder="Responsibilities, requirements, benefits…" />
+            <BiasCheck description={draft.description} />
           </Field>
         )}
 
@@ -185,4 +186,29 @@ export function PostJobForm() {
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return <div className="space-y-1.5"><Label>{label}</Label>{children}</div>;
+}
+
+/** Live inclusivity / bias indicator for the job description (Phase 12). */
+function BiasCheck({ description }: { description: string }) {
+  const check = trpc.ai.biasDetector.useMutation();
+  const score = check.data ? Math.max(0, 100 - check.data.score) : null; // inclusivity score (100 = no bias)
+  return (
+    <div className="mt-3 rounded-lg border bg-navy-50/40 p-3">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm font-medium text-navy-800">Inclusivity check {score !== null && <span className={cn('ml-1 font-bold', score >= 80 ? 'text-green-600' : score >= 50 ? 'text-amber-600' : 'text-red-600')}>{score}/100</span>}</p>
+        <Button type="button" size="sm" variant="outline" disabled={description.trim().length < 20 || check.isPending} onClick={() => check.mutate({ description })}>
+          {check.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />} Check bias
+        </Button>
+      </div>
+      {check.data && (
+        <div className="mt-2 space-y-1">
+          {check.data.flags.length === 0 ? (
+            <p className="flex items-center gap-1 text-xs text-green-700"><Check className="h-3.5 w-3.5" /> No biased language detected.</p>
+          ) : (
+            check.data.flags.map((f, i) => <p key={i} className="text-xs text-amber-700">⚠ {f}</p>)
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
