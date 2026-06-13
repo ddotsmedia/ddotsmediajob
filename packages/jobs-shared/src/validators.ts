@@ -43,7 +43,7 @@ export const jobFieldsSchema = z.object({
   emirateSlug: z.enum(EMIRATE_SLUGS as [string, ...string[]]),
   location: z.string().trim().max(160).optional(),
   jobType: z.enum(JOB_TYPES),
-  experienceLevel: z.enum(EXPERIENCE_LEVELS),
+  experienceLevel: z.enum(EXPERIENCE_LEVELS).optional(),
   visaStatus: z.enum(VISA_STATUS).default('any'),
   salaryMin: z.number().int().nonnegative().nullable().optional(),
   salaryMax: z.number().int().nonnegative().nullable().optional(),

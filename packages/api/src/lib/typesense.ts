@@ -78,7 +78,7 @@ export function jobToDocument(
     categorySlug: job.categorySlug,
     emirateSlug: job.emirateSlug,
     jobType: job.jobType,
-    experienceLevel: job.experienceLevel,
+    experienceLevel: job.experienceLevel ?? '',
     visaStatus: job.visaStatus,
     skills: job.skills ?? [],
     salaryMin: job.salaryMin ?? undefined,

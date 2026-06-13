@@ -320,7 +320,7 @@ export const jobsRouter = router({
         categorySlug: input.categorySlug,
         emirateSlug: input.emirateSlug,
         jobType: 'full-time',
-        experienceLevel: '1-3-years',
+        experienceLevel: null, // community referrals have no experience field
         salaryMin: input.salaryMin ?? null,
         salaryMax: input.salaryMax ?? null,
         salaryHidden: input.salaryMin == null && input.salaryMax == null,

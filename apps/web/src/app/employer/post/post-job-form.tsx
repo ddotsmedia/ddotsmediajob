@@ -54,7 +54,7 @@ export function PostJobForm() {
   });
 
   const canNext =
-    step === 0 ? draft.title.trim().length >= 3 && Boolean(draft.emirateSlug) && Boolean(draft.experienceLevel) :
+    step === 0 ? draft.title.trim().length >= 3 && Boolean(draft.emirateSlug) :
     step === 1 ? draft.description.trim().length >= 30 :
     step === 2 ? draft.salaryMin == null || draft.salaryMax == null || draft.salaryMax >= draft.salaryMin : true;
 
@@ -62,6 +62,7 @@ export function PostJobForm() {
     const salaryHidden = draft.salaryMin == null && draft.salaryMax == null;
     create.mutate({
       ...draft,
+      experienceLevel: draft.experienceLevel || undefined, // '' → undefined so it stays empty
       salaryPeriod: 'monthly',
       salaryHidden,
       visaStatus: 'any',
@@ -109,7 +110,7 @@ export function PostJobForm() {
               <Field label="Category"><Select value={draft.categorySlug} onChange={(e) => set('categorySlug', e.target.value)}>{CATEGORIES.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}</Select></Field>
               <Field label="Emirate"><Select value={draft.emirateSlug} onChange={(e) => set('emirateSlug', e.target.value)}><option value="">Select emirate</option>{EMIRATES.map((e) => <option key={e.slug} value={e.slug}>{e.name}</option>)}</Select></Field>
               <Field label="Job type"><Select value={draft.jobType} onChange={(e) => set('jobType', e.target.value)}>{JOB_TYPES.map((t) => <option key={t} value={t} className="capitalize">{t.replace('-', ' ')}</option>)}</Select></Field>
-              <Field label="Experience"><Select value={draft.experienceLevel} onChange={(e) => set('experienceLevel', e.target.value)}><option value="">Select experience</option>{EXPERIENCE_LEVELS.map((l) => <option key={l} value={l}>{expLabel(l)}</option>)}</Select></Field>
+              <Field label="Experience"><Select value={draft.experienceLevel} onChange={(e) => set('experienceLevel', e.target.value)}><option value="">Select experience (optional)</option>{EXPERIENCE_LEVELS.map((l) => <option key={l} value={l}>{expLabel(l)}</option>)}</Select></Field>
             </div>
           </>
         )}

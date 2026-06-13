@@ -219,7 +219,8 @@ export const jobs = pgTable(
     emirateSlug: varchar('emirate_slug', { length: 40 }).notNull(),
     location: varchar('location', { length: 160 }),
     jobType: jobTypeEnum('job_type').notNull(),
-    experienceLevel: experienceLevelEnum('experience_level').notNull(),
+    // Nullable + no default: "experience not specified" is a real, valid state.
+    experienceLevel: experienceLevelEnum('experience_level'),
     visaStatus: visaStatusEnum('visa_status').default('any').notNull(),
     salaryMin: integer('salary_min'),
     salaryMax: integer('salary_max'),

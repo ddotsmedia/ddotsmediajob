@@ -1,0 +1,1 @@
+ALTER TABLE "jobs" ALTER COLUMN "experience_level" DROP NOT NULL;

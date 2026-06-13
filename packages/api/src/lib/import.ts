@@ -57,7 +57,7 @@ export async function extractAndSaveDraft(text: string, source: string, sourceMe
     emirateSlug: draft.emirate,
     location: draft.area || null,
     jobType: draft.jobType as never,
-    experienceLevel: 'fresher' as never,
+    experienceLevel: null as never, // AI imports don't infer experience — leave empty for admin review
     salaryMin: draft.salaryMin || null,
     salaryMax: draft.salaryMax || null,
     visaProvided: draft.visaProvided,
