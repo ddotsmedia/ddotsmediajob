@@ -71,6 +71,14 @@ export const communityHubRouter = router({
     return ctx.db.query.jobs.findMany({ where: and(eq(jobs.status, 'active'), eq(jobs.categorySlug, group.categorySlug)), orderBy: [desc(jobs.publishedAt)], limit: 10, with: { company: { columns: { name: true } } } });
   }),
 
+  /** Group leaderboards: most jobs shared, most hires, most members. */
+  groupLeaderboard: publicProcedure.query(async ({ ctx }) => {
+    const top = async (col: typeof whatsappGroups.jobsSharedCount) =>
+      (await ctx.db.query.whatsappGroups.findMany({ where: eq(whatsappGroups.isActive, true), orderBy: [desc(col)], limit: 10 })).map((g) => ({ id: g.id, name: g.name, slug: groupSlug(g), jobsShared: g.jobsSharedCount, hires: g.hiresCount, members: g.memberCount }));
+    const [mostJobs, mostHires, mostMembers] = await Promise.all([top(whatsappGroups.jobsSharedCount), top(whatsappGroups.hiresCount), top(whatsappGroups.memberCount)]);
+    return { mostJobs, mostHires, mostMembers };
+  }),
+
   directoryStats: publicProcedure.query(async ({ ctx }) => {
     const [g, blastWeek] = await Promise.all([
       ctx.db.select({ groups: count(), members: sql<number>`coalesce(sum(${whatsappGroups.memberCount}),0)::int` }).from(whatsappGroups).where(eq(whatsappGroups.isActive, true)),
