@@ -406,9 +406,23 @@ export const whatsappGroups = pgTable(
     description: text('description'),
     memberCount: integer('member_count').default(0).notNull(),
     isActive: boolean('is_active').default(true).notNull(),
+    // Community linkage (additive)
+    slug: varchar('slug', { length: 120 }),
+    jobsSharedCount: integer('jobs_shared_count').default(0).notNull(),
+    hiresCount: integer('hires_count').default(0).notNull(),
+    weeklyActivity: integer('weekly_activity').default(0).notNull(),
+    coverImage: varchar('cover_image', { length: 500 }),
+    groupDescription: text('group_description'),
+    pinnedMessage: text('pinned_message'),
+    volunteerId: uuid('volunteer_id').references(() => users.id, { onDelete: 'set null' }),
+    lastBlastedAt: timestamp('last_blasted_at', { withTimezone: true }),
+    isVerified: boolean('is_verified').default(false).notNull(),
+    badgeFeatured: boolean('badge_featured').default(false).notNull(),
+    badgeMostActive: boolean('badge_most_active').default(false).notNull(),
+    badgeFastestHiring: boolean('badge_fastest_hiring').default(false).notNull(),
     ...timestamps,
   },
-  (t) => [index('wa_category_idx').on(t.categorySlug), index('wa_emirate_idx').on(t.emirateSlug)],
+  (t) => [index('wa_category_idx').on(t.categorySlug), index('wa_emirate_idx').on(t.emirateSlug), uniqueIndex('wa_slug_idx').on(t.slug)],
 );
 
 // ─── WhatsApp posting bot (Twilio) ───────────────────────
@@ -1225,4 +1239,246 @@ export const hiringAnalytics = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [index('hanalytics_employer_idx').on(t.employerId), index('hanalytics_metric_idx').on(t.metric)],
+);
+
+// ════════════════════════════════════════════════════════
+// WhatsApp community suite (additive)
+// ════════════════════════════════════════════════════════
+
+export const groupJobBlasts = pgTable(
+  'group_job_blasts',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    groupId: uuid('group_id').notNull().references(() => whatsappGroups.id, { onDelete: 'cascade' }),
+    jobId: uuid('job_id').notNull().references(() => jobs.id, { onDelete: 'cascade' }),
+    blasterId: uuid('blaster_id').references(() => users.id, { onDelete: 'set null' }),
+    message: text('message'),
+    blastType: varchar('blast_type', { length: 30 }).default('manual').notNull(),
+    clickCount: integer('click_count').default(0).notNull(),
+    sentAt: timestamp('sent_at', { withTimezone: true }).defaultNow().notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index('blast_group_idx').on(t.groupId), index('blast_job_idx').on(t.jobId)],
+);
+
+export const volunteerStats = pgTable(
+  'volunteer_stats',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    groupId: uuid('group_id').references(() => whatsappGroups.id, { onDelete: 'set null' }),
+    month: date('month'),
+    jobsShared: integer('jobs_shared').default(0).notNull(),
+    membersReferred: integer('members_referred').default(0).notNull(),
+    hiresTracked: integer('hires_tracked').default(0).notNull(),
+    points: integer('points').default(0).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index('vstats_user_idx').on(t.userId), index('vstats_group_idx').on(t.groupId)],
+);
+
+export const referralCodes = pgTable(
+  'referral_codes',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    code: varchar('code', { length: 20 }).notNull(),
+    totalClicks: integer('total_clicks').default(0).notNull(),
+    totalConversions: integer('total_conversions').default(0).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex('refcode_code_idx').on(t.code), uniqueIndex('refcode_user_idx').on(t.userId)],
+);
+
+export const referrals = pgTable(
+  'referrals',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    referrerId: uuid('referrer_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    referredId: uuid('referred_id').references(() => users.id, { onDelete: 'cascade' }),
+    referralCode: varchar('referral_code', { length: 20 }).notNull(),
+    source: varchar('source', { length: 40 }),
+    groupId: uuid('group_id').references(() => whatsappGroups.id, { onDelete: 'set null' }),
+    converted: boolean('converted').default(false).notNull(),
+    conversionType: varchar('conversion_type', { length: 40 }),
+    rewardPoints: integer('reward_points').default(0).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    convertedAt: timestamp('converted_at', { withTimezone: true }),
+  },
+  (t) => [index('referral_referrer_idx').on(t.referrerId), index('referral_code_idx').on(t.referralCode)],
+);
+
+export const communityQa = pgTable(
+  'community_qa',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    slug: varchar('slug', { length: 200 }).notNull(),
+    categorySlug: varchar('category_slug', { length: 40 }),
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+    question: text('question').notNull(),
+    isAnonymous: boolean('is_anonymous').default(false).notNull(),
+    upvotes: integer('upvotes').default(0).notNull(),
+    answerCount: integer('answer_count').default(0).notNull(),
+    isAnswered: boolean('is_answered').default(false).notNull(),
+    isApproved: boolean('is_approved').default(true).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex('qa_slug_idx').on(t.slug), index('qa_category_idx').on(t.categorySlug)],
+);
+
+export const communityQaAnswers = pgTable(
+  'community_qa_answers',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    questionId: uuid('question_id').notNull().references(() => communityQa.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+    answer: text('answer').notNull(),
+    upvotes: integer('upvotes').default(0).notNull(),
+    isAccepted: boolean('is_accepted').default(false).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index('qaans_question_idx').on(t.questionId)],
+);
+
+export const salaryPolls = pgTable(
+  'salary_polls',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    categorySlug: varchar('category_slug', { length: 40 }),
+    emirate: varchar('emirate', { length: 40 }),
+    question: text('question').notNull(),
+    options: jsonb('options').$type<string[]>().default([]).notNull(),
+    responses: jsonb('responses').$type<Record<string, number>>().default({}).notNull(),
+    startsAt: timestamp('starts_at', { withTimezone: true }),
+    endsAt: timestamp('ends_at', { withTimezone: true }),
+    publishedAt: timestamp('published_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index('poll_category_idx').on(t.categorySlug)],
+);
+
+export const salaryPollResponses = pgTable(
+  'salary_poll_responses',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    pollId: uuid('poll_id').notNull().references(() => salaryPolls.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    selectedOption: varchar('selected_option', { length: 120 }).notNull(),
+    isAnonymous: boolean('is_anonymous').default(true).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex('pollresp_unique_idx').on(t.pollId, t.userId)],
+);
+
+export const communityEvents = pgTable(
+  'community_events',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    slug: varchar('slug', { length: 200 }).notNull(),
+    groupId: uuid('group_id').references(() => whatsappGroups.id, { onDelete: 'set null' }),
+    categorySlug: varchar('category_slug', { length: 40 }),
+    title: varchar('title', { length: 200 }).notNull(),
+    description: text('description'),
+    hostId: uuid('host_id').references(() => users.id, { onDelete: 'set null' }),
+    eventType: varchar('event_type', { length: 40 }),
+    zoomLink: varchar('zoom_link', { length: 500 }),
+    scheduledAt: timestamp('scheduled_at', { withTimezone: true }),
+    durationMinutes: integer('duration_minutes').default(60).notNull(),
+    maxAttendees: integer('max_attendees'),
+    status: varchar('status', { length: 20 }).default('upcoming').notNull(),
+    recordingUrl: varchar('recording_url', { length: 500 }),
+    summary: text('summary'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex('cevent_slug_idx').on(t.slug), index('cevent_status_idx').on(t.status)],
+);
+
+export const communityEventRsvps = pgTable(
+  'community_event_rsvps',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    eventId: uuid('event_id').notNull().references(() => communityEvents.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    attended: boolean('attended').default(false).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex('rsvp_unique_idx').on(t.eventId, t.userId)],
+);
+
+export const mentorProfiles = pgTable(
+  'mentor_profiles',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    professions: jsonb('professions').$type<string[]>().default([]).notNull(),
+    emirates: jsonb('emirates').$type<string[]>().default([]).notNull(),
+    topics: jsonb('topics').$type<string[]>().default([]).notNull(),
+    bio: text('bio'),
+    availableDays: jsonb('available_days').$type<string[]>().default([]).notNull(),
+    availableTimes: jsonb('available_times').$type<string[]>().default([]).notNull(),
+    maxMenteesPerMonth: integer('max_mentees_per_month').default(3).notNull(),
+    totalSessions: integer('total_sessions').default(0).notNull(),
+    ratingAvg: real('rating_avg').default(0).notNull(),
+    isApproved: boolean('is_approved').default(false).notNull(),
+    isActive: boolean('is_active').default(true).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex('mentor_user_idx').on(t.userId)],
+);
+
+export const mentorRequests = pgTable(
+  'mentor_requests',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    menteeId: uuid('mentee_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    mentorId: uuid('mentor_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    topic: varchar('topic', { length: 120 }),
+    message: text('message'),
+    preferredTime: varchar('preferred_time', { length: 120 }),
+    status: varchar('status', { length: 20 }).default('pending').notNull(),
+    scheduledAt: timestamp('scheduled_at', { withTimezone: true }),
+    zoomLink: varchar('zoom_link', { length: 500 }),
+    notes: text('notes'),
+    rating: integer('rating'),
+    ratingComment: text('rating_comment'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index('mreq_mentor_idx').on(t.mentorId), index('mreq_mentee_idx').on(t.menteeId)],
+);
+
+export const groupSuccessStories = pgTable(
+  'group_success_stories',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    slug: varchar('slug', { length: 200 }).notNull(),
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+    groupId: uuid('group_id').references(() => whatsappGroups.id, { onDelete: 'set null' }),
+    title: varchar('title', { length: 200 }).notNull(),
+    story: text('story').notNull(),
+    photo: varchar('photo', { length: 500 }),
+    jobTitle: varchar('job_title', { length: 160 }),
+    company: varchar('company', { length: 160 }),
+    emirate: varchar('emirate', { length: 40 }),
+    weeksToHire: integer('weeks_to_hire'),
+    tips: text('tips'),
+    approved: boolean('approved').default(false).notNull(),
+    featured: boolean('featured').default(false).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex('gstory_slug_idx').on(t.slug), index('gstory_group_idx').on(t.groupId)],
+);
+
+export const scamReports = pgTable(
+  'scam_reports',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    text: text('text'),
+    riskScore: integer('risk_score'),
+    flags: jsonb('flags').$type<string[]>().default([]).notNull(),
+    source: varchar('source', { length: 60 }),
+    reporterId: uuid('reporter_id').references(() => users.id, { onDelete: 'set null' }),
+    status: varchar('status', { length: 20 }).default('pending').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index('scam_status_idx').on(t.status)],
 );

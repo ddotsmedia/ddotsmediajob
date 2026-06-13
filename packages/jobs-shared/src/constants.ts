@@ -111,7 +111,7 @@ export type JobStatus = (typeof JOB_STATUS)[number];
 export const APPLICATION_STATUS = ['applied', 'reviewing', 'shortlisted', 'interview', 'offered', 'hired', 'rejected', 'withdrawn'] as const;
 export type ApplicationStatus = (typeof APPLICATION_STATUS)[number];
 
-export const USER_ROLES = ['jobseeker', 'employer', 'admin'] as const;
+export const USER_ROLES = ['jobseeker', 'employer', 'admin', 'volunteer'] as const;
 export type UserRole = (typeof USER_ROLES)[number];
 
 export const ALERT_FREQUENCY = ['daily', 'weekly', 'instant'] as const;
