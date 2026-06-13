@@ -10,6 +10,7 @@ import { AnnouncementBanner } from '@/components/announcement-banner';
 import { MobileBottomNav } from '@/components/mobile-bottom-nav';
 import { AccessibilityWidget } from '@/components/accessibility-widget';
 import { CompareBar } from '@/components/compare-bar';
+import { InstallPrompt } from '@/components/install-prompt';
 import { ErrorBoundary } from '@/components/error-boundary';
 import './globals.css';
 
@@ -61,6 +62,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <MobileBottomNav />
           <PostJobFab />
           <CompareBar />
+          <InstallPrompt />
           <AccessibilityWidget />
         </Providers>
         {process.env.NEXT_PUBLIC_UMAMI_ID && (
