@@ -81,6 +81,30 @@ export const employerAtsRouter = router({
     return last?.stageId ?? 'new';
   }),
 
+  /** Full Kanban board: pipeline stages + applications with their current stage. */
+  board: employerProcedure.input(z.object({ jobId: z.string().uuid() })).query(async ({ ctx, input }) => {
+    await assertJobOwner(ctx, input.jobId);
+    const pipe = await ctx.db.query.hiringPipelines.findFirst({ where: eq(hiringPipelines.jobId, input.jobId) });
+    const stages = pipe?.stages ?? DEFAULT_STAGES;
+    const [apps, stageRows] = await Promise.all([
+      ctx.db.query.applications.findMany({ where: eq(applications.jobId, input.jobId), with: { seeker: { columns: { name: true, email: true, image: true } } }, orderBy: [desc(applications.createdAt)] }),
+      ctx.db.query.applicationStages.findMany({ where: eq(applicationStages.jobId, input.jobId), orderBy: [desc(applicationStages.movedAt)] }),
+    ]);
+    const latest = new Map<string, string>();
+    for (const s of stageRows) if (!latest.has(s.applicationId)) latest.set(s.applicationId, s.stageId);
+    const out = apps.map((a) => ({
+      id: a.id,
+      name: a.seeker?.name ?? a.guestName ?? 'Candidate',
+      email: a.seeker?.email ?? a.guestEmail ?? null,
+      matchScore: a.matchScore,
+      status: a.status,
+      source: a.seekerId ? 'direct' : 'guest',
+      createdAt: a.createdAt,
+      stageId: a.status === 'rejected' ? 'rejected' : (latest.get(a.id) ?? 'new'),
+    }));
+    return { stages, applications: out };
+  }),
+
   bulkMoveApplications: employerProcedure
     .input(z.object({ applicationIds: z.array(z.string().uuid()).min(1).max(100), stageId: z.string().max(40) }))
     .mutation(async ({ ctx, input }) => {
