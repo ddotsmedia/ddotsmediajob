@@ -15,6 +15,8 @@ import {
   salaryPollResponses,
   mentorProfiles,
   mentorRequests,
+  communityEvents,
+  communityEventRsvps,
   scamReports,
   eq,
   and,
@@ -331,6 +333,40 @@ export const communityHubRouter = router({
     const req = await ctx.db.query.mentorRequests.findFirst({ where: eq(mentorRequests.id, input.id) });
     if (!req || req.menteeId !== ctx.session.user.id) throw new TRPCError({ code: 'FORBIDDEN' });
     await ctx.db.update(mentorRequests).set({ rating: input.rating, ratingComment: input.comment }).where(eq(mentorRequests.id, input.id));
+    return { ok: true };
+  }),
+
+  // ── Phase 8: community events ───────────────────────────
+  createEvent: protectedProcedure
+    .input(z.object({ title: z.string().min(3).max(200), description: z.string().max(5000).optional(), eventType: z.string().max(40).optional(), categorySlug: z.string().max(40).optional(), zoomLink: z.string().max(500).optional(), scheduledAt: z.string(), durationMinutes: z.number().int().min(15).max(480).default(60), maxAttendees: z.number().int().positive().optional() }))
+    .mutation(async ({ ctx, input }) => {
+      if (!['admin', 'volunteer'].includes(ctx.session.user.role)) throw new TRPCError({ code: 'FORBIDDEN', message: 'Admins and volunteers only.' });
+      const slug = `${slugify(input.title).slice(0, 60)}-${randomBytes(3).toString('hex')}`;
+      const [row] = await ctx.db.insert(communityEvents).values({ slug, title: input.title, description: input.description, eventType: input.eventType, categorySlug: input.categorySlug, zoomLink: input.zoomLink, scheduledAt: new Date(input.scheduledAt), durationMinutes: input.durationMinutes, maxAttendees: input.maxAttendees ?? null, hostId: ctx.session.user.id, status: 'upcoming' }).returning();
+      return row;
+    }),
+
+  listEvents: publicProcedure.query(async ({ ctx }) => {
+    const rows = await ctx.db.query.communityEvents.findMany({ orderBy: [desc(communityEvents.scheduledAt)], limit: 100 });
+    const now = Date.now();
+    return {
+      upcoming: rows.filter((e) => e.status !== 'completed' && e.status !== 'cancelled' && (!e.scheduledAt || new Date(e.scheduledAt).getTime() >= now)),
+      past: rows.filter((e) => e.status === 'completed' || (e.scheduledAt && new Date(e.scheduledAt).getTime() < now)),
+    };
+  }),
+
+  eventBySlug: publicProcedure.input(z.object({ slug: z.string().max(200) })).query(async ({ ctx, input }) => {
+    const event = await ctx.db.query.communityEvents.findFirst({ where: eq(communityEvents.slug, input.slug) });
+    if (!event) throw new TRPCError({ code: 'NOT_FOUND' });
+    const rsvpRow = await ctx.db.select({ n: count() }).from(communityEventRsvps).where(eq(communityEventRsvps.eventId, event.id));
+    let hasRsvp = false;
+    if (ctx.session?.user?.id) hasRsvp = !!(await ctx.db.query.communityEventRsvps.findFirst({ where: and(eq(communityEventRsvps.eventId, event.id), eq(communityEventRsvps.userId, ctx.session.user.id)) }));
+    // Reveal the meeting link only after RSVP.
+    return { event: { ...event, zoomLink: hasRsvp ? event.zoomLink : null }, rsvpCount: Number(rsvpRow[0]?.n ?? 0), hasRsvp };
+  }),
+
+  rsvpEvent: protectedProcedure.input(z.object({ eventId: z.string().uuid() })).mutation(async ({ ctx, input }) => {
+    await ctx.db.insert(communityEventRsvps).values({ eventId: input.eventId, userId: ctx.session.user.id }).onConflictDoNothing();
     return { ok: true };
   }),
 });
