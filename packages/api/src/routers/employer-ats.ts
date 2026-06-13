@@ -10,6 +10,8 @@ import {
   scorecards,
   scorecardResults,
   talentPool,
+  interviewSlots,
+  interviewBookings,
   offerLetters,
   candidateNotes,
   approvalRequests,
@@ -18,6 +20,8 @@ import {
   and,
   inArray,
   desc,
+  asc,
+  gte,
 } from '@ddots/db';
 import { router, employerProcedure, publicProcedure } from '../trpc';
 import { audit, notify } from '../lib/helpers';
@@ -342,6 +346,59 @@ export const employerAtsRouter = router({
   referenceResults: employerProcedure.input(z.object({ applicationId: z.string().uuid() })).query(async ({ ctx, input }) => {
     await assertAppOwner(ctx, input.applicationId);
     return ctx.db.query.referenceCheckRequests.findMany({ where: eq(referenceCheckRequests.applicationId, input.applicationId), orderBy: [desc(referenceCheckRequests.createdAt)] });
+  }),
+
+  // ── Phase 2: interview scheduling ───────────────────────
+  setAvailability: employerProcedure
+    .input(z.object({ slots: z.array(z.object({ startTime: z.string(), endTime: z.string(), jobId: z.string().uuid().optional(), zoomLink: z.string().max(500).optional() })).min(1).max(50) }))
+    .mutation(async ({ ctx, input }) => {
+      const rows = input.slots.map((s) => ({ employerId: ctx.session.user.id, jobId: s.jobId ?? null, startTime: new Date(s.startTime), endTime: new Date(s.endTime), zoomLink: s.zoomLink ?? null }));
+      await ctx.db.insert(interviewSlots).values(rows);
+      return { added: rows.length };
+    }),
+
+  mySlots: employerProcedure.query(({ ctx }) =>
+    ctx.db.query.interviewSlots.findMany({ where: and(eq(interviewSlots.employerId, ctx.session.user.id), gte(interviewSlots.startTime, new Date())), orderBy: [asc(interviewSlots.startTime)], limit: 200 }),
+  ),
+
+  deleteSlot: employerProcedure.input(z.object({ id: z.string().uuid() })).mutation(async ({ ctx, input }) => {
+    await ctx.db.delete(interviewSlots).where(and(eq(interviewSlots.id, input.id), eq(interviewSlots.employerId, ctx.session.user.id), eq(interviewSlots.booked, false)));
+    return { ok: true };
+  }),
+
+  /** Employer calendar: all booked interviews. */
+  calendar: employerProcedure.query(async ({ ctx }) => {
+    const rows = await ctx.db
+      .select({ id: interviewSlots.id, startTime: interviewSlots.startTime, endTime: interviewSlots.endTime, zoomLink: interviewSlots.zoomLink, applicationId: interviewSlots.applicationId, candidateName: users.name, jobTitle: jobs.title })
+      .from(interviewSlots)
+      .leftJoin(applications, eq(applications.id, interviewSlots.applicationId))
+      .leftJoin(users, eq(users.id, applications.seekerId))
+      .leftJoin(jobs, eq(jobs.id, interviewSlots.jobId))
+      .where(and(eq(interviewSlots.employerId, ctx.session.user.id), eq(interviewSlots.booked, true)))
+      .orderBy(asc(interviewSlots.startTime));
+    return rows;
+  }),
+
+  /** Public: candidate views the employer's open slots for their application (token = applicationId). */
+  openSlots: publicProcedure.input(z.object({ token: z.string().uuid() })).query(async ({ ctx, input }) => {
+    const app = await ctx.db.query.applications.findFirst({ where: eq(applications.id, input.token), columns: { id: true, jobId: true } });
+    if (!app) throw new TRPCError({ code: 'NOT_FOUND' });
+    const job = await ctx.db.query.jobs.findFirst({ where: eq(jobs.id, app.jobId), columns: { employerId: true, title: true } });
+    if (!job) throw new TRPCError({ code: 'NOT_FOUND' });
+    const slots = await ctx.db.query.interviewSlots.findMany({ where: and(eq(interviewSlots.employerId, job.employerId), eq(interviewSlots.booked, false), gte(interviewSlots.startTime, new Date())), orderBy: [asc(interviewSlots.startTime)], limit: 30 });
+    return { jobTitle: job.title, slots };
+  }),
+
+  /** Public: candidate books a slot. */
+  bookSlot: publicProcedure.input(z.object({ token: z.string().uuid(), slotId: z.string().uuid() })).mutation(async ({ ctx, input }) => {
+    const app = await ctx.db.query.applications.findFirst({ where: eq(applications.id, input.token), columns: { id: true, jobId: true } });
+    if (!app) throw new TRPCError({ code: 'NOT_FOUND' });
+    const slot = await ctx.db.query.interviewSlots.findFirst({ where: eq(interviewSlots.id, input.slotId) });
+    if (!slot || slot.booked) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Slot no longer available.' });
+    await ctx.db.update(interviewSlots).set({ booked: true, applicationId: app.id }).where(eq(interviewSlots.id, slot.id));
+    await ctx.db.insert(interviewBookings).values({ slotId: slot.id, applicationId: app.id, confirmedAt: new Date() });
+    await notify(slot.employerId, 'interview-booked', 'Interview booked', { body: `A candidate booked ${new Date(slot.startTime).toLocaleString('en-AE')}`, link: '/employer/calendar' });
+    return { ok: true };
   }),
 
   // ── Phase 8: compliance calculators (pure) ──────────────
