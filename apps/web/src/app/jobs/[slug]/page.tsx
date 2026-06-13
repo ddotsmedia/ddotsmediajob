@@ -17,6 +17,7 @@ import { JobActions } from '@/components/job-actions';
 import { MatchScoreCard } from '@/components/ai/match-score';
 import { SkillGap } from '@/components/ai/skill-gap';
 import { ShareMenu } from '@/components/share-menu';
+import { ReferJobButton } from '@/components/refer-job-button';
 import { MobileApplyBar } from '@/components/mobile-apply-bar';
 import { Badge, Card, CardContent } from '@/components/ui/primitives';
 import { parseRoleEmirate, roleEmirateMetadata, roleEmirateStaticParams, RoleEmirateView } from './role-emirate';
@@ -239,6 +240,9 @@ export default async function JobDetailPage({ params }: Props) {
                 />
                 <div className="mt-3">
                   <ShareMenu jobId={job.id} title={job.title} url={`${SITE.url}/jobs/${job.slug}`} variant="button" />
+                </div>
+                <div className="mt-3">
+                  <ReferJobButton title={job.title} slug={job.slug} salary={formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod, job.salaryHidden)} emirate={emirate?.name ?? 'UAE'} company={job.isAnonymous ? null : job.company?.name} />
                 </div>
                 <p className="mt-3 text-center text-xs text-navy-700/50">{job.applicationCount} applicants · {job.viewCount} views</p>
               </CardContent>
