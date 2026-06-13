@@ -16,7 +16,7 @@
  * approved/live state queried by the public site.
  */
 import bcrypt from 'bcryptjs';
-import { db, eq, count, users, jobs, salaryReports, blogPosts } from './index';
+import { db, eq, count, users, jobs, salaryReports, blogPosts, amaSessions } from './index';
 import { BLOG_ARTICLES, renderArticle } from './blog-seed';
 import { EMIRATES, slugify } from '@ddots/shared';
 
@@ -180,6 +180,37 @@ async function main() {
     }
   } else {
     console.log(`   blog: ${publishedCount} published already — skipped`);
+  }
+
+  // ── 4. AMA sessions: seed 3 recorded sessions if the table is empty ──────
+  const amaTotal = Number((await db.select({ n: count() }).from(amaSessions))[0]?.n ?? 0);
+  if (amaTotal === 0) {
+    await db.insert(amaSessions).values([
+      {
+        slug: 'uae-job-market-2026-hr-director-dubai',
+        expertName: 'HR Director', expertTitle: 'HR Director', expertCompany: 'Leading Group, Dubai',
+        topic: 'UAE Job Market 2026', status: 'past',
+        description: 'What is changing in UAE hiring in 2026 — in-demand skills, salary trends and how to stand out.',
+        summary: 'Key takeaways: prioritise digital + AI skills, salary transparency is rising, and Emiratization is reshaping demand across sectors. Tailor every application and lead with measurable impact.',
+      },
+      {
+        slug: 'how-to-land-a-tech-job-in-uae-cto-abu-dhabi',
+        expertName: 'CTO', expertTitle: 'Chief Technology Officer', expertCompany: 'Tech Scaleup, Abu Dhabi',
+        topic: 'How to Land a Tech Job in UAE', status: 'past',
+        description: 'A hiring CTO on what actually gets tech candidates shortlisted in the UAE.',
+        summary: 'Build in public, show real projects, and be specific about stack and outcomes. Referrals and a sharp portfolio beat a generic CV every time.',
+      },
+      {
+        slug: 'emiratization-strategy-hr-consultant',
+        expertName: 'HR Consultant', expertTitle: 'Emiratization Consultant', expertCompany: 'ADNOC (ex)',
+        topic: 'Emiratization Strategy', status: 'past',
+        description: 'Practical Emiratization compliance and talent strategy for UAE employers.',
+        summary: 'Plan quotas early, use Nafis incentives, and invest in graduate pipelines from UAE universities to meet 2026 targets sustainably.',
+      },
+    ]).onConflictDoNothing();
+    console.log('   ama: inserted 3 recorded sessions');
+  } else {
+    console.log(`   ama: ${amaTotal} sessions already — skipped`);
   }
 
   console.log('✅ Demo seed complete.');
