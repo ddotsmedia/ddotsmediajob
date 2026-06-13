@@ -12,6 +12,7 @@ import { trpc } from '@/trpc/react';
 const NAV = [
   { href: '/jobs', label: 'Jobs' },
   { href: '/companies', label: 'Companies' },
+  { href: '/campus', label: 'Campus' },
   { href: '/community', label: 'Community', key: 'community_visible' },
   { href: '/whatsapp-groups', label: 'WhatsApp', key: 'whatsapp_groups_visible' },
   { href: '/blog', label: 'Blog', key: 'blog_visible' },
