@@ -1,7 +1,8 @@
 import { db, jobs, auditLogs, notifications, eq, and, lt, sql } from '@ddots/db';
 import { slugify } from '@ddots/shared';
+import { pushToUser } from './realtime';
 
-/** Create an in-app notification for a user (best-effort). */
+/** Create an in-app notification for a user (best-effort) + real-time ping when configured. */
 export async function notify(
   userId: string,
   type: string,
@@ -10,6 +11,7 @@ export async function notify(
 ): Promise<void> {
   try {
     await db.insert(notifications).values({ userId, type, title, body: opts?.body, link: opts?.link });
+    void pushToUser(userId, 'notification', { type, title });
   } catch (err) {
     console.error('[notify] failed', err);
   }

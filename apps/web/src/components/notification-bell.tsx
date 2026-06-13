@@ -1,16 +1,25 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 import { Bell, Check } from 'lucide-react';
 import { timeAgo } from '@ddots/shared';
 import { trpc } from '@/trpc/react';
+import { useRealtime, isRealtimeEnabled } from '@/lib/realtime';
 import { cn } from '@/lib/utils';
 
 export function NotificationBell() {
   const [open, setOpen] = useState(false);
+  const { data: session } = useSession();
   const utils = trpc.useUtils();
-  const unread = trpc.notifications.unreadCount.useQuery(undefined, { refetchInterval: 30_000 });
+  // Real-time when Pusher is configured; otherwise poll every 30s.
+  const unread = trpc.notifications.unreadCount.useQuery(undefined, { refetchInterval: isRealtimeEnabled ? false : 30_000 });
+  const refresh = useCallback(() => {
+    utils.notifications.unreadCount.invalidate();
+    utils.notifications.list.invalidate();
+  }, [utils]);
+  useRealtime(session?.user?.id, 'notification', refresh);
   const list = trpc.notifications.list.useQuery(undefined, { enabled: open });
   const markAll = trpc.notifications.markAllRead.useMutation({
     onSuccess: () => {

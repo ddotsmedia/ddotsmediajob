@@ -36,6 +36,7 @@
     "ioredis": "^5.4.2",
     "isomorphic-dompurify": "2.20.0",
     "openai": "^4.77.0",
+    "pusher": "^5.3.4",
     "resend": "^4.0.1",
     "superjson": "^2.2.2",
     "typesense": "^1.8.2",
