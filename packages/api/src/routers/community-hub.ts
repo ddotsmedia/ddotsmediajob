@@ -4,7 +4,9 @@ import { TRPCError } from '@trpc/server';
 import {
   whatsappGroups,
   groupJobBlasts,
+  volunteerStats,
   jobs,
+  users,
   referralCodes,
   referrals,
   communityQa,
@@ -17,8 +19,8 @@ import {
   gte,
   count,
 } from '@ddots/db';
-import { slugify } from '@ddots/shared';
-import { router, publicProcedure, protectedProcedure } from '../trpc';
+import { slugify, formatSalary, emirateBySlug } from '@ddots/shared';
+import { router, publicProcedure, protectedProcedure, adminProcedure } from '../trpc';
 import { structured, MODEL_FAST } from '../lib/anthropic';
 import { wrapUserContent } from '../lib/security';
 
@@ -77,8 +79,72 @@ export const communityHubRouter = router({
       if (Number(recent[0]?.n ?? 0) > 0) throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'This job was already blasted to this group in the last 24h.' });
       await ctx.db.insert(groupJobBlasts).values({ groupId: input.groupId, jobId: input.jobId, blasterId: ctx.session.user.id, message: input.message });
       await ctx.db.update(whatsappGroups).set({ jobsSharedCount: sql`${whatsappGroups.jobsSharedCount} + 1`, lastBlastedAt: new Date() }).where(eq(whatsappGroups.id, input.groupId));
+      // Volunteer points: +10 per blast (event-log row).
+      await ctx.db.insert(volunteerStats).values({ userId: ctx.session.user.id, groupId: input.groupId, month: sql`date_trunc('month', now())` as never, jobsShared: 1, points: 10 });
       return { ok: true };
     }),
+
+  /** Build a ready-to-paste WhatsApp blast message for a job + group. */
+  generateBlastMessage: protectedProcedure
+    .input(z.object({ jobId: z.string().uuid(), groupId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      const [job, group] = await Promise.all([
+        ctx.db.query.jobs.findFirst({ where: eq(jobs.id, input.jobId), with: { company: { columns: { name: true } } } }),
+        ctx.db.query.whatsappGroups.findFirst({ where: eq(whatsappGroups.id, input.groupId) }),
+      ]);
+      if (!job || !group) throw new TRPCError({ code: 'NOT_FOUND' });
+      const site = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ddotsmediajobs.com';
+      const pay = formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod, job.salaryHidden);
+      const em = emirateBySlug(job.emirateSlug)?.name ?? job.emirateSlug;
+      const lines = [
+        `🚨 *New Job Alert* | ${group.name}`,
+        `📋 ${job.title}`,
+        job.company?.name ? `🏢 ${job.company.name}` : '',
+        `📍 ${em}`,
+        `💰 ${pay}`,
+        job.visaProvided ? '✅ Visa provided' : '',
+        `📲 Apply free: ${site}/jobs/${job.slug}`,
+        `👥 Shared by DdotsMediaJobs`,
+      ].filter(Boolean);
+      return { message: lines.join('\n') };
+    }),
+
+  /** Current volunteer's stats + rank. */
+  myVolunteerStats: protectedProcedure.query(async ({ ctx }) => {
+    const mine = await ctx.db.select({ points: sql<number>`coalesce(sum(${volunteerStats.points}),0)::int`, jobsShared: sql<number>`coalesce(sum(${volunteerStats.jobsShared}),0)::int` }).from(volunteerStats).where(eq(volunteerStats.userId, ctx.session.user.id));
+    const monthPoints = await ctx.db.select({ points: sql<number>`coalesce(sum(${volunteerStats.points}),0)::int` }).from(volunteerStats).where(and(eq(volunteerStats.userId, ctx.session.user.id), gte(volunteerStats.month, sql`date_trunc('month', now())` as never)));
+    return { totalPoints: Number(mine[0]?.points ?? 0), jobsShared: Number(mine[0]?.jobsShared ?? 0), monthPoints: Number(monthPoints[0]?.points ?? 0) };
+  }),
+
+  /** Top volunteers by points (this month). */
+  volunteerLeaderboard: publicProcedure.input(z.object({ period: z.enum(['month', 'all']).default('month') }).optional()).query(async ({ ctx, input }) => {
+    const period = input?.period ?? 'month';
+    const where = period === 'month' ? gte(volunteerStats.month, sql`date_trunc('month', now())` as never) : undefined;
+    const q = ctx.db.select({ userId: volunteerStats.userId, name: users.name, points: sql<number>`sum(${volunteerStats.points})::int`, jobsShared: sql<number>`sum(${volunteerStats.jobsShared})::int` }).from(volunteerStats).leftJoin(users, eq(users.id, volunteerStats.userId)).groupBy(volunteerStats.userId, users.name).orderBy(desc(sql`sum(${volunteerStats.points})`)).limit(10);
+    return where ? q.where(where) : q;
+  }),
+
+  /** My assigned groups (volunteer). */
+  myGroups: protectedProcedure.query(({ ctx }) =>
+    ctx.db.query.whatsappGroups.findMany({ where: eq(whatsappGroups.volunteerId, ctx.session.user.id), orderBy: [desc(whatsappGroups.memberCount)] }),
+  ),
+
+  // ── Admin: volunteer management ─────────────────────────
+  adminListVolunteers: adminProcedure.query(async ({ ctx }) => {
+    const rows = await ctx.db
+      .select({ id: whatsappGroups.id, name: whatsappGroups.name, volunteerId: whatsappGroups.volunteerId, volunteerName: users.name, jobsShared: whatsappGroups.jobsSharedCount })
+      .from(whatsappGroups)
+      .leftJoin(users, eq(users.id, whatsappGroups.volunteerId))
+      .where(eq(whatsappGroups.isActive, true))
+      .orderBy(desc(whatsappGroups.memberCount));
+    return rows;
+  }),
+
+  adminAssignVolunteer: adminProcedure.input(z.object({ groupId: z.string().uuid(), userId: z.string().uuid().nullable() })).mutation(async ({ ctx, input }) => {
+    await ctx.db.update(whatsappGroups).set({ volunteerId: input.userId }).where(eq(whatsappGroups.id, input.groupId));
+    if (input.userId) await ctx.db.update(users).set({ role: 'volunteer' }).where(and(eq(users.id, input.userId), eq(users.role, 'jobseeker')));
+    return { ok: true };
+  }),
 
   // ── Phase 3: referrals ──────────────────────────────────
   myReferralCode: protectedProcedure.mutation(async ({ ctx }) => {
