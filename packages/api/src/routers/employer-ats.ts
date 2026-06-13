@@ -541,6 +541,20 @@ export const employerAtsRouter = router({
     ];
   }),
 
+  // ── Phase 15: AI hiring assistant (read-only) ───────────
+  hiringAssistant: employerProcedure
+    .input(z.object({ messages: z.array(z.object({ role: z.enum(['user', 'assistant']), content: z.string().max(4000) })).min(1).max(20) }))
+    .mutation(async ({ ctx, input }) => {
+      const myJobs = await ctx.db.query.jobs.findMany({ where: eq(jobs.employerId, ctx.session.user.id), columns: { title: true, status: true, applicationCount: true, viewCount: true, emirateSlug: true, createdAt: true }, limit: 50 });
+      const context = myJobs.length
+        ? myJobs.map((j) => `- ${j.title} (${j.emirateSlug}, ${j.status}): ${j.viewCount} views, ${j.applicationCount} applications, posted ${new Date(j.createdAt).toLocaleDateString('en-AE')}`).join('\n')
+        : 'No jobs posted yet.';
+      const today = new Date().toLocaleDateString('en-AE', { day: 'numeric', month: 'long', year: 'numeric' });
+      const system = `You are the DdotsMediaJobs hiring assistant for a UAE employer. Today is ${today}. You have READ-ONLY access to their data below — never claim to make changes, only suggest actions and draft messages they can send. Always ground answers in the data ("Based on your 23 applications..."). Know UAE labour law and MOHRE basics. Be concise.\n\nEMPLOYER'S JOBS:\n${context}`;
+      const reply = await chat(system, input.messages, { model: MODEL_FAST, maxTokens: 700 });
+      return { reply };
+    }),
+
   // ── Phase 8: compliance calculators (pure) ──────────────
   gratuity: employerProcedure
     .input(z.object({ monthlySalary: z.number().positive(), years: z.number().min(0).max(50), unlimited: z.boolean().default(true) }))
