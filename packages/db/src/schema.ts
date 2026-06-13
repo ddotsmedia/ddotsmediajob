@@ -994,3 +994,224 @@ export const courseClicks = pgTable(
   },
   (t) => [index('course_click_course_idx').on(t.courseId)],
 );
+
+// ════════════════════════════════════════════════════════
+// Employer ATS suite (additive)
+// ════════════════════════════════════════════════════════
+
+const DEFAULT_STAGES = [
+  { id: 'new', name: 'New', order: 0 },
+  { id: 'screened', name: 'Screened', order: 1 },
+  { id: 'phone', name: 'Phone Interview', order: 2 },
+  { id: 'test', name: 'Skills Test', order: 3 },
+  { id: 'interview', name: 'Final Interview', order: 4 },
+  { id: 'offer', name: 'Offer', order: 5 },
+  { id: 'hired', name: 'Hired', order: 6 },
+];
+
+export const hiringPipelines = pgTable(
+  'hiring_pipelines',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    jobId: uuid('job_id').notNull().references(() => jobs.id, { onDelete: 'cascade' }),
+    stages: jsonb('stages').$type<{ id: string; name: string; order: number }[]>().default(DEFAULT_STAGES).notNull(),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex('pipeline_job_idx').on(t.jobId)],
+);
+
+export const applicationStages = pgTable(
+  'application_stages',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    applicationId: uuid('application_id').notNull().references(() => applications.id, { onDelete: 'cascade' }),
+    jobId: uuid('job_id').notNull().references(() => jobs.id, { onDelete: 'cascade' }),
+    stageId: varchar('stage_id', { length: 40 }).notNull(),
+    movedBy: uuid('moved_by').references(() => users.id, { onDelete: 'set null' }),
+    notes: text('notes'),
+    movedAt: timestamp('moved_at', { withTimezone: true }).defaultNow().notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index('appstage_app_idx').on(t.applicationId), index('appstage_job_idx').on(t.jobId)],
+);
+
+export const scorecards = pgTable(
+  'scorecards',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    jobId: uuid('job_id').references(() => jobs.id, { onDelete: 'cascade' }),
+    employerId: uuid('employer_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    name: varchar('name', { length: 200 }).notNull(),
+    competencies: jsonb('competencies').$type<{ name: string; weight: number; description?: string; criteria?: Record<string, string> }[]>().default([]).notNull(),
+    ...timestamps,
+  },
+  (t) => [index('sc_employer_idx').on(t.employerId), index('sc_job_idx').on(t.jobId)],
+);
+
+export const scorecardResults = pgTable(
+  'scorecard_results',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    scorecardId: uuid('scorecard_id').notNull().references(() => scorecards.id, { onDelete: 'cascade' }),
+    applicationId: uuid('application_id').notNull().references(() => applications.id, { onDelete: 'cascade' }),
+    interviewerId: uuid('interviewer_id').references(() => users.id, { onDelete: 'set null' }),
+    scores: jsonb('scores').$type<Record<string, number>>().default({}).notNull(),
+    totalScore: integer('total_score'),
+    recommendation: varchar('recommendation', { length: 30 }),
+    notes: text('notes'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index('scresult_app_idx').on(t.applicationId), index('scresult_card_idx').on(t.scorecardId)],
+);
+
+export const talentPool = pgTable(
+  'talent_pool',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    employerId: uuid('employer_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    candidateId: uuid('candidate_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    notes: text('notes'),
+    tags: jsonb('tags').$type<string[]>().default([]).notNull(),
+    followUpDate: date('follow_up_date'),
+    addedFromJobId: uuid('added_from_job_id').references(() => jobs.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex('talent_unique_idx').on(t.employerId, t.candidateId), index('talent_employer_idx').on(t.employerId)],
+);
+
+export const interviewSlots = pgTable(
+  'interview_slots',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    jobId: uuid('job_id').references(() => jobs.id, { onDelete: 'cascade' }),
+    employerId: uuid('employer_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    startTime: timestamp('start_time', { withTimezone: true }).notNull(),
+    endTime: timestamp('end_time', { withTimezone: true }).notNull(),
+    booked: boolean('booked').default(false).notNull(),
+    applicationId: uuid('application_id').references(() => applications.id, { onDelete: 'set null' }),
+    zoomLink: varchar('zoom_link', { length: 500 }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index('slot_employer_idx').on(t.employerId), index('slot_job_idx').on(t.jobId)],
+);
+
+export const interviewBookings = pgTable(
+  'interview_bookings',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    slotId: uuid('slot_id').notNull().references(() => interviewSlots.id, { onDelete: 'cascade' }),
+    applicationId: uuid('application_id').notNull().references(() => applications.id, { onDelete: 'cascade' }),
+    confirmedAt: timestamp('confirmed_at', { withTimezone: true }),
+    reminderSent24h: boolean('reminder_sent_24h').default(false).notNull(),
+    reminderSent1h: boolean('reminder_sent_1h').default(false).notNull(),
+    calendarInviteSent: boolean('calendar_invite_sent').default(false).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index('booking_slot_idx').on(t.slotId)],
+);
+
+export const offerLetters = pgTable(
+  'offer_letters',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    applicationId: uuid('application_id').notNull().references(() => applications.id, { onDelete: 'cascade' }),
+    jobId: uuid('job_id').references(() => jobs.id, { onDelete: 'set null' }),
+    employerId: uuid('employer_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    candidateId: uuid('candidate_id').references(() => users.id, { onDelete: 'set null' }),
+    salary: integer('salary'),
+    currency: varchar('currency', { length: 8 }).default('AED').notNull(),
+    startDate: date('start_date'),
+    probationMonths: integer('probation_months').default(6).notNull(),
+    benefits: jsonb('benefits').$type<string[]>().default([]).notNull(),
+    content: text('content'),
+    token: varchar('token', { length: 64 }).notNull(),
+    status: varchar('status', { length: 20 }).default('draft').notNull(), // draft|sent|viewed|accepted|declined
+    declineReason: text('decline_reason'),
+    sentAt: timestamp('sent_at', { withTimezone: true }),
+    viewedAt: timestamp('viewed_at', { withTimezone: true }),
+    respondedAt: timestamp('responded_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex('offer_token_idx').on(t.token), index('offer_employer_idx').on(t.employerId), index('offer_app_idx').on(t.applicationId)],
+);
+
+export const skillsAssessmentsResults = pgTable(
+  'skills_assessments_results',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    assessmentId: uuid('assessment_id').references(() => skillAssessments.id, { onDelete: 'set null' }),
+    applicationId: uuid('application_id').references(() => applications.id, { onDelete: 'cascade' }),
+    candidateId: uuid('candidate_id').references(() => users.id, { onDelete: 'set null' }),
+    jobId: uuid('job_id').references(() => jobs.id, { onDelete: 'set null' }),
+    score: integer('score'),
+    passed: boolean('passed').default(false).notNull(),
+    answers: jsonb('answers').$type<Record<string, unknown>>(),
+    timeTaken: integer('time_taken'),
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index('sar_app_idx').on(t.applicationId), index('sar_job_idx').on(t.jobId)],
+);
+
+export const candidateNotes = pgTable(
+  'candidate_notes',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    applicationId: uuid('application_id').notNull().references(() => applications.id, { onDelete: 'cascade' }),
+    authorId: uuid('author_id').references(() => users.id, { onDelete: 'set null' }),
+    content: text('content').notNull(),
+    isPrivate: boolean('is_private').default(false).notNull(),
+    mentions: jsonb('mentions').$type<string[]>().default([]).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index('cnote_app_idx').on(t.applicationId)],
+);
+
+export const approvalRequests = pgTable(
+  'approval_requests',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    jobId: uuid('job_id').references(() => jobs.id, { onDelete: 'cascade' }),
+    offerId: uuid('offer_id').references(() => offerLetters.id, { onDelete: 'cascade' }),
+    requestedBy: uuid('requested_by').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    approvedBy: uuid('approved_by').references(() => users.id, { onDelete: 'set null' }),
+    status: varchar('status', { length: 20 }).default('pending').notNull(), // pending|approved|rejected
+    comment: text('comment'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    decidedAt: timestamp('decided_at', { withTimezone: true }),
+  },
+  (t) => [index('approval_status_idx').on(t.status), index('approval_requestedby_idx').on(t.requestedBy)],
+);
+
+export const referenceCheckRequests = pgTable(
+  'referencecheck_requests',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    applicationId: uuid('application_id').notNull().references(() => applications.id, { onDelete: 'cascade' }),
+    refereeName: varchar('referee_name', { length: 160 }).notNull(),
+    refereeEmail: varchar('referee_email', { length: 255 }),
+    refereePhone: varchar('referee_phone', { length: 40 }),
+    refereeRelation: varchar('referee_relation', { length: 120 }),
+    token: varchar('token', { length: 64 }).notNull(),
+    status: varchar('status', { length: 20 }).default('pending').notNull(), // pending|sent|completed
+    answers: jsonb('answers').$type<Record<string, unknown>>(),
+    aiSummary: text('ai_summary'),
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex('refcheck_token_idx').on(t.token), index('refcheck_app_idx').on(t.applicationId)],
+);
+
+export const hiringAnalytics = pgTable(
+  'hiring_analytics',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    employerId: uuid('employer_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    jobId: uuid('job_id').references(() => jobs.id, { onDelete: 'set null' }),
+    metric: varchar('metric', { length: 60 }).notNull(),
+    value: real('value').default(0).notNull(),
+    period: date('period'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index('hanalytics_employer_idx').on(t.employerId), index('hanalytics_metric_idx').on(t.metric)],
+);
