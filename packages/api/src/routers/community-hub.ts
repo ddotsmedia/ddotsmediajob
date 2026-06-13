@@ -11,6 +11,8 @@ import {
   referrals,
   communityQa,
   communityQaAnswers,
+  salaryPolls,
+  salaryPollResponses,
   scamReports,
   eq,
   and,
@@ -244,6 +246,39 @@ export const communityHubRouter = router({
 
   reportScam: publicProcedure.input(z.object({ text: z.string().max(4000), source: z.string().max(60).optional(), riskScore: z.number().int().optional(), flags: z.array(z.string()).optional() })).mutation(async ({ ctx, input }) => {
     await ctx.db.insert(scamReports).values({ text: input.text.slice(0, 4000), source: input.source, riskScore: input.riskScore, flags: input.flags ?? [], reporterId: ctx.session?.user?.id ?? null });
+    return { ok: true };
+  }),
+
+  // ── Phase 6: salary polls ───────────────────────────────
+  createPoll: adminProcedure
+    .input(z.object({ question: z.string().min(5).max(300), options: z.array(z.string().min(1).max(120)).min(2).max(6), categorySlug: z.string().max(40).optional(), emirate: z.string().max(40).optional(), durationDays: z.number().int().min(1).max(60).default(7) }))
+    .mutation(async ({ ctx, input }) => {
+      const [row] = await ctx.db.insert(salaryPolls).values({
+        question: input.question, options: input.options, categorySlug: input.categorySlug, emirate: input.emirate,
+        startsAt: new Date(), endsAt: new Date(Date.now() + input.durationDays * 86_400_000), publishedAt: new Date(),
+      }).returning();
+      return row;
+    }),
+
+  adminListPolls: adminProcedure.query(({ ctx }) => ctx.db.query.salaryPolls.findMany({ orderBy: [desc(salaryPolls.createdAt)], limit: 100 })),
+
+  /** Latest active poll for a category/emirate (with results + whether I voted). */
+  activePoll: publicProcedure.input(z.object({ category: z.string().optional(), emirate: z.string().optional() }).optional()).query(async ({ ctx, input }) => {
+    const conds = [sql`${salaryPolls.publishedAt} is not null`, sql`(${salaryPolls.endsAt} is null or ${salaryPolls.endsAt} > now())`];
+    if (input?.category) conds.push(eq(salaryPolls.categorySlug, input.category));
+    if (input?.emirate) conds.push(eq(salaryPolls.emirate, input.emirate));
+    const poll = await ctx.db.query.salaryPolls.findFirst({ where: and(...conds), orderBy: [desc(salaryPolls.createdAt)] });
+    if (!poll) return null;
+    const counts = await ctx.db.select({ option: salaryPollResponses.selectedOption, n: count() }).from(salaryPollResponses).where(eq(salaryPollResponses.pollId, poll.id)).groupBy(salaryPollResponses.selectedOption);
+    const map = new Map(counts.map((c) => [c.option, Number(c.n)]));
+    const total = counts.reduce((s, c) => s + Number(c.n), 0);
+    let voted = false;
+    if (ctx.session?.user?.id) voted = !!(await ctx.db.query.salaryPollResponses.findFirst({ where: and(eq(salaryPollResponses.pollId, poll.id), eq(salaryPollResponses.userId, ctx.session.user.id)) }));
+    return { poll, results: poll.options.map((o) => ({ option: o, votes: map.get(o) ?? 0 })), total, voted };
+  }),
+
+  votePoll: protectedProcedure.input(z.object({ pollId: z.string().uuid(), option: z.string().max(120) })).mutation(async ({ ctx, input }) => {
+    await ctx.db.insert(salaryPollResponses).values({ pollId: input.pollId, userId: ctx.session.user.id, selectedOption: input.option }).onConflictDoNothing();
     return { ok: true };
   }),
 });

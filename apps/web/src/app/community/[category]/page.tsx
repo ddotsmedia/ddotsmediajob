@@ -5,6 +5,7 @@ import { MessageCircle, Briefcase, Banknote, MessageSquare, ArrowRight, Users } 
 import { CATEGORIES, categoryBySlug, formatSalary, SITE } from '@ddots/shared';
 import { getApi } from '@/trpc/server';
 import { JobCard } from '@/components/job-card';
+import { SalaryPoll } from '@/components/salary-poll';
 import { Badge } from '@/components/ui/primitives';
 
 export const revalidate = 1800;
@@ -65,6 +66,8 @@ export default async function CommunityCategoryPage({ params }: { params: Promis
             <Link href="/salary-guide" className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-teal-600 hover:underline">Full salary guide <ArrowRight className="h-3 w-3" /></Link>
           </div>
         )}
+
+        <SalaryPoll category={category} />
 
         <section>
           <div className="flex items-center justify-between"><h2 className="flex items-center gap-2 font-display text-xl font-bold text-navy-900"><Briefcase className="h-5 w-5 text-teal-600" /> Latest {cat.name} jobs</h2><Link href={`/jobs?category=${category}`} className="text-sm font-semibold text-teal-600 hover:underline">View all →</Link></div>
