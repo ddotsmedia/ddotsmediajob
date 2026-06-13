@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { MapPin, Briefcase, Clock, Banknote, Zap } from 'lucide-react';
+import { MapPin, Briefcase, Clock, Banknote, Zap, BadgeCheck } from 'lucide-react';
 import { formatSalary, timeAgo, emirateBySlug, categoryBySlug } from '@ddots/shared';
 import { Badge } from './ui/primitives';
 import { WhatsappApplyButton } from './whatsapp-apply-button';
@@ -31,7 +31,7 @@ export type JobCardData = {
   applicationCount?: number;
   publishedAt: Date | string | null;
   createdAt: Date | string;
-  company?: { name: string | null; logoUrl?: string | null } | null;
+  company?: { name: string | null; logoUrl?: string | null; isVerified?: boolean | null } | null;
 };
 
 export function JobCard({ job }: { job: JobCardData }) {
@@ -61,7 +61,12 @@ export function JobCard({ job }: { job: JobCardData }) {
             </h3>
             {job.isFeatured && <Badge>Featured</Badge>}
           </div>
-          <p className="text-sm text-navy-700/70">{job.isAnonymous ? 'Confidential Company' : (job.company?.name ?? 'Confidential')}</p>
+          <p className="flex items-center gap-1 text-sm text-navy-700/70">
+            {job.isAnonymous ? 'Confidential Company' : (job.company?.name ?? 'Confidential')}
+            {!job.isAnonymous && job.company?.isVerified && (
+              <span title="Verified Employer"><BadgeCheck className="h-4 w-4 text-teal-500" /></span>
+            )}
+          </p>
 
           <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-navy-700/80">
             <span className="inline-flex items-center gap-1">

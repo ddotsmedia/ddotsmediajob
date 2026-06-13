@@ -129,6 +129,33 @@ export const contentRouter = router({
     return rows;
   }),
 
+  /** Verified employers directory with open-job counts + filters. */
+  verifiedEmployers: publicProcedure
+    .input(z.object({ industry: z.string().optional(), emirate: z.string().optional(), size: z.string().optional(), hiringNow: z.boolean().optional() }).optional())
+    .query(async ({ ctx, input }) => {
+      const conds = [eq(companies.isVerified, true)];
+      if (input?.industry) conds.push(eq(companies.industry, input.industry));
+      if (input?.emirate) conds.push(eq(companies.emirateSlug, input.emirate));
+      if (input?.size) conds.push(eq(companies.size, input.size as never));
+      const rows = await ctx.db
+        .select({
+          id: companies.id,
+          slug: companies.slug,
+          name: companies.name,
+          logoUrl: companies.logoUrl,
+          industry: companies.industry,
+          emirateSlug: companies.emirateSlug,
+          size: companies.size,
+          openJobs: sql<number>`count(${jobs.id}) filter (where ${jobs.status} = 'active')::int`,
+        })
+        .from(companies)
+        .leftJoin(jobs, eq(jobs.companyId, companies.id))
+        .where(and(...conds))
+        .groupBy(companies.id)
+        .orderBy(desc(sql`count(${jobs.id}) filter (where ${jobs.status} = 'active')`));
+      return input?.hiringNow ? rows.filter((r) => r.openJobs > 0) : rows;
+    }),
+
   companyBySlug: publicProcedure.input(z.object({ slug: z.string() })).query(async ({ ctx, input }) => {
     const company = await ctx.db.query.companies.findFirst({ where: eq(companies.slug, input.slug) });
     if (!company) throw new TRPCError({ code: 'NOT_FOUND' });
