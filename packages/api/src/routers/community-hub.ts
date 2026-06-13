@@ -73,10 +73,14 @@ export const communityHubRouter = router({
 
   /** Group leaderboards: most jobs shared, most hires, most members. */
   groupLeaderboard: publicProcedure.query(async ({ ctx }) => {
-    const top = async (col: typeof whatsappGroups.jobsSharedCount) =>
-      (await ctx.db.query.whatsappGroups.findMany({ where: eq(whatsappGroups.isActive, true), orderBy: [desc(col)], limit: 10 })).map((g) => ({ id: g.id, name: g.name, slug: groupSlug(g), jobsShared: g.jobsSharedCount, hires: g.hiresCount, members: g.memberCount }));
-    const [mostJobs, mostHires, mostMembers] = await Promise.all([top(whatsappGroups.jobsSharedCount), top(whatsappGroups.hiresCount), top(whatsappGroups.memberCount)]);
-    return { mostJobs, mostHires, mostMembers };
+    const map = (g: { id: string; name: string; slug: string | null; jobsSharedCount: number; hiresCount: number; memberCount: number }) =>
+      ({ id: g.id, name: g.name, slug: groupSlug(g), jobsShared: g.jobsSharedCount, hires: g.hiresCount, members: g.memberCount });
+    const [mostJobs, mostHires, mostMembers] = await Promise.all([
+      ctx.db.query.whatsappGroups.findMany({ where: eq(whatsappGroups.isActive, true), orderBy: [desc(whatsappGroups.jobsSharedCount)], limit: 10 }),
+      ctx.db.query.whatsappGroups.findMany({ where: eq(whatsappGroups.isActive, true), orderBy: [desc(whatsappGroups.hiresCount)], limit: 10 }),
+      ctx.db.query.whatsappGroups.findMany({ where: eq(whatsappGroups.isActive, true), orderBy: [desc(whatsappGroups.memberCount)], limit: 10 }),
+    ]);
+    return { mostJobs: mostJobs.map(map), mostHires: mostHires.map(map), mostMembers: mostMembers.map(map) };
   }),
 
   directoryStats: publicProcedure.query(async ({ ctx }) => {
