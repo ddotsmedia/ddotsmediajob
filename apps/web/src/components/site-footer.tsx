@@ -51,6 +51,17 @@ export function SiteFooter() {
           <FooterLink href="/blog">Hiring Blog</FooterLink>
         </FooterCol>
 
+        <FooterCol title="Community">
+          <FooterLink href="/community">Community Forum</FooterLink>
+          <FooterLink href="/community/qa">Q&amp;A</FooterLink>
+          <FooterLink href="/community/profession/healthcare">Healthcare Community</FooterLink>
+          <FooterLink href="/community/profession/it">IT Community</FooterLink>
+          <FooterLink href="/community/profession/driving">Driving Community</FooterLink>
+          <FooterLink href="/community/mentors">Find a Mentor</FooterLink>
+          <FooterLink href="/community/events">Events</FooterLink>
+          <FooterLink href="/community/leaderboard">Leaderboard</FooterLink>
+        </FooterCol>
+
         <FooterCol title="Popular Searches">
           <FooterLink href="/jobs/jobs-for-indians-in-uae">Jobs for Indians</FooterLink>
           <FooterLink href="/jobs/jobs-for-filipinos-in-dubai">Jobs for Filipinos</FooterLink>

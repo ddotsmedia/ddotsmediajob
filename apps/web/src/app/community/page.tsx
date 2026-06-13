@@ -50,6 +50,17 @@ export default function CommunityPage() {
       </div>
       <p className="mt-1 text-navy-700/60">Ask questions and share advice with UAE jobseekers and employers.</p>
 
+      <div className="mt-6 rounded-xl border bg-white p-5">
+        <h2 className="font-display text-lg font-bold text-navy-900">Browse by profession</h2>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {CATEGORIES.map((c) => (
+            <Link key={c.slug} href={`/community/profession/${c.slug}`} className="rounded-full bg-navy-50 px-3 py-1.5 text-sm font-medium text-navy-700 hover:bg-teal-50 hover:text-teal-700">
+              {c.name}
+            </Link>
+          ))}
+        </div>
+      </div>
+
       {open && (
         <form onSubmit={onSubmit} className="mt-6 space-y-3 rounded-xl border bg-white p-5">
           <div className="space-y-1.5"><Label>Title</Label><Input name="title" required placeholder="What's your question?" /></div>
