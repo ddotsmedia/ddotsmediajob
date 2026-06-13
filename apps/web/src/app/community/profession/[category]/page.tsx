@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: { params: Promise<{ category:
   return {
     title: `${cat.name} Jobs Community UAE — Professionals, Salaries & Q&A`,
     description: `Connect with ${cat.name} professionals in the UAE. Jobs, salary insights, WhatsApp groups and community Q&A.`,
-    alternates: { canonical: `${SITE.url}/community/${category}` },
+    alternates: { canonical: `${SITE.url}/community/profession/${category}` },
   };
 }
 
