@@ -28,7 +28,8 @@ import {
 import { slugify } from '@ddots/shared';
 import { router, employerProcedure, publicProcedure } from '../trpc';
 import { audit, notify } from '../lib/helpers';
-import { chat, structured, MODEL_FAST, MODEL_SMART } from '../lib/anthropic';
+import type Anthropic from '@anthropic-ai/sdk';
+import { chat, structured, structuredFromImage, MODEL_FAST, MODEL_SMART } from '../lib/anthropic';
 import { wrapUserContent } from '../lib/security';
 
 const DEFAULT_STAGES = [
@@ -457,6 +458,45 @@ export const employerAtsRouter = router({
       });
       return { score, passed: score >= test.passScore };
     }),
+
+  // ── Phase 7: Arabic / bilingual CV parser (Sonnet) ──────
+  parseArabicCV: employerProcedure.input(z.object({ fileUrl: z.string().url() })).mutation(async ({ input }) => {
+    const res = await fetch(input.fileUrl);
+    if (!res.ok) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Could not fetch the file.' });
+    const buf = Buffer.from(await res.arrayBuffer());
+    if (buf.byteLength > 8 * 1024 * 1024) throw new TRPCError({ code: 'BAD_REQUEST', message: 'File too large (max 8MB).' });
+    const ct = res.headers.get('content-type') ?? '';
+    const mediaType = ct.includes('pdf') || input.fileUrl.endsWith('.pdf') ? 'application/pdf' : ct.includes('png') || input.fileUrl.endsWith('.png') ? 'image/png' : 'image/jpeg';
+    const TOOL: Anthropic.Tool = {
+      name: 'cv',
+      description: 'Extract structured data from a CV in any language.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          language: { type: 'string', description: 'arabic | english | bilingual' },
+          name: { type: 'string' },
+          nameRomanized: { type: 'string' },
+          nationality: { type: 'string' },
+          location: { type: 'string' },
+          email: { type: 'string' },
+          phone: { type: 'string' },
+          skills: { type: 'array', items: { type: 'string' } },
+          experience: { type: 'array', items: { type: 'object', properties: { company: { type: 'string' }, role: { type: 'string' }, dates: { type: 'string' }, description: { type: 'string' } } } },
+          education: { type: 'array', items: { type: 'object', properties: { institution: { type: 'string' }, degree: { type: 'string' }, year: { type: 'string' } } } },
+          confidence: { type: 'integer', description: '0-100' },
+        },
+        required: ['language', 'name', 'skills', 'experience', 'education', 'confidence'],
+      },
+    };
+    return structuredFromImage<Record<string, unknown>>(
+      'You are an expert UAE recruiter fluent in Arabic and English. Extract CV data accurately. For Arabic names provide both Arabic script (name) and a romanized version (nameRomanized). Output all other fields in English. Call cv.',
+      'Extract this CV into structured data.',
+      buf.toString('base64'),
+      mediaType,
+      TOOL,
+      { model: MODEL_SMART, maxTokens: 2000 },
+    );
+  }),
 
   // ── Phase 8: compliance calculators (pure) ──────────────
   gratuity: employerProcedure
