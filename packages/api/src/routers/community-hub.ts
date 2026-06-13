@@ -13,6 +13,8 @@ import {
   communityQaAnswers,
   salaryPolls,
   salaryPollResponses,
+  mentorProfiles,
+  mentorRequests,
   scamReports,
   eq,
   and,
@@ -25,6 +27,7 @@ import { slugify, formatSalary, emirateBySlug } from '@ddots/shared';
 import { router, publicProcedure, protectedProcedure, adminProcedure } from '../trpc';
 import { structured, MODEL_FAST } from '../lib/anthropic';
 import { wrapUserContent } from '../lib/security';
+import { notify } from '../lib/helpers';
 
 function groupSlug(g: { slug: string | null; name: string }) {
   return g.slug ?? slugify(g.name);
@@ -279,6 +282,55 @@ export const communityHubRouter = router({
 
   votePoll: protectedProcedure.input(z.object({ pollId: z.string().uuid(), option: z.string().max(120) })).mutation(async ({ ctx, input }) => {
     await ctx.db.insert(salaryPollResponses).values({ pollId: input.pollId, userId: ctx.session.user.id, selectedOption: input.option }).onConflictDoNothing();
+    return { ok: true };
+  }),
+
+  // ── Phase 7: mentor matching ────────────────────────────
+  applyMentor: protectedProcedure
+    .input(z.object({ bio: z.string().max(2000), professions: z.array(z.string().max(60)).max(10), emirates: z.array(z.string().max(40)).max(7), topics: z.array(z.string().max(60)).max(10), availableDays: z.array(z.string().max(20)).max(7).optional(), maxMenteesPerMonth: z.number().int().min(1).max(20).default(3) }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db.insert(mentorProfiles).values({ userId: ctx.session.user.id, ...input, availableDays: input.availableDays ?? [], availableTimes: [] }).onConflictDoUpdate({ target: mentorProfiles.userId, set: { bio: input.bio, professions: input.professions, emirates: input.emirates, topics: input.topics, availableDays: input.availableDays ?? [], maxMenteesPerMonth: input.maxMenteesPerMonth } });
+      return { ok: true };
+    }),
+
+  getMentors: publicProcedure.input(z.object({ profession: z.string().optional(), topic: z.string().optional() }).optional()).query(async ({ ctx, input }) => {
+    const rows = await ctx.db
+      .select({ id: mentorProfiles.id, userId: mentorProfiles.userId, bio: mentorProfiles.bio, professions: mentorProfiles.professions, topics: mentorProfiles.topics, emirates: mentorProfiles.emirates, totalSessions: mentorProfiles.totalSessions, ratingAvg: mentorProfiles.ratingAvg, name: users.name, image: users.image })
+      .from(mentorProfiles)
+      .leftJoin(users, eq(users.id, mentorProfiles.userId))
+      .where(and(eq(mentorProfiles.isApproved, true), eq(mentorProfiles.isActive, true)))
+      .orderBy(desc(mentorProfiles.totalSessions))
+      .limit(60);
+    return rows.filter((m) => (!input?.profession || m.professions.includes(input.profession)) && (!input?.topic || m.topics.includes(input.topic)));
+  }),
+
+  requestMentorSession: protectedProcedure
+    .input(z.object({ mentorId: z.string().uuid(), topic: z.string().max(120), message: z.string().max(2000), preferredTime: z.string().max(120).optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const [row] = await ctx.db.insert(mentorRequests).values({ menteeId: ctx.session.user.id, mentorId: input.mentorId, topic: input.topic, message: input.message, preferredTime: input.preferredTime }).returning();
+      await notify(input.mentorId, 'mentor-request', 'New mentorship request', { body: input.topic, link: '/dashboard/mentorship' });
+      return row;
+    }),
+
+  myMentorRequests: protectedProcedure.query(({ ctx }) =>
+    ctx.db.query.mentorRequests.findMany({ where: eq(mentorRequests.mentorId, ctx.session.user.id), orderBy: [desc(mentorRequests.createdAt)], limit: 100 }),
+  ),
+
+  respondMentorRequest: protectedProcedure
+    .input(z.object({ id: z.string().uuid(), status: z.enum(['accepted', 'declined', 'completed']), zoomLink: z.string().max(500).optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const req = await ctx.db.query.mentorRequests.findFirst({ where: eq(mentorRequests.id, input.id) });
+      if (!req || req.mentorId !== ctx.session.user.id) throw new TRPCError({ code: 'FORBIDDEN' });
+      await ctx.db.update(mentorRequests).set({ status: input.status, zoomLink: input.zoomLink }).where(eq(mentorRequests.id, input.id));
+      if (input.status === 'completed') await ctx.db.update(mentorProfiles).set({ totalSessions: sql`${mentorProfiles.totalSessions} + 1` }).where(eq(mentorProfiles.userId, ctx.session.user.id));
+      await notify(req.menteeId, 'mentor-response', `Mentorship request ${input.status}`, { body: input.zoomLink ? 'A meeting link was added.' : undefined, link: '/dashboard/mentorship' });
+      return { ok: true };
+    }),
+
+  rateMentor: protectedProcedure.input(z.object({ id: z.string().uuid(), rating: z.number().int().min(1).max(5), comment: z.string().max(1000).optional() })).mutation(async ({ ctx, input }) => {
+    const req = await ctx.db.query.mentorRequests.findFirst({ where: eq(mentorRequests.id, input.id) });
+    if (!req || req.menteeId !== ctx.session.user.id) throw new TRPCError({ code: 'FORBIDDEN' });
+    await ctx.db.update(mentorRequests).set({ rating: input.rating, ratingComment: input.comment }).where(eq(mentorRequests.id, input.id));
     return { ok: true };
   }),
 });
