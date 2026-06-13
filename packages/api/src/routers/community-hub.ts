@@ -17,6 +17,7 @@ import {
   mentorRequests,
   communityEvents,
   communityEventRsvps,
+  groupSuccessStories,
   scamReports,
   eq,
   and,
@@ -367,6 +368,29 @@ export const communityHubRouter = router({
 
   rsvpEvent: protectedProcedure.input(z.object({ eventId: z.string().uuid() })).mutation(async ({ ctx, input }) => {
     await ctx.db.insert(communityEventRsvps).values({ eventId: input.eventId, userId: ctx.session.user.id }).onConflictDoNothing();
+    return { ok: true };
+  }),
+
+  // ── Phase 9: community success stories ──────────────────
+  submitStory: protectedProcedure
+    .input(z.object({ title: z.string().min(5).max(200), story: z.string().min(100).max(4000), jobTitle: z.string().max(160).optional(), company: z.string().max(160).optional(), emirate: z.string().max(40).optional(), groupId: z.string().uuid().optional(), weeksToHire: z.number().int().min(0).max(520).optional(), tips: z.string().max(2000).optional(), photo: z.string().url().optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const slug = `${slugify(input.title).slice(0, 60)}-${randomBytes(3).toString('hex')}`;
+      const [row] = await ctx.db.insert(groupSuccessStories).values({ slug, userId: ctx.session.user.id, ...input, approved: false }).returning();
+      return row;
+    }),
+
+  listStories: publicProcedure.input(z.object({ groupId: z.string().uuid().optional(), featured: z.boolean().optional() }).optional()).query(async ({ ctx, input }) => {
+    const conds = [eq(groupSuccessStories.approved, true)];
+    if (input?.groupId) conds.push(eq(groupSuccessStories.groupId, input.groupId));
+    if (input?.featured) conds.push(eq(groupSuccessStories.featured, true));
+    return ctx.db.query.groupSuccessStories.findMany({ where: and(...conds), orderBy: [desc(groupSuccessStories.createdAt)], limit: 30 });
+  }),
+
+  adminPendingStories: adminProcedure.query(({ ctx }) => ctx.db.query.groupSuccessStories.findMany({ where: eq(groupSuccessStories.approved, false), orderBy: [desc(groupSuccessStories.createdAt)], limit: 100 })),
+
+  adminDecideStory: adminProcedure.input(z.object({ id: z.string().uuid(), approved: z.boolean(), featured: z.boolean().optional() })).mutation(async ({ ctx, input }) => {
+    await ctx.db.update(groupSuccessStories).set({ approved: input.approved, featured: input.featured ?? false }).where(eq(groupSuccessStories.id, input.id));
     return { ok: true };
   }),
 });
