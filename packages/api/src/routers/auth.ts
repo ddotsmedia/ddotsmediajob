@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
-import { users, employerProfiles, jobseekerProfiles, verificationTokens, sessions, eq, and } from '@ddots/db';
+import { users, employerProfiles, jobseekerProfiles, verificationTokens, sessions, referralCodes, referrals, eq, and, sql } from '@ddots/db';
 import { registerSchema, passwordSchema } from '@ddots/shared';
 import { hashPassword } from '@ddots/auth/password';
 import { router, publicProcedure, protectedProcedure } from '../trpc';
@@ -50,6 +50,19 @@ export const authRouter = router({
       name: input.name,
       verifyUrl: `${APP_URL}/verify-email?token=${t}`,
     });
+
+    // Referral conversion (best-effort).
+    if (input.ref) {
+      try {
+        const code = await ctx.db.query.referralCodes.findFirst({ where: eq(referralCodes.code, input.ref) });
+        if (code && code.userId !== user!.id) {
+          await ctx.db.insert(referrals).values({ referrerId: code.userId, referredId: user!.id, referralCode: input.ref, source: 'register', converted: true, conversionType: 'registration', rewardPoints: 50, convertedAt: new Date() }).onConflictDoNothing();
+          await ctx.db.update(referralCodes).set({ totalConversions: sql`${referralCodes.totalConversions} + 1` }).where(eq(referralCodes.id, code.id));
+        }
+      } catch (err) {
+        console.error('[register] referral conversion failed:', err instanceof Error ? err.message : err);
+      }
+    }
 
     await audit(user!.id, 'user.register', 'user', user!.id, { role: input.role });
     return { id: user!.id, email: user!.email };

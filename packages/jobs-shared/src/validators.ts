@@ -26,6 +26,7 @@ export const registerSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
   password: passwordSchema,
   role: z.enum(['jobseeker', 'employer']),
+  ref: z.string().trim().max(20).optional(), // referral code
 });
 export type RegisterInput = z.infer<typeof registerSchema>;
 

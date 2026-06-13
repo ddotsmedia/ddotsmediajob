@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 
 export function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [role, setRole] = useState<'jobseeker' | 'employer'>('jobseeker');
   const register = trpc.auth.register.useMutation();
 
@@ -21,7 +22,10 @@ export function RegisterForm() {
     const email = String(form.get('email'));
     const password = String(form.get('password'));
     try {
-      await register.mutateAsync({ name: String(form.get('name')), email, password, role });
+      let ref = searchParams.get('ref') ?? undefined;
+      if (!ref && typeof window !== 'undefined') { try { ref = localStorage.getItem('ddots-ref') ?? undefined; } catch { /* ignore */ } }
+      await register.mutateAsync({ name: String(form.get('name')), email, password, role, ref });
+      if (typeof window !== 'undefined') { try { localStorage.removeItem('ddots-ref'); } catch { /* ignore */ } }
       await signIn('credentials', { email, password, redirect: false });
       toast.success('Account created!');
       router.push(role === 'employer' ? '/employer' : '/dashboard');
