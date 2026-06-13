@@ -28,6 +28,7 @@ import { credentialsRouter } from './routers/credentials';
 import { cultureRouter } from './routers/culture';
 import { learnRouter } from './routers/learn';
 import { employerAtsRouter } from './routers/employer-ats';
+import { communityHubRouter } from './routers/community-hub';
 
 export const appRouter = router({
   auth: authRouter,
@@ -59,6 +60,7 @@ export const appRouter = router({
   culture: cultureRouter,
   learn: learnRouter,
   employerAts: employerAtsRouter,
+  communityHub: communityHubRouter,
 });
 
 export type AppRouter = typeof appRouter;
