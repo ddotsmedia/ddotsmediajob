@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db, jobs, applications, eq, and, gte, count } from '@ddots/db';
+import { db, jobs, applications, eq, and, gte, count, desc } from '@ddots/db';
 import { extractAndSaveDraft, isJobMessage, sendTelegram } from '@ddots/api/lib/import';
 import { rateLimit } from '@ddots/api/lib/security';
 
@@ -43,7 +43,16 @@ export async function POST(req: Request) {
   if (text.startsWith('/')) {
     const [cmd, arg] = text.split(/\s+/, 2);
     if (cmd === '/start') {
-      await sendTelegram(chatId, 'Welcome! Forward job messages to create drafts. Commands: /drafts /stats /approve <id> /reject <id>');
+      await sendTelegram(chatId, "Hi! I'm Zainab, your UAE job assistant.\nForward any job message to create a draft.\n\nCommands:\n/pending — list jobs awaiting approval\n/drafts — draft count\n/top — top jobs today\n/stats — today's numbers\n/approve <id> · /reject <id>\n/help");
+    } else if (cmd === '/help') {
+      await sendTelegram(chatId, 'Commands:\n/pending /drafts /top /stats\n/approve <id> /reject <id>\nForward a job message to create a draft.');
+    } else if (cmd === '/pending') {
+      const rows = await db.query.jobs.findMany({ where: eq(jobs.status, 'draft'), orderBy: [desc(jobs.createdAt)], limit: 5, columns: { id: true, title: true, emirateSlug: true } });
+      if (!rows.length) await sendTelegram(chatId, 'No jobs awaiting approval. 🎉');
+      else await sendTelegram(chatId, 'Pending approval:\n\n' + rows.map((r) => `${r.title} — ${r.emirateSlug}\n/approve ${r.id}`).join('\n\n'));
+    } else if (cmd === '/top') {
+      const rows = await db.query.jobs.findMany({ where: eq(jobs.status, 'active'), orderBy: [desc(jobs.viewCount)], limit: 5, columns: { title: true, viewCount: true, emirateSlug: true } });
+      await sendTelegram(chatId, rows.length ? 'Top jobs by views:\n\n' + rows.map((r, i) => `${i + 1}. ${r.title} (${r.emirateSlug}) — ${r.viewCount} views`).join('\n') : 'No active jobs yet.');
     } else if (cmd === '/drafts') {
       const [r] = await db.select({ n: count() }).from(jobs).where(eq(jobs.status, 'draft'));
       await sendTelegram(chatId, `You have ${r?.n ?? 0} pending drafts.\nReview: ${DRAFTS_LINK}`);

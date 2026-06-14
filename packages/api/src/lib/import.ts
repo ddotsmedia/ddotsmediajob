@@ -96,6 +96,27 @@ export async function extractAndSaveDraft(text: string, source: string, sourceMe
   return { title: draft.title, slug: jobSlug };
 }
 
+/** One-line scam-risk verdict for a pasted job message (Haiku). Best-effort. */
+export async function quickScamVerdict(text: string): Promise<string> {
+  const TOOL = {
+    name: 'scam_check',
+    description: 'Assess UAE job-posting scam risk.',
+    input_schema: { type: 'object' as const, properties: { risk: { type: 'string', enum: ['safe', 'caution', 'scam'] }, reason: { type: 'string' } }, required: ['risk', 'reason'] },
+  };
+  try {
+    const r = await structured<{ risk: string; reason: string }>(
+      'You detect UAE job scams (upfront fees, no company, personal/overseas numbers, unrealistic salary, passport/bank requests, urgency). Call scam_check.',
+      wrapUserContent(text),
+      TOOL as never,
+      { model: MODEL_FAST, maxTokens: 300 },
+    );
+    const icon = r.risk === 'scam' ? '🚨' : r.risk === 'caution' ? '⚠️' : '✅';
+    return `${icon} ${r.risk.toUpperCase()}\n${r.reason}`;
+  } catch {
+    return 'Could not analyse this message right now.';
+  }
+}
+
 // ─── Channel send helpers (fetch-only, no SDKs) ──────────
 export async function sendWhapiText(to: string, body: string): Promise<void> {
   const key = process.env.WHAPI_API_KEY;
