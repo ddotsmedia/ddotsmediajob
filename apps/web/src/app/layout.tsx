@@ -53,7 +53,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${sora.variable} ${dmSans.variable}`} suppressHydrationWarning>
-      <body className="min-h-screen flex flex-col">
+      <body className="flex min-h-screen flex-col overflow-x-hidden">
         <Providers>
           <AnnouncementBanner />
           <SiteHeader />

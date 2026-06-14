@@ -26,10 +26,10 @@ export function SiteHeader() {
     <>
       <header className="sticky top-0 z-50 border-b bg-white/90 backdrop-blur">
         <div className="bg-navy-900 text-white">
-          <div className="mx-auto flex max-w-7xl items-center justify-center gap-2 px-4 py-2 text-sm font-semibold sm:justify-end">
-            <a href="https://wa.me/971509379212" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 hover:text-[#25D366]">
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#25D366]"><MessageCircle className="h-3 w-3 text-white" /></span>
-              WhatsApp us: <span className="text-[#25D366]">+971 50 937 9212</span>
+          <div className="mx-auto flex max-w-7xl items-center justify-center gap-2 px-4 py-2 text-xs font-semibold sm:justify-end sm:text-sm">
+            <a href="https://wa.me/971509379212" target="_blank" rel="noopener noreferrer" className="inline-flex min-w-0 items-center gap-1.5 truncate hover:text-[#25D366]">
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#25D366]"><MessageCircle className="h-3 w-3 text-white" /></span>
+              <span className="hidden sm:inline">WhatsApp us:</span> <span className="text-[#25D366]">+971 50 937 9212</span>
             </a>
           </div>
         </div>
