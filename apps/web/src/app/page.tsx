@@ -57,8 +57,8 @@ export default async function HomePage() {
       {/* ── Hero ───────────────────────────────────────── */}
       <section className="relative overflow-hidden bg-navy-900 text-white">
         <GridPattern />
-        <div className="absolute -right-24 top-1/2 h-96 w-96 -translate-y-1/2 rounded-full bg-teal-500/20 blur-3xl" />
-        <div className="relative mx-auto max-w-5xl px-4 py-20 text-center md:py-28">
+        <div className="pointer-events-none absolute -right-24 top-1/2 h-96 w-96 -translate-y-1/2 rounded-full bg-teal-500/20 blur-3xl" />
+        <div className="relative z-10 mx-auto max-w-5xl px-4 py-20 text-center md:py-28">
           <span className="inline-flex items-center gap-2 rounded-full border border-teal-400/30 bg-teal-400/10 px-4 py-1.5 text-sm font-medium text-teal-300">
             <CheckCircle2 className="h-4 w-4" /> {stats.totalActive.toLocaleString('en-AE')}+ live jobs across the UAE
           </span>
