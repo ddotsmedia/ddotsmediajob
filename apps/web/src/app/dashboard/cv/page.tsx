@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { FileSpreadsheet, Loader2, Wand2, Check, AlertTriangle, Download } from 'lucide-react';
+import { FileSpreadsheet, Loader2, Wand2, Check, AlertTriangle, Download, Sparkles, Save } from 'lucide-react';
 import { trpc } from '@/trpc/react';
 import { Button } from '@/components/ui/button';
 import { Input, Label, Textarea, Badge } from '@/components/ui/primitives';
@@ -52,6 +52,27 @@ function Builder() {
   const skills = f.skills.split(',').map((s) => s.trim()).filter(Boolean);
   const cvText = `${f.name}\n${f.title}\n\nSUMMARY\n${f.summary}\n\nEXPERIENCE\n${f.experience}\n\nEDUCATION\n${f.education}\n\nSKILLS\n${f.skills}`;
 
+  const me = trpc.jobseekers.me.useQuery();
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => {
+    if (loaded || !me.data) return;
+    const d = me.data.resumeData as (Partial<typeof f> & { template?: TemplateKey }) | null;
+    if (d && typeof d === 'object') {
+      const { template, ...rest } = d;
+      setF((s) => ({ ...s, ...rest }));
+      if (template) setTpl(template);
+    }
+    setLoaded(true);
+  }, [me.data, loaded]);
+
+  const save = trpc.jobseekers.saveCv.useMutation({ onSuccess: () => toast.success('CV saved'), onError: (e) => toast.error(e.message) });
+  const enhance = trpc.ai.cvEnhance.useMutation({ onError: (e) => toast.error(e.message) });
+  function runEnhance(kind: 'summary' | 'bullets' | 'skills') {
+    const content = kind === 'skills' || kind === 'summary' ? `${f.experience}\n${f.education}` : f.experience;
+    if (content.trim().length < 5) return toast.error('Add some experience first');
+    enhance.mutate({ kind, content }, { onSuccess: (r) => set(kind === 'bullets' ? 'experience' : kind, r.text) });
+  }
+
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <div className="space-y-4 rounded-xl border bg-white p-6">
@@ -71,13 +92,23 @@ function Builder() {
         </div>
         <Row label="Full name"><Input value={f.name} onChange={(e) => set('name', e.target.value)} /></Row>
         <Row label="Professional title"><Input value={f.title} onChange={(e) => set('title', e.target.value)} placeholder="e.g. Senior Accountant" /></Row>
-        <Row label="Summary"><Textarea value={f.summary} onChange={(e) => set('summary', e.target.value)} /></Row>
-        <Row label="Experience"><Textarea value={f.experience} onChange={(e) => set('experience', e.target.value)} placeholder="Company — Role (dates)&#10;• achievement" className="min-h-[120px]" /></Row>
+        <Row label="Summary">
+          <Textarea value={f.summary} onChange={(e) => set('summary', e.target.value)} />
+          <AiBtn onClick={() => runEnhance('summary')} pending={enhance.isPending} label="Generate summary" />
+        </Row>
+        <Row label="Experience">
+          <Textarea value={f.experience} onChange={(e) => set('experience', e.target.value)} placeholder="Company — Role (dates)&#10;• achievement" className="min-h-[120px]" />
+          <AiBtn onClick={() => runEnhance('bullets')} pending={enhance.isPending} label="Improve bullets" />
+        </Row>
         <Row label="Education"><Textarea value={f.education} onChange={(e) => set('education', e.target.value)} /></Row>
-        <Row label="Skills (comma-separated)"><Input value={f.skills} onChange={(e) => set('skills', e.target.value)} /></Row>
-        <div className="flex gap-2">
-          <Button className="flex-1" onClick={() => window.print()}><Download /> Download PDF</Button>
-          <Button variant="outline" onClick={() => { navigator.clipboard.writeText(cvText); toast.success('CV text copied'); }}>Copy text</Button>
+        <Row label="Skills (comma-separated)">
+          <Input value={f.skills} onChange={(e) => set('skills', e.target.value)} />
+          <AiBtn onClick={() => runEnhance('skills')} pending={enhance.isPending} label="Suggest skills" />
+        </Row>
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={() => save.mutate({ data: { ...f, template: tpl } })} disabled={save.isPending}>{save.isPending ? <Loader2 className="animate-spin" /> : <Save />} Save</Button>
+          <Button variant="outline" className="flex-1" onClick={() => window.print()}><Download /> PDF</Button>
+          <Button variant="outline" onClick={() => { navigator.clipboard.writeText(cvText); toast.success('CV text copied'); }}>Copy</Button>
         </div>
         <p className="text-xs text-navy-700/50">PDF export opens the print dialog — choose “Save as PDF”.</p>
       </div>
@@ -86,6 +117,14 @@ function Builder() {
         <CvTemplate tpl={tpl} f={f} skills={skills} />
       </div>
     </div>
+  );
+}
+
+function AiBtn({ onClick, pending, label }: { onClick: () => void; pending: boolean; label: string }) {
+  return (
+    <button type="button" onClick={onClick} disabled={pending} className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-teal-600 hover:underline disabled:opacity-50">
+      {pending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />} {label}
+    </button>
   );
 }
 

@@ -39,6 +39,16 @@ export const jobseekersRouter = router({
     return profile;
   }),
 
+  /** Save the structured CV builder data (jsonb). */
+  saveCv: protectedProcedure.input(z.object({ data: z.record(z.string(), z.unknown()) })).mutation(async ({ ctx, input }) => {
+    const username = await ensureUsername(ctx.db, ctx.session.user.id, ctx.session.user.name ?? null);
+    await ctx.db
+      .insert(jobseekerProfiles)
+      .values({ userId: ctx.session.user.id, username, resumeData: input.data as Record<string, unknown> })
+      .onConflictDoUpdate({ target: jobseekerProfiles.userId, set: { resumeData: input.data as Record<string, unknown> } });
+    return { ok: true };
+  }),
+
   /** Update talent / availability / privacy settings. */
   updateTalent: protectedProcedure
     .input(z.object({

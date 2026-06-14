@@ -155,6 +155,20 @@ export const aiRouter = router({
       ),
     ),
 
+  /** CV builder AI helpers: generate summary, improve experience bullets, suggest skills. */
+  cvEnhance: protectedProcedure
+    .input(z.object({ kind: z.enum(['summary', 'bullets', 'skills']), content: z.string().min(5).max(6000) }))
+    .mutation(async ({ ctx, input }) => {
+      await guardAi(ctx, input.content);
+      const prompts = {
+        summary: 'Write a concise 3-line professional CV summary (UAE market) from the experience below. Return only the summary text.',
+        bullets: 'Rewrite these CV experience lines as strong, action-verb bullet points with measurable impact where possible. Keep the same roles. Return only the rewritten bullets.',
+        skills: 'From the experience below, suggest 10-15 relevant skills for a UAE CV. Return a single comma-separated line, nothing else.',
+      } as const;
+      const text = await chat(prompts[input.kind], [{ role: 'user', content: wrapUserContent(input.content) }], { model: MODEL_FAST, maxTokens: 600 });
+      return { text: text.trim() };
+    }),
+
   /** Career advisor chat (Sonnet). */
   careerAdvisor: protectedProcedure
     .input(z.object({ messages }))
