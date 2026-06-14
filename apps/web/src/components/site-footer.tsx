@@ -48,6 +48,7 @@ export function SiteFooter() {
           <FooterLink href="/talent">Browse Talent</FooterLink>
           <FooterLink href="/employer">Employer Dashboard</FooterLink>
           <FooterLink href="/companies">Company Profiles</FooterLink>
+          <FooterLink href="/campus">Campus Jobs</FooterLink>
           <FooterLink href="/blog">Hiring Blog</FooterLink>
         </FooterCol>
 
