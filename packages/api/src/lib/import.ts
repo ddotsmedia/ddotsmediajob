@@ -1,14 +1,21 @@
 import { z } from 'zod';
 import { db, jobs, users, companies, notifications, eq } from '@ddots/db';
 import { slugify, inferExperienceLevel } from '@ddots/shared';
-import { structured, JOB_DRAFT_TOOL, MODEL_FAST, type JobDraft } from './anthropic';
+import { structured, JOB_DRAFT_TOOL, MODEL_FAST, MODEL_SMART, type JobDraft } from './anthropic';
+import { detectLanguage } from './ai-router';
 import { wrapUserContent } from './security';
 
 const SYSTEM =
   'You are a UAE recruitment expert. Extract structured job data from the message and call job_draft. ' +
   'Map locations to the correct emirate slug. If salary is unstated use 0. Set confidence per field.';
 
-const JOB_KEYWORDS = /hiring|vacanc|required|wanted|recruit|\bjobs?\b|positions?|urgently|walk[\s-]?in|salary|send\s+cv|candidate/i;
+const SYSTEM_AR =
+  'أنت خبير توظيف في الإمارات. استخرج بيانات الوظيفة من الرسالة واستدعِ job_draft. ' +
+  'حوّل المواقع إلى slug الإمارة الصحيح (مثل دبي=dubai، أبوظبي=abu-dhabi، الشارقة=sharjah). ' +
+  'حوّل الأرقام العربية إلى إنجليزية (٣٠٠٠ → 3000). إذا لم يُذكر الراتب استخدم 0. حدّد مستوى الثقة لكل حقل.';
+
+// Job keywords in English + Arabic (مطلوب=required, وظيفة=job, شاغر=vacancy, راتب=salary).
+const JOB_KEYWORDS = /hiring|vacanc|required|wanted|recruit|\bjobs?\b|positions?|urgently|walk[\s-]?in|salary|send\s+cv|candidate|مطلوب|وظيفة|شاغر|راتب|توظيف/i;
 
 /** Quick keyword gate so we don't burn AI on non-job chatter. */
 export function isJobMessage(text: string): boolean {
@@ -30,10 +37,14 @@ export type SavedDraft = { title: string; slug: string };
 
 /** Extract a job from free text via Haiku and save a DRAFT (never auto-published). */
 export async function extractAndSaveDraft(text: string, source: string, sourceMetadata?: Record<string, unknown>): Promise<SavedDraft | null> {
-  const draft = await structured<JobDraft>(SYSTEM, `Extract the job posting from this message:\n\n${wrapUserContent(text)}`, JOB_DRAFT_TOOL, {
-    model: MODEL_FAST,
-    maxTokens: 1800,
-  });
+  // Arabic messages → Arabic-optimised prompt + Sonnet (better Arabic); else Haiku.
+  const isArabic = detectLanguage(text) === 'ar';
+  const draft = await structured<JobDraft>(
+    isArabic ? SYSTEM_AR : SYSTEM,
+    `${isArabic ? 'استخرج تفاصيل الوظيفة من النص التالي' : 'Extract the job posting from this message'}:\n\n${wrapUserContent(text)}`,
+    JOB_DRAFT_TOOL,
+    { model: isArabic ? MODEL_SMART : MODEL_FAST, maxTokens: 1800 },
+  );
   draftSchema.parse(draft); // throws if the model returned junk
 
   const admin = await db.query.users.findFirst({ where: eq(users.role, 'admin') });
