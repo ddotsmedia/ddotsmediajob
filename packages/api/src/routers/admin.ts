@@ -32,6 +32,7 @@ import { enforceRateLimit } from '../lib/security';
 import { sanitizeHtml } from '../lib/security';
 import { isSearchConfigured, ensureJobsIndex, bulkUpsert, ping as searchPing, indexCount, jobRowToDoc } from '../lib/meili';
 import { isIndexingConfigured, submitUrl } from '../lib/google-indexing';
+import { ensureVectorSetup, upsertJobEmbedding } from '../lib/embeddings';
 
 /** Shared shape for admin-created jobs (from any of the 6 ingestion methods). */
 const adminJobInput = z.object({
@@ -164,6 +165,7 @@ export const adminRouter = router({
       .where(eq(jobs.id, input.id));
     await enqueueSearchSync({ type: 'upsert', jobId: input.id });
     void submitUrl(`${process.env.NEXT_PUBLIC_APP_URL}/jobs/${job.slug}`, 'URL_UPDATED'); // Google Indexing (best-effort)
+    void upsertJobEmbedding(job.id, `${job.title} ${job.categorySlug} ${job.emirateSlug} ${job.description.slice(0, 1000)}`); // semantic (best-effort, no-op if pgvector absent)
     if (job.employer?.email) {
       await enqueueEmail({
         type: 'job-approved',
@@ -728,6 +730,20 @@ export const adminRouter = router({
     ok: await searchPing(),
     count: await indexCount(),
   })),
+
+  // ── Semantic embeddings (pgvector, conditional) ───────────
+  buildEmbeddings: adminProcedure.mutation(async ({ ctx }) => {
+    const ready = await ensureVectorSetup();
+    if (!ready) return { embedded: 0, available: false };
+    const rows = await ctx.db.query.jobs.findMany({ where: eq(jobs.status, 'active'), orderBy: [desc(jobs.publishedAt)], limit: 500, columns: { id: true, title: true, categorySlug: true, emirateSlug: true, description: true, skills: true } });
+    let embedded = 0;
+    for (const r of rows) {
+      await upsertJobEmbedding(r.id, `${r.title} ${r.categorySlug} ${r.emirateSlug} ${(r.skills ?? []).join(' ')} ${r.description.slice(0, 1000)}`);
+      embedded++;
+    }
+    await audit(ctx.session.user.id, 'admin.embeddings.build', 'job', undefined, { embedded });
+    return { embedded, available: true };
+  }),
 
   // ── Google Indexing ───────────────────────────────────────
   indexingStatus: adminProcedure.query(() => ({ configured: isIndexingConfigured() })),

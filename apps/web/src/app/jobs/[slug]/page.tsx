@@ -18,6 +18,7 @@ import { MatchScoreCard } from '@/components/ai/match-score';
 import { SkillGap } from '@/components/ai/skill-gap';
 import { ShareMenu } from '@/components/share-menu';
 import { ReferJobButton } from '@/components/refer-job-button';
+import { SimilarJobs } from '@/components/similar-jobs';
 import { MobileApplyBar } from '@/components/mobile-apply-bar';
 import { Badge, Card, CardContent } from '@/components/ui/primitives';
 import { parseRoleEmirate, roleEmirateMetadata, roleEmirateStaticParams, RoleEmirateView } from './role-emirate';
@@ -224,6 +225,8 @@ export default async function JobDetailPage({ params }: Props) {
                 </div>
               </CardContent>
             </Card>
+
+            <SimilarJobs jobId={job.id} />
           </div>
 
           <div id="apply" className="scroll-mt-24 space-y-4 lg:sticky lg:top-20 lg:self-start">

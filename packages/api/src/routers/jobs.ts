@@ -24,6 +24,7 @@ import { uniqueJobSlug, audit } from '../lib/helpers';
 import { enqueueSearchSync, enqueueJobEvent } from '../lib/queue';
 import { generateJobFromPrompt } from '../lib/anthropic';
 import { isSearchConfigured, searchJobs, suggest as meiliSuggest } from '../lib/meili';
+import { similarJobIds } from '../lib/embeddings';
 
 export const jobsRouter = router({
   /** Public: fetch up to 3 active jobs by slug for side-by-side comparison. */
@@ -112,6 +113,15 @@ export const jobsRouter = router({
       perPage: input.perPage,
       totalPages: Math.ceil(total / input.perPage),
     };
+  }),
+
+  /** Semantically similar jobs (pgvector). Empty when embeddings unavailable. */
+  similar: publicProcedure.input(z.object({ jobId: z.string().uuid(), limit: z.number().min(1).max(12).default(6) })).query(async ({ ctx, input }) => {
+    const ids = await similarJobIds(input.jobId, input.limit);
+    if (!ids.length) return [];
+    const rows = await ctx.db.query.jobs.findMany({ where: and(inArray(jobs.id, ids), eq(jobs.status, 'active')), with: { company: { columns: { name: true, logoUrl: true, isVerified: true } } } });
+    const byId = new Map(rows.map((r) => [r.id, r]));
+    return ids.map((id) => byId.get(id)).filter((r): r is (typeof rows)[number] => !!r);
   }),
 
   /** Public single job by slug; increments view count. */
