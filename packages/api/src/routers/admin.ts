@@ -653,6 +653,55 @@ export const adminRouter = router({
     return { ok: true, slug: job!.slug };
   }),
 
+  /** Edit a draft's fields without changing its status. */
+  updateDraft: adminProcedure
+    .input(z.object({
+      id: z.string().uuid(),
+      title: z.string().min(3).max(160),
+      description: z.string().min(10),
+      companyName: z.string().max(160).optional(),
+      categorySlug: z.string().max(40),
+      emirateSlug: z.string().max(40),
+      jobType: z.string().max(30),
+      experienceLevel: z.string().max(20).optional().nullable(),
+      salaryMin: z.number().int().nonnegative().nullable().optional(),
+      salaryMax: z.number().int().nonnegative().nullable().optional(),
+      contactWhatsapp: z.string().max(30).optional(),
+      contactEmail: z.string().max(255).optional(),
+      visaProvided: z.boolean().optional(),
+      accommodationProvided: z.boolean().optional(),
+      isUrgent: z.boolean().optional(),
+      isFresher: z.boolean().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      let companyId: string | undefined;
+      if (input.companyName?.trim()) {
+        const slug = slugify(input.companyName);
+        const existing = await ctx.db.query.companies.findFirst({ where: eq(companies.slug, slug) });
+        companyId = existing?.id ?? (await ctx.db.insert(companies).values({ slug, name: input.companyName.trim(), industry: 'General' }).returning())[0]?.id;
+      }
+      await ctx.db.update(jobs).set({
+        title: input.title,
+        description: sanitizeHtml(input.description),
+        categorySlug: input.categorySlug,
+        emirateSlug: input.emirateSlug,
+        jobType: input.jobType as never,
+        experienceLevel: (input.experienceLevel || null) as never,
+        salaryMin: input.salaryMin ?? null,
+        salaryMax: input.salaryMax ?? null,
+        salaryHidden: input.salaryMin == null && input.salaryMax == null,
+        contactWhatsapp: input.contactWhatsapp ?? null,
+        applyEmail: input.contactEmail ?? null,
+        visaProvided: input.visaProvided ?? false,
+        accommodationProvided: input.accommodationProvided ?? false,
+        isUrgent: input.isUrgent ?? false,
+        isFresher: input.isFresher ?? false,
+        ...(companyId ? { companyId } : {}),
+      }).where(and(eq(jobs.id, input.id), eq(jobs.status, 'draft')));
+      await audit(ctx.session.user.id, 'admin.draft.update', 'job', input.id);
+      return { ok: true };
+    }),
+
   // ── WhatsApp bot management ─────────────────────────────
   waBotNumbers: adminProcedure.query(async ({ ctx }) =>
     ctx.db.query.whatsappAdmins.findMany({ orderBy: [desc(whatsappAdmins.createdAt)] }),
