@@ -4,10 +4,11 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { Loader2, Send, Trash2, Pencil, X } from 'lucide-react';
-import { timeAgo, CATEGORIES, EMIRATES, JOB_TYPES, EXPERIENCE_LEVELS, formatExperience } from '@ddots/shared';
+import { formatRelative, CATEGORIES, EMIRATES, JOB_TYPES, EXPERIENCE_LEVELS, formatExperience } from '@ddots/shared';
 import { trpc } from '@/trpc/react';
 import { Button } from '@/components/ui/button';
 import { Select, Badge, Input, Label, Textarea } from '@/components/ui/primitives';
+import { SourceBadge } from '@/components/source-badge';
 
 const SOURCES = ['paste', 'whatsapp', 'whapi', 'telegram', 'csv', 'quick', 'url', 'manual'];
 
@@ -49,8 +50,8 @@ export default function DraftsPage() {
               {drafts.data?.map((d) => (
                 <tr key={d.id} className="border-b last:border-0">
                   <td className="px-4 py-3 font-medium text-navy-900">{d.title}<span className="block text-xs font-normal text-navy-700/50">{d.company?.name ?? 'Confidential'}</span></td>
-                  <td className="px-4 py-3"><Badge variant="muted" className="capitalize">{d.source}</Badge></td>
-                  <td className="px-4 py-3 text-navy-700/50">{timeAgo(d.createdAt)}</td>
+                  <td className="px-4 py-3"><SourceBadge source={d.source} /></td>
+                  <td className="px-4 py-3 text-navy-700/50">Created {formatRelative(d.createdAt)}</td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-1">
                       <Button size="sm" onClick={() => setEditing(d as Draft)}><Pencil /> Review &amp; Edit</Button>

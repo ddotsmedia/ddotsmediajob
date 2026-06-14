@@ -4,10 +4,11 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { Loader2, Star, Trash2, ExternalLink, Search, Pencil, Check, X, Download } from 'lucide-react';
-import { JOB_STATUS, formatSalary } from '@ddots/shared';
+import { JOB_STATUS, formatSalary, formatShort } from '@ddots/shared';
 import { trpc } from '@/trpc/react';
 import { Input, Select, Badge } from '@/components/ui/primitives';
 import { Button } from '@/components/ui/button';
+import { SourceBadge } from '@/components/source-badge';
 
 export default function AdminJobsPage() {
   const utils = trpc.useUtils();
@@ -99,7 +100,7 @@ export default function AdminJobsPage() {
             <thead className="border-b bg-navy-50 text-left text-navy-700">
               <tr>
                 <th className="px-4 py-3"><input type="checkbox" checked={allSelected} onChange={toggleAll} aria-label="Select all" /></th>
-                <th className="px-4 py-3">Title</th><th className="px-4 py-3">Company</th><th className="px-4 py-3">Salary</th><th className="px-4 py-3">Status</th><th className="px-4 py-3"></th>
+                <th className="px-4 py-3">Title</th><th className="px-4 py-3">Company</th><th className="px-4 py-3">Posted</th><th className="px-4 py-3">Source</th><th className="px-4 py-3">Salary</th><th className="px-4 py-3">Status</th><th className="px-4 py-3"></th>
               </tr>
             </thead>
             <tbody>
@@ -110,6 +111,8 @@ export default function AdminJobsPage() {
                     {j.title} {j.isFeatured && <Badge className="ml-1">★</Badge>}
                   </td>
                   <td className="px-4 py-3 text-navy-700/70">{j.company?.name ?? '—'}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-navy-700/60">{formatShort(j.publishedAt ?? j.createdAt)}</td>
+                  <td className="px-4 py-3"><SourceBadge source={j.source} /></td>
                   <td className="px-4 py-3 text-navy-700/70">{formatSalary(j.salaryMin, j.salaryMax, j.salaryPeriod, j.salaryHidden)}</td>
                   <td className="px-4 py-3">
                     <Select className="h-8 w-28 text-xs" value={j.status} onChange={(e) => setStatusM.mutate({ id: j.id, status: e.target.value as never })}>
@@ -128,7 +131,7 @@ export default function AdminJobsPage() {
                   </td>
                 </tr>
               ))}
-              {rows.length === 0 && <tr><td colSpan={6} className="px-4 py-12 text-center text-navy-700/60">No jobs.</td></tr>}
+              {rows.length === 0 && <tr><td colSpan={8} className="px-4 py-12 text-center text-navy-700/60">No jobs.</td></tr>}
             </tbody>
           </table>
         )}

@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { toast } from 'sonner';
-import { Eye, Users, Loader2, ExternalLink, Pencil, RefreshCw, Trash2 } from 'lucide-react';
-import { formatSalary } from '@ddots/shared';
+import { Eye, Users, Loader2, ExternalLink, Pencil, RefreshCw, Trash2, Clock, CalendarClock } from 'lucide-react';
+import { formatSalary, formatShort, timeUntilExpiry } from '@ddots/shared';
 import { trpc } from '@/trpc/react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/primitives';
@@ -72,9 +72,15 @@ export default function ManageJobsPage() {
               {job.status === 'rejected' && job.rejectionReason && (
                 <p className="mt-1 text-xs text-red-600">Rejected: {job.rejectionReason}</p>
               )}
-              <div className="mt-2 flex gap-4 text-xs text-navy-700/60">
+              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-navy-700/60">
                 <span className="inline-flex items-center gap-1"><Eye className="h-3.5 w-3.5" /> {job.viewCount} views</span>
                 <span className="inline-flex items-center gap-1"><Users className="h-3.5 w-3.5" /> {job.applicationCount} applicants</span>
+                <span className="inline-flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {formatShort(job.publishedAt ?? job.createdAt)}</span>
+                {job.expiresAt && (() => {
+                  const days = Math.round((new Date(job.expiresAt).getTime() - Date.now()) / 86_400_000);
+                  const color = days < 7 ? 'text-red-600' : days <= 14 ? 'text-amber-600' : 'text-green-600';
+                  return <span className={`inline-flex items-center gap-1 font-medium ${color}`}><CalendarClock className="h-3.5 w-3.5" /> {timeUntilExpiry(job.expiresAt)}</span>;
+                })()}
               </div>
             </div>
             <div className="flex items-center gap-1">

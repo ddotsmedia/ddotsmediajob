@@ -33,6 +33,16 @@ export function JobFilters() {
         </button>
       </div>
 
+      <Field label="When posted">
+        <Select value={get('postedWithin')} onChange={(e) => setParam('postedWithin', e.target.value)}>
+          <option value="">Any time</option>
+          <option value="today">Today</option>
+          <option value="3days">Last 3 days</option>
+          <option value="week">Last week</option>
+          <option value="month">Last month</option>
+        </Select>
+      </Field>
+
       <Field label="Category">
         <Select value={get('category')} onChange={(e) => setParam('category', e.target.value)}>
           <option value="">All categories</option>

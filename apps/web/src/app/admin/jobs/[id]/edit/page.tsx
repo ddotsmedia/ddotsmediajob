@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Loader2, Save, ArrowLeft, Trash2 } from 'lucide-react';
-import { CATEGORIES, EMIRATES, JOB_TYPES } from '@ddots/shared';
+import { CATEGORIES, EMIRATES, JOB_TYPES, formatDateTime } from '@ddots/shared';
 import { trpc } from '@/trpc/react';
 import { Button } from '@/components/ui/button';
 import { Input, Label, Select, Textarea } from '@/components/ui/primitives';
@@ -81,6 +81,17 @@ export default function AdminJobEditPage({ params }: { params: Promise<{ id: str
       <h1 className="mt-2 font-display text-2xl font-bold text-navy-900">Edit Job</h1>
       <p className="text-sm text-navy-700/60">Admin edits go live immediately — no approval queue.</p>
 
+      {job.data && (
+        <div className="mt-6 grid grid-cols-2 gap-x-6 gap-y-2 rounded-xl border bg-navy-50/50 p-5 text-sm sm:grid-cols-3">
+          <Info label="Created" value={formatDateTime(job.data.createdAt)} />
+          <Info label="Published" value={job.data.publishedAt ? formatDateTime(job.data.publishedAt) : 'Not yet published'} />
+          <Info label="Last updated" value={formatDateTime(job.data.updatedAt)} />
+          <Info label="Source" value={job.data.source} />
+          <Info label="Views" value={String(job.data.viewCount ?? 0)} />
+          <Info label="Applications" value={String(job.data.applicationCount ?? 0)} />
+        </div>
+      )}
+
       <div className="mt-6 space-y-5 rounded-xl border bg-white p-6">
         <div className="grid gap-5 sm:grid-cols-2">
           <Fld label="Title"><Input value={f.title} onChange={(e) => set('title', e.target.value)} /></Fld>
@@ -125,4 +136,8 @@ export default function AdminJobEditPage({ params }: { params: Promise<{ id: str
 
 function Fld({ label, children }: { label: string; children: React.ReactNode }) {
   return <div className="space-y-1.5"><Label>{label}</Label>{children}</div>;
+}
+
+function Info({ label, value }: { label: string; value: string }) {
+  return <div><p className="text-xs font-semibold uppercase tracking-wide text-navy-400">{label}</p><p className="mt-0.5 capitalize text-navy-800">{value || '—'}</p></div>;
 }

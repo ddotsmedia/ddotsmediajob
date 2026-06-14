@@ -112,6 +112,7 @@ export const jobFilterSchema = z.object({
   freeZone: z.coerce.boolean().optional(),
   visaProvided: z.coerce.boolean().optional(),
   sort: z.enum(['relevance', 'newest', 'salary']).default('newest'),
+  postedWithin: z.enum(['any', 'today', '3days', 'week', 'month']).default('any'),
   page: z.coerce.number().int().min(1).default(1),
   perPage: z.coerce.number().int().min(1).max(50).default(20),
 });

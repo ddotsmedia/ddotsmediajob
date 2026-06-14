@@ -85,6 +85,10 @@ export const jobsRouter = router({
     if (input.isUrgent) conds.push(eq(jobs.isUrgent, true));
     if (input.freeZone) conds.push(eq(jobs.freeZone, true));
     if (input.visaProvided) conds.push(eq(jobs.visaProvided, true));
+    if (input.postedWithin && input.postedWithin !== 'any') {
+      const days = { today: 1, '3days': 3, week: 7, month: 30 }[input.postedWithin];
+      conds.push(gte(sql`coalesce(${jobs.publishedAt}, ${jobs.createdAt})`, sql`now() - ${sql.raw(`interval '${days} days'`)}`)!);
+    }
 
     const where = and(...conds);
     const orderBy =

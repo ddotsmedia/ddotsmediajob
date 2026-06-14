@@ -33,6 +33,13 @@ export function formatJobDate(d: Date | string | null | undefined): string {
   return `Posted ${part(dt, { day: 'numeric', month: 'short', year: 'numeric' })}`;
 }
 
+/** "14 Jun 2026, 9:30 AM" (compact, UAE time) — for tables. */
+export function formatShort(d: Date | string | null | undefined): string {
+  const dt = toDate(d);
+  if (!dt) return '';
+  return `${part(dt, { day: 'numeric', month: 'short', year: 'numeric' })}, ${uaeTime(dt)}`;
+}
+
 /** "Monday, 14 June 2026 at 9:30 AM (UAE time)". */
 export function formatDateTime(d: Date | string | null | undefined): string {
   const dt = toDate(d);
