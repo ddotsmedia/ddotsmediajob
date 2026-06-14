@@ -31,6 +31,7 @@ import { extractAndSaveDraft } from '../lib/import';
 import { enforceRateLimit } from '../lib/security';
 import { sanitizeHtml } from '../lib/security';
 import { isSearchConfigured, ensureJobsIndex, bulkUpsert, ping as searchPing, indexCount, jobRowToDoc } from '../lib/meili';
+import { isIndexingConfigured, submitUrl } from '../lib/google-indexing';
 
 /** Shared shape for admin-created jobs (from any of the 6 ingestion methods). */
 const adminJobInput = z.object({
@@ -162,6 +163,7 @@ export const adminRouter = router({
       .set({ status: 'active', publishedAt: new Date(), rejectionReason: null })
       .where(eq(jobs.id, input.id));
     await enqueueSearchSync({ type: 'upsert', jobId: input.id });
+    void submitUrl(`${process.env.NEXT_PUBLIC_APP_URL}/jobs/${job.slug}`, 'URL_UPDATED'); // Google Indexing (best-effort)
     if (job.employer?.email) {
       await enqueueEmail({
         type: 'job-approved',
@@ -726,6 +728,20 @@ export const adminRouter = router({
     ok: await searchPing(),
     count: await indexCount(),
   })),
+
+  // ── Google Indexing ───────────────────────────────────────
+  indexingStatus: adminProcedure.query(() => ({ configured: isIndexingConfigured() })),
+
+  /** Submit up to 200 most-recent active jobs to the Google Indexing API. */
+  submitToGoogleIndex: adminProcedure.mutation(async ({ ctx }) => {
+    if (!isIndexingConfigured()) return { submitted: 0, configured: false };
+    const rows = await ctx.db.query.jobs.findMany({ where: eq(jobs.status, 'active'), orderBy: [desc(jobs.publishedAt)], limit: 200, columns: { slug: true } });
+    const base = process.env.NEXT_PUBLIC_APP_URL ?? 'https://ddotsmediajobs.com';
+    let submitted = 0;
+    for (const r of rows) if (await submitUrl(`${base}/jobs/${r.slug}`, 'URL_UPDATED')) submitted++;
+    await audit(ctx.session.user.id, 'admin.googleIndex.bulk', 'job', undefined, { submitted });
+    return { submitted, configured: true };
+  }),
 
   /** Re-index every active job into Meilisearch. No-op (indexed 0) when unconfigured. */
   reindexJobs: adminProcedure.mutation(async ({ ctx }) => {
