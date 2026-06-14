@@ -2,6 +2,9 @@ import { initTRPC, TRPCError } from '@trpc/server';
 import superjson from 'superjson';
 import { ZodError } from 'zod';
 import type { Context } from './context';
+import { isIpBlocked } from './lib/security-log';
+
+const ipOf = (ctx: Context) => ctx.headers?.get('x-forwarded-for')?.split(',')[0]?.trim() ?? null;
 
 const t = initTRPC.context<Context>().create({
   transformer: superjson,
@@ -18,10 +21,17 @@ const t = initTRPC.context<Context>().create({
 
 export const router = t.router;
 export const createCallerFactory = t.createCallerFactory;
-export const publicProcedure = t.procedure;
+
+/** Base procedure with fail-open IP blocking (only active when ENABLE_IP_BLOCKING=true). */
+const ipGuard = t.procedure.use(async ({ ctx, next }) => {
+  if (await isIpBlocked(ipOf(ctx))) throw new TRPCError({ code: 'FORBIDDEN', message: 'Access temporarily blocked.' });
+  return next();
+});
+
+export const publicProcedure = ipGuard;
 
 /** Requires an authenticated user. */
-export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
+export const protectedProcedure = ipGuard.use(({ ctx, next }) => {
   if (!ctx.session?.user) {
     console.error('[auth] protectedProcedure: no session on request — cookie not received or token invalid.');
     throw new TRPCError({ code: 'UNAUTHORIZED', message: 'You must be signed in.' });

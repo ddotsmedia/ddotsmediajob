@@ -3,9 +3,17 @@ import type { JWT } from 'next-auth/jwt';
 import Google from 'next-auth/providers/google';
 import Credentials from 'next-auth/providers/credentials';
 import { DrizzleAdapter } from '@auth/drizzle-adapter';
-import { db, users, accounts, sessions, verificationTokens, eq } from '@ddots/db';
+import { db, users, accounts, sessions, verificationTokens, securityLogs, eq } from '@ddots/db';
 import { loginSchema, type UserRole } from '@ddots/shared';
 import { verifyPassword } from './password';
+
+/** Record a failed login (fail-open — never throws, never blocks sign-in). */
+async function logFailedLogin(req: Request | undefined, reason: string): Promise<void> {
+  try {
+    const ip = req?.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? null;
+    await db.insert(securityLogs).values({ event: 'FAILED_LOGIN', ip, metadata: { reason }, severity: 'warn' });
+  } catch { /* never block auth on logging failure */ }
+}
 
 declare module 'next-auth' {
   interface Session {
@@ -50,18 +58,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
       },
-      authorize: async (raw) => {
+      authorize: async (raw, request) => {
+        const req = request as unknown as Request | undefined;
         const parsed = loginSchema.safeParse(raw);
-        if (!parsed.success) return null;
+        if (!parsed.success) { await logFailedLogin(req, 'invalid_input'); return null; }
         const { email, password } = parsed.data;
 
         const user = await db.query.users.findFirst({
           where: eq(users.email, email),
         });
-        if (!user || !user.passwordHash || user.isBanned) return null;
+        if (!user || !user.passwordHash || user.isBanned) { await logFailedLogin(req, 'no_user_or_banned'); return null; }
 
         const ok = await verifyPassword(password, user.passwordHash);
-        if (!ok) return null;
+        if (!ok) { await logFailedLogin(req, 'bad_password'); return null; }
 
         return {
           id: user.id,

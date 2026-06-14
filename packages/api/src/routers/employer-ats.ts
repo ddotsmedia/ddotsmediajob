@@ -28,6 +28,7 @@ import {
 import { slugify } from '@ddots/shared';
 import { router, employerProcedure, publicProcedure } from '../trpc';
 import { audit, notify } from '../lib/helpers';
+import { logSecurityEvent } from '../lib/security-log';
 import type Anthropic from '@anthropic-ai/sdk';
 import { chat, structured, structuredFromImage, MODEL_FAST, MODEL_SMART } from '../lib/anthropic';
 import { wrapUserContent } from '../lib/security';
@@ -45,7 +46,10 @@ const DEFAULT_STAGES = [
 // ── IDOR helpers — every resource verified against the session employer ──
 async function assertJobOwner(ctx: { db: typeof import('@ddots/db').db; session: { user: { id: string } } }, jobId: string) {
   const job = await ctx.db.query.jobs.findFirst({ where: eq(jobs.id, jobId), columns: { id: true, employerId: true, title: true } });
-  if (!job || job.employerId !== ctx.session.user.id) throw new TRPCError({ code: 'FORBIDDEN', message: 'Not your job.' });
+  if (!job || job.employerId !== ctx.session.user.id) {
+    void logSecurityEvent('IDOR_ATTEMPT', { userId: ctx.session.user.id, metadata: { resource: 'job', jobId }, severity: 'critical' });
+    throw new TRPCError({ code: 'FORBIDDEN', message: 'Not your job.' });
+  }
   return job;
 }
 async function assertAppOwner(ctx: { db: typeof import('@ddots/db').db; session: { user: { id: string } } }, applicationId: string) {

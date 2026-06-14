@@ -1227,6 +1227,21 @@ export const referenceCheckRequests = pgTable(
   (t) => [uniqueIndex('refcheck_token_idx').on(t.token), index('refcheck_app_idx').on(t.applicationId)],
 );
 
+export const securityLogs = pgTable(
+  'security_logs',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    event: varchar('event', { length: 60 }).notNull(),
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+    ip: varchar('ip', { length: 64 }),
+    userAgent: varchar('user_agent', { length: 400 }),
+    metadata: jsonb('metadata').$type<Record<string, unknown>>(),
+    severity: varchar('severity', { length: 20 }).default('info').notNull(), // info|warn|error|critical
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index('seclog_event_idx').on(t.event), index('seclog_ip_idx').on(t.ip), index('seclog_created_idx').on(t.createdAt)],
+);
+
 export const hiringAnalytics = pgTable(
   'hiring_analytics',
   {

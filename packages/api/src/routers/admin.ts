@@ -15,9 +15,11 @@ import {
   auditLogs,
   whatsappAdmins,
   whatsappBotLogs,
+  securityLogs,
   eq,
   and,
   desc,
+  gte,
   count,
   sql,
   ilike,
@@ -33,6 +35,7 @@ import { sanitizeHtml } from '../lib/security';
 import { isSearchConfigured, ensureJobsIndex, bulkUpsert, ping as searchPing, indexCount, jobRowToDoc } from '../lib/meili';
 import { isIndexingConfigured, submitUrl } from '../lib/google-indexing';
 import { ensureVectorSetup, upsertJobEmbedding } from '../lib/embeddings';
+import { blockIp, unblockIp, ipBlockingEnabled } from '../lib/security-log';
 
 /** Shared shape for admin-created jobs (from any of the 6 ingestion methods). */
 const adminJobInput = z.object({
@@ -779,6 +782,28 @@ export const adminRouter = router({
     ok: await searchPing(),
     count: await indexCount(),
   })),
+
+  // ── Security monitoring (Phase 11) ────────────────────────
+  securityOverview: adminProcedure.query(async ({ ctx }) => {
+    const since = sql`now() - interval '24 hours'`;
+    const [byEvent, recent] = await Promise.all([
+      ctx.db.select({ event: securityLogs.event, n: count() }).from(securityLogs).where(gte(securityLogs.createdAt, since)).groupBy(securityLogs.event),
+      ctx.db.query.securityLogs.findMany({ orderBy: [desc(securityLogs.createdAt)], limit: 100 }),
+    ]);
+    return { blockingEnabled: ipBlockingEnabled, byEvent: byEvent.map((r) => ({ label: r.event, value: Number(r.n) })), recent };
+  }),
+
+  blockIp: adminProcedure.input(z.object({ ip: z.string().min(3).max(64), hours: z.number().int().min(1).max(720).default(24) })).mutation(async ({ ctx, input }) => {
+    await blockIp(input.ip, input.hours * 3600, ctx.session.user.id);
+    await audit(ctx.session.user.id, 'admin.security.blockIp', 'ip', undefined, { ip: input.ip });
+    return { ok: true };
+  }),
+
+  unblockIp: adminProcedure.input(z.object({ ip: z.string().min(3).max(64) })).mutation(async ({ ctx, input }) => {
+    await unblockIp(input.ip, ctx.session.user.id);
+    await audit(ctx.session.user.id, 'admin.security.unblockIp', 'ip', undefined, { ip: input.ip });
+    return { ok: true };
+  }),
 
   // ── Semantic embeddings (pgvector, conditional) ───────────
   buildEmbeddings: adminProcedure.mutation(async ({ ctx }) => {
