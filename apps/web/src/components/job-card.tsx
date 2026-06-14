@@ -1,6 +1,6 @@
 import Link from 'next/link';
-import { MapPin, Briefcase, Clock, Banknote, Zap, BadgeCheck } from 'lucide-react';
-import { formatSalary, timeAgo, emirateBySlug, categoryBySlug } from '@ddots/shared';
+import { MapPin, Briefcase, Clock, Banknote, Zap, BadgeCheck, Sparkles } from 'lucide-react';
+import { formatSalary, formatJobDate, isNew, emirateBySlug, categoryBySlug } from '@ddots/shared';
 import { Badge } from './ui/primitives';
 import { WhatsappApplyButton } from './whatsapp-apply-button';
 import { CompareButton } from './compare-button';
@@ -59,6 +59,7 @@ export function JobCard({ job }: { job: JobCardData }) {
             <h3 className="font-display font-bold text-navy-900 group-hover:text-teal-600">
               <Link href={`/jobs/${job.slug}`} className="after:absolute after:inset-0">{job.title}</Link>
             </h3>
+            {isNew(job.publishedAt ?? job.createdAt) && <Badge variant="success"><Sparkles className="mr-1 h-3 w-3" /> New</Badge>}
             {job.isFeatured && <Badge>Featured</Badge>}
           </div>
           <p className="flex items-center gap-1 text-sm text-navy-700/70">
@@ -98,11 +99,11 @@ export function JobCard({ job }: { job: JobCardData }) {
               </Badge>
             )}
             {job.walkIn && <Badge variant="outline" className="border-orange-300 bg-orange-50 text-orange-700">🚶 Walk-in</Badge>}
-            <span className="ml-auto text-xs text-navy-700/50">
+            <span className="ml-auto inline-flex items-center gap-1 text-xs text-navy-400">
               {typeof job.applicationCount === 'number' && job.applicationCount > 0 && (
                 <span className="mr-2 font-medium text-navy-700/70">{job.applicationCount} applied</span>
               )}
-              {timeAgo(job.publishedAt ?? job.createdAt)}
+              <Clock className="h-3 w-3" /> {formatJobDate(job.publishedAt ?? job.createdAt)}
             </span>
           </div>
         </div>

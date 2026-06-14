@@ -1,5 +1,6 @@
 export * from './constants';
 export * from './validators';
+export * from './date-utils';
 
 /** Build a URL-friendly slug from arbitrary text. */
 export function slugify(input: string): string {

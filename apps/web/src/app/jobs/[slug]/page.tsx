@@ -6,10 +6,13 @@ import { MapPin, Briefcase, Banknote, Clock, GraduationCap, BadgeCheck, CheckCir
 import { TRPCError } from '@trpc/server';
 import {
   formatSalary,
-  timeAgo,
+  formatDateTime,
+  formatRelative,
+  isExpired,
   emirateBySlug,
   categoryBySlug,
   expLabel,
+  UAE_TZ,
   SITE,
 } from '@ddots/shared';
 import { getApi } from '@/trpc/server';
@@ -167,7 +170,17 @@ export default async function JobDetailPage({ params }: Props) {
                       {job.isAnonymous ? `Confidential Company · ${categoryBySlug(job.categorySlug)?.name ?? ''}` : (job.company?.name ?? 'Confidential')}
                       {!job.isAnonymous && job.company?.isVerified && <BadgeCheck className="h-4 w-4 text-teal-500" />}
                     </p>
-                    <p className="mt-1 text-xs text-navy-700/50">Posted {timeAgo(job.publishedAt ?? job.createdAt)}</p>
+                    <div className="mt-1.5 space-y-1 text-xs text-navy-700/60">
+                      <p className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> Posted: {formatDateTime(job.publishedAt ?? job.createdAt)}</p>
+                      {job.updatedAt && job.publishedAt && new Date(job.updatedAt).getTime() - new Date(job.publishedAt).getTime() > 60_000 && (
+                        <p>Last updated {formatRelative(job.updatedAt)}</p>
+                      )}
+                      {['whapi', 'whatsapp', 'whatsapp_bot'].includes(job.source) && <span className="inline-flex items-center gap-1 rounded-full bg-[#25D366]/10 px-2 py-0.5 font-medium text-[#1a8a4f]">📲 Via WhatsApp</span>}
+                      {job.source === 'telegram' && <span className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2 py-0.5 font-medium text-sky-700">✈ Via Telegram</span>}
+                      {job.expiresAt && (isExpired(job.expiresAt)
+                        ? <p className="font-medium text-amber-600">⚠ Applications closed</p>
+                        : <p>Applications close: {new Intl.DateTimeFormat('en-GB', { timeZone: UAE_TZ, day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(job.expiresAt))}</p>)}
+                    </div>
                   </div>
                 </div>
 
