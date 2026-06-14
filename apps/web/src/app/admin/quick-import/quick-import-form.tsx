@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { Loader2, Sparkles, Check } from 'lucide-react';
 import { trpc } from '@/trpc/react';
 import { Button } from '@/components/ui/button';
+import { VoiceRecorder } from '@/components/voice-recorder';
 
 export function QuickImportForm() {
   const params = useSearchParams();
@@ -22,7 +23,9 @@ export function QuickImportForm() {
   return (
     <div className="mx-auto max-w-lg px-4 py-6">
       <div className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-teal-500" /><h1 className="font-display text-2xl font-bold text-navy-900">Quick Import</h1></div>
-      <p className="text-navy-700/60">Paste or share a job message, then extract it into a draft.</p>
+      <p className="text-navy-700/60">Paste, speak, or share a job message, then extract it into a draft.</p>
+
+      <div className="mt-3"><VoiceRecorder onTranscript={(t) => setText((prev) => (prev ? `${prev}\n${t}` : t))} /></div>
 
       <textarea
         className="mt-4 w-full rounded-xl border p-4 text-base"
