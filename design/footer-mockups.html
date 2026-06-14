@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>DdotsMediaJobs — Footer Layout Options</title>
+<style>
+  :root{
+    --navy-900:#0f172a; --navy-800:#152033; --navy-700:#1d2b44; --navy-600:#1e3a5f;
+    --teal:#2a9aa4; --teal-dark:#1d7a82; --white:#ffffff; --muted:#94a3b8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#334155;font-family:'DM Sans',-apple-system,Segoe UI,Roboto,sans-serif;padding:48px;display:flex;flex-direction:column;gap:56px;align-items:center}
+  .label{color:#cbd5e1;font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin:0 0 10px 4px;align-self:flex-start;margin-left:calc(50% - 720px)}
+  .frame{width:1440px;background:var(--navy-900);color:var(--white);overflow:hidden}
+  .h{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#fff;margin-bottom:14px}
+  .lnk{display:block;font-size:12px;font-weight:400;color:var(--muted);text-decoration:none;line-height:2.0}
+  .lnk:hover{color:var(--teal)}
+  .logo{font-size:20px;font-weight:700;color:#fff}
+  .logo .t{color:var(--teal)}
+  .pill{display:inline-block;font-size:12px;color:var(--muted);border:1px solid var(--teal);border-radius:20px;padding:6px 14px;margin:0 8px 8px 0}
+  .pill:hover{background:rgba(42,154,164,.12);color:#fff}
+  .btn{background:var(--teal);color:#fff;border:none;border-radius:8px;padding:11px 22px;font-size:13px;font-weight:700;cursor:pointer}
+  .input{background:#0b1322;border:1px solid #334155;border-radius:8px;padding:11px 14px;color:#fff;font-size:13px;width:260px}
+  .social{width:34px;height:34px;border-radius:8px;background:#1e293b;display:flex;align-items:center;justify-content:center;color:#cbd5e1;font-size:14px}
+  .row{display:flex}
+  .bar{border-top:1px solid #1e293b;font-size:12px;color:var(--muted)}
+  .cta{border:1px solid var(--teal);border-radius:12px;padding:16px;background:rgba(42,154,164,.06)}
+  .tag{display:inline-flex;align-items:center;gap:6px;background:#152033;border-radius:999px;padding:6px 12px;font-size:12px;color:#cbd5e1}
+</style>
+</head>
+<body>
+
+<!-- ============ FRAME 1 — MEGA FOOTER 1440×520 ============ -->
+<div>
+  <p class="label">Frame 1 — Mega Footer (1440 × 520)</p>
+  <div class="frame" style="height:520px;display:flex;flex-direction:column">
+    <!-- Row 1: logo + newsletter -->
+    <div style="background:var(--navy-800);padding:22px 64px;display:flex;align-items:center;justify-content:space-between">
+      <div class="logo"><span class="t">Ddots</span>MediaJobs</div>
+      <div class="row" style="gap:10px;align-items:center">
+        <span style="font-size:13px;color:#cbd5e1;margin-right:6px">Get the Sunday Job Digest</span>
+        <input class="input" placeholder="you@email.com" />
+        <button class="btn">Subscribe</button>
+      </div>
+    </div>
+    <!-- Row 2: 6 columns -->
+    <div style="padding:32px 64px;display:grid;grid-template-columns:repeat(6,1fr);gap:24px;flex:1">
+      <div><div class="h">Locations</div><a class="lnk">Dubai</a><a class="lnk">Abu Dhabi</a><a class="lnk">Sharjah</a><a class="lnk">Ajman</a><a class="lnk">RAK</a><a class="lnk">Fujairah</a><a class="lnk">UAQ</a></div>
+      <div><div class="h">Categories</div><a class="lnk">IT &amp; Software</a><a class="lnk">Healthcare</a><a class="lnk">Finance</a><a class="lnk">Driving</a><a class="lnk">Sales</a><a class="lnk">Hospitality</a><a class="lnk">Construction</a></div>
+      <div><div class="h">Jobseekers</div><a class="lnk">Browse Jobs</a><a class="lnk">Create Account</a><a class="lnk">Job Alerts</a><a class="lnk">AI Career Advisor</a><a class="lnk">Interview Prep</a><a class="lnk">Salary Guide</a><a class="lnk">Success Stories</a></div>
+      <div><div class="h">Employers</div><a class="lnk">Post a Job</a><a class="lnk">Browse Talent</a><a class="lnk">Dashboard</a><a class="lnk">Company Profiles</a><a class="lnk">Verified Employers</a><a class="lnk">Hiring Blog</a></div>
+      <div><div class="h">Community</div><a class="lnk">Forum</a><a class="lnk">Q&amp;A</a><a class="lnk">WhatsApp Groups</a><a class="lnk">Find a Mentor</a><a class="lnk">Events</a><a class="lnk">Leaderboard</a></div>
+      <div><div class="h">UAE Tools</div><a class="lnk">Salary Calculator</a><a class="lnk">Gratuity Calculator</a><a class="lnk">WPS Calculator</a><a class="lnk">Visa Guide</a><a class="lnk">Scam Checker</a><a class="lnk">CV Builder</a></div>
+    </div>
+    <!-- Row 3: pills -->
+    <div style="background:var(--navy-900);padding:18px 64px;border-top:1px solid #1e293b">
+      <span class="pill">Nurse jobs Dubai</span><span class="pill">Driver jobs Abu Dhabi</span><span class="pill">Accountant Sharjah</span><span class="pill">IT jobs UAE</span><span class="pill">Remote jobs</span><span class="pill">Visa provided</span><span class="pill">Walk-in interviews</span>
+    </div>
+    <!-- Row 4: bottom bar -->
+    <div class="bar row" style="padding:16px 64px;align-items:center;justify-content:space-between">
+      <span>© 2026 DdotsMediaJobs</span>
+      <span class="row" style="gap:20px"><a class="lnk" style="display:inline">Privacy</a><a class="lnk" style="display:inline">Terms</a><a class="lnk" style="display:inline">Sitemap</a></span>
+      <span>🇦🇪 Made in the UAE</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============ FRAME 2 — COMPACT MODERN 1440×380 ============ -->
+<div>
+  <p class="label">Frame 2 — Compact Modern (1440 × 380)</p>
+  <div class="frame" style="height:380px;display:flex;flex-direction:column">
+    <div style="padding:36px 64px;display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr 1fr;gap:32px;flex:1">
+      <!-- brand col -->
+      <div>
+        <div class="logo"><span class="t">Ddots</span>MediaJobs</div>
+        <p style="font-size:12px;color:var(--muted);margin-top:10px;line-height:1.6">UAE's fastest-growing job portal. 120,000+ professionals, AI-powered matching.</p>
+        <div class="row" style="gap:8px;margin-top:14px"><span class="social">in</span><span class="social">f</span><span class="social">ig</span><span class="social">wa</span></div>
+        <div class="row" style="gap:8px;margin-top:16px"><input class="input" style="width:180px" placeholder="Email for alerts" /><button class="btn">Join</button></div>
+      </div>
+      <div><div class="h">Locations</div><a class="lnk">Dubai</a><a class="lnk">Abu Dhabi</a><a class="lnk">Sharjah</a><a class="lnk">Ajman</a><a class="lnk">All Emirates</a></div>
+      <div><div class="h">Jobseekers</div><a class="lnk">Browse Jobs</a><a class="lnk">Job Alerts</a><a class="lnk">Salary Guide</a><a class="lnk">CV Builder</a><a class="lnk">Success Stories</a></div>
+      <div><div class="h">Employers</div><a class="lnk">Post a Job</a><a class="lnk">Browse Talent</a><a class="lnk">Dashboard</a><a class="lnk">Verified Employers</a></div>
+      <div><div class="h">Community &amp; Tools</div><a class="lnk">WhatsApp Groups</a><a class="lnk">Q&amp;A</a><a class="lnk">Mentors</a><a class="lnk">Salary Calculator</a><a class="lnk">Scam Checker</a></div>
+    </div>
+    <div style="background:var(--navy-600);padding:14px 64px"><span class="pill" style="border-color:rgba(255,255,255,.25)">Trending: Nurse Dubai</span><span class="pill" style="border-color:rgba(255,255,255,.25)">Driver AD</span><span class="pill" style="border-color:rgba(255,255,255,.25)">IT remote</span><span class="pill" style="border-color:rgba(255,255,255,.25)">Sales Sharjah</span></div>
+    <div class="bar" style="padding:14px 64px">© 2026 DdotsMediaJobs · Privacy · Terms · 🇦🇪 Made in the UAE</div>
+  </div>
+</div>
+
+<!-- ============ FRAME 3 — BRAND-FORWARD 1440×460 ============ -->
+<div>
+  <p class="label">Frame 3 — Brand-Forward (1440 × 460)</p>
+  <div class="frame" style="height:460px;display:flex;flex-direction:column">
+    <!-- newsletter strip -->
+    <div style="background:var(--navy-700);padding:20px 64px;display:flex;align-items:center;justify-content:space-between">
+      <div><div style="font-size:18px;font-weight:700">Get the Sunday Job Digest</div><div style="font-size:12px;color:var(--muted)">Top jobs, salary insights &amp; community picks — every week.</div></div>
+      <div class="row" style="gap:10px"><input class="input" placeholder="you@email.com" /><button class="btn">Subscribe</button></div>
+    </div>
+    <!-- main grid -->
+    <div style="padding:32px 64px;display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:28px;flex:1">
+      <!-- brand 2-col -->
+      <div>
+        <div class="logo" style="font-size:24px"><span class="t">Ddots</span>MediaJobs</div>
+        <div style="font-size:13px;color:#cbd5e1;margin-top:10px">🇦🇪 120,000+ professionals</div>
+        <div class="tag" style="margin-top:10px">📲 76 WhatsApp groups</div>
+        <div class="row" style="gap:8px;margin-top:14px"><span class="social">in</span><span class="social">f</span><span class="social">ig</span><span class="social">x</span></div>
+        <div class="cta" style="margin-top:16px;max-width:300px"><div style="font-size:13px;font-weight:700;color:#fff">Join the WhatsApp community</div><div style="font-size:12px;color:var(--muted);margin-top:4px">Daily jobs in your field, free.</div></div>
+      </div>
+      <div><div class="h">Jobs</div><a class="lnk">Browse Jobs</a><a class="lnk">Remote</a><a class="lnk">Visa Provided</a><a class="lnk">Walk-in</a><a class="lnk">Campus</a></div>
+      <div><div class="h">Tools &amp; Resources</div><a class="lnk">Salary Calculator</a><a class="lnk">Gratuity</a><a class="lnk">Scam Checker</a><a class="lnk">CV Builder</a><a class="lnk">Visa Guide</a></div>
+      <div><div class="h">Community</div><a class="lnk">Forum</a><a class="lnk">Q&amp;A</a><a class="lnk">Mentors</a><a class="lnk">Events</a><a class="lnk">Leaderboard</a></div>
+      <div><div class="h">Quick Links</div><a class="lnk">Post a Job</a><a class="lnk">Companies</a><a class="lnk">Blog</a><a class="lnk">About</a><a class="lnk">Contact</a></div>
+    </div>
+    <!-- pills -->
+    <div style="padding:0 64px 16px"><span class="pill">Nurse Dubai</span><span class="pill">Driver AD</span><span class="pill">Accountant</span><span class="pill">IT UAE</span><span class="pill">Sales</span></div>
+    <div class="bar" style="padding:14px 64px">© 2026 DdotsMediaJobs · Privacy · Terms · Sitemap · 🇦🇪 Made in the UAE</div>
+  </div>
+</div>
+
+</body>
+</html>

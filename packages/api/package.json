@@ -33,6 +33,7 @@
     "@ddots/shared": "workspace:*",
     "@trpc/server": "^11.0.0-rc.660",
     "bullmq": "^5.34.5",
+    "franc": "^6.2.0",
     "ioredis": "^5.4.2",
     "isomorphic-dompurify": "2.20.0",
     "openai": "^4.77.0",

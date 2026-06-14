@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>DdotsMediaJobs — Mega Menu Options</title>
+<style>
+  :root{
+    --navy:#0f172a; --navy-2:#152033; --teal:#2a9aa4; --teal-dark:#1d7a82;
+    --white:#fff; --muted:#94a3b8; --border:#e2e8f0; --ink:#0f172a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#334155;font-family:Inter,-apple-system,Segoe UI,Roboto,sans-serif;padding:48px;display:flex;flex-direction:column;gap:56px;align-items:center}
+  .label{color:#cbd5e1;font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;align-self:flex-start;margin-left:calc(50% - 720px);margin-bottom:10px}
+  .frame{width:1440px;background:#f1f5f9;overflow:hidden;border-radius:4px}
+  /* header */
+  .hdr{height:64px;background:var(--navy);display:flex;align-items:center;justify-content:space-between;padding:0 40px}
+  .logo{font-size:20px;font-weight:700;color:#fff}.logo .t{color:var(--teal)}
+  .nav{display:flex;gap:28px}
+  .nav a{color:#cbd5e1;font-size:14px;font-weight:500;text-decoration:none;position:relative}
+  .nav a.active{color:#fff}
+  .nav a.active:after{content:"";position:absolute;left:0;right:0;bottom:-22px;height:3px;background:var(--teal);border-radius:3px}
+  .hdr-r{display:flex;gap:12px;align-items:center}
+  .ghost{color:#cbd5e1;font-size:14px;text-decoration:none}
+  .btn{background:var(--teal);color:#fff;border:none;border-radius:8px;padding:9px 18px;font-size:14px;font-weight:600;cursor:pointer}
+  /* dropdown */
+  .dd{background:#fff;border-top:1px solid var(--border);box-shadow:0 24px 48px rgba(15,23,42,.18)}
+  .h{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#64748b;margin-bottom:14px}
+  .lnk{display:flex;align-items:center;gap:10px;font-size:14px;color:#334155;text-decoration:none;padding:6px 0}
+  .lnk:hover{color:var(--teal)}
+  .ic{width:24px;height:24px;border-radius:6px;background:rgba(42,154,164,.12);color:var(--teal);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+  .pill{display:inline-block;font-size:12px;color:#475569;border:1px solid var(--border);border-radius:20px;padding:5px 12px;margin:0 6px 8px 0}
+  .pill:hover{border-color:var(--teal);color:var(--teal)}
+  .teal-strip{background:var(--teal);color:#fff;font-size:14px;font-weight:600;padding:14px 40px;display:flex;align-items:center;justify-content:space-between}
+  .cta{background:var(--navy);border-radius:12px;padding:18px 20px;color:#fff}
+  .cta .s{color:var(--muted);font-size:12px;margin-top:4px}
+  .card{background:#fff;border:1px solid var(--border);border-left:3px solid var(--teal);border-radius:10px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start}
+  .card .ttl{font-size:13px;font-weight:700;color:var(--ink)}
+  .card .sub{font-size:11px;color:#64748b;margin-top:2px}
+  .catlist a{display:block;font-size:14px;color:#334155;text-decoration:none;padding:10px 16px;border-radius:8px}
+  .catlist a.on{background:rgba(42,154,164,.10);color:var(--teal);font-weight:600}
+</style>
+</head>
+<body>
+
+<!-- ===== helper header markup repeated per frame ===== -->
+<!-- OPTION A -->
+<div>
+  <p class="label">Frame 1 — Mega Menu Option A (1440 × 580)</p>
+  <div class="frame" style="height:580px">
+    <div class="hdr">
+      <div style="display:flex;gap:40px;align-items:center"><div class="logo"><span class="t">Ddots</span>MediaJobs</div>
+        <nav class="nav"><a class="active">Jobs</a><a>Companies</a><a>Community</a><a>Salary Guide</a><a>Tools</a></nav>
+      </div>
+      <div class="hdr-r"><a class="ghost">Log in</a><button class="btn">Post a Job</button></div>
+    </div>
+    <div class="dd">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:32px;padding:32px 40px">
+        <div>
+          <div class="h">Browse by Location</div>
+          <a class="lnk"><span class="ic">📍</span>Dubai</a><a class="lnk"><span class="ic">📍</span>Abu Dhabi</a><a class="lnk"><span class="ic">📍</span>Sharjah</a><a class="lnk"><span class="ic">📍</span>Ajman</a><a class="lnk"><span class="ic">📍</span>Ras Al Khaimah</a><a class="lnk"><span class="ic">📍</span>Fujairah</a><a class="lnk"><span class="ic">📍</span>Umm Al Quwain</a>
+        </div>
+        <div>
+          <div class="h">Top Categories</div>
+          <a class="lnk"><span class="ic">💻</span>IT &amp; Software</a><a class="lnk"><span class="ic">🩺</span>Healthcare</a><a class="lnk"><span class="ic">💰</span>Finance</a><a class="lnk"><span class="ic">🚚</span>Driving</a><a class="lnk"><span class="ic">📈</span>Sales</a><a class="lnk"><span class="ic">🏨</span>Hospitality</a><a class="lnk"><span class="ic">🏗️</span>Construction</a><a class="lnk"><span class="ic">🛡️</span>Security</a>
+        </div>
+        <div>
+          <div class="h">For Jobseekers</div>
+          <a class="lnk"><span class="ic">📄</span>AI CV Builder</a><a class="lnk"><span class="ic">🔔</span>Job Alerts</a><a class="lnk"><span class="ic">💵</span>Salary Guide</a><a class="lnk"><span class="ic">🤖</span>AI Career Advisor</a><a class="lnk"><span class="ic">🎯</span>Interview Prep</a><a class="lnk"><span class="ic">🛡️</span>Scam Checker</a>
+        </div>
+        <div>
+          <div class="h">Popular Searches</div>
+          <a class="lnk">Remote jobs</a><a class="lnk">Visa provided</a><a class="lnk">Walk-in interviews</a><a class="lnk">Fresher jobs</a>
+          <div class="h" style="margin-top:18px">By Nationality</div>
+          <a class="lnk">Indian</a><a class="lnk">Filipino</a><a class="lnk">Pakistani</a>
+        </div>
+      </div>
+      <div class="teal-strip"><span>120,000+ professionals · 76 WhatsApp groups</span><span>Post a Job free →</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- OPTION B -->
+<div>
+  <p class="label">Frame 2 — Mega Menu Option B (1440 × 500)</p>
+  <div class="frame" style="height:500px">
+    <div class="hdr">
+      <div style="display:flex;gap:40px;align-items:center"><div class="logo"><span class="t">Ddots</span>MediaJobs</div>
+        <nav class="nav"><a class="active">Jobs</a><a>Companies</a><a>Community</a><a>Salary Guide</a><a>Tools</a></nav>
+      </div>
+      <div class="hdr-r"><a class="ghost">Log in</a><button class="btn">Post a Job</button></div>
+    </div>
+    <div class="dd" style="display:flex">
+      <!-- left category list 200px -->
+      <div class="catlist" style="width:200px;border-right:1px solid var(--border);padding:20px 8px;background:#f8fafc">
+        <a class="on">By Category ›</a><a>By Location ›</a><a>By Job Type ›</a><a>By Visa Status ›</a><a>By Nationality ›</a><a>By Salary ›</a>
+      </div>
+      <!-- right 3 cols -->
+      <div style="flex:1;padding:28px 36px">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:28px">
+          <div><a class="lnk"><span class="ic">💻</span>IT &amp; Software</a><a class="lnk"><span class="ic">🩺</span>Healthcare</a><a class="lnk"><span class="ic">💰</span>Finance</a><a class="lnk"><span class="ic">🚚</span>Driving</a></div>
+          <div><a class="lnk"><span class="ic">📈</span>Sales</a><a class="lnk"><span class="ic">🏨</span>Hospitality</a><a class="lnk"><span class="ic">🏗️</span>Construction</a><a class="lnk"><span class="ic">🎓</span>Education</a></div>
+          <div><a class="lnk"><span class="ic">🛡️</span>Security</a><a class="lnk"><span class="ic">🏭</span>Manufacturing</a><a class="lnk"><span class="ic">💼</span>Admin</a><a class="lnk"><span class="ic">✨</span>Beauty</a></div>
+        </div>
+        <div class="cta" style="margin-top:24px;display:flex;align-items:center;justify-content:space-between">
+          <div><div style="font-weight:700">Join the WhatsApp community</div><div class="s">76 groups · daily jobs in your field, free</div></div>
+          <button class="btn" style="background:#25D366">Join now</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- OPTION C -->
+<div>
+  <p class="label">Frame 3 — Mega Menu Option C (1440 × 460)</p>
+  <div class="frame" style="height:460px">
+    <div class="hdr">
+      <div style="display:flex;gap:40px;align-items:center"><div class="logo"><span class="t">Ddots</span>MediaJobs</div>
+        <nav class="nav"><a class="active">Jobs</a><a>Companies</a><a>Community</a><a>Salary Guide</a><a>Tools</a></nav>
+      </div>
+      <div class="hdr-r"><a class="ghost">Log in</a><button class="btn">Post a Job</button></div>
+    </div>
+    <div class="dd" style="display:flex;padding:28px 40px;gap:32px">
+      <!-- 3 cols left -->
+      <div style="flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:28px">
+        <div><div class="h">Locations</div><a class="lnk"><span class="ic">📍</span>Dubai</a><a class="lnk"><span class="ic">📍</span>Abu Dhabi</a><a class="lnk"><span class="ic">📍</span>Sharjah</a><a class="lnk"><span class="ic">📍</span>All Emirates</a></div>
+        <div><div class="h">Categories</div><a class="lnk"><span class="ic">💻</span>IT</a><a class="lnk"><span class="ic">🩺</span>Healthcare</a><a class="lnk"><span class="ic">🚚</span>Driving</a><a class="lnk"><span class="ic">📈</span>Sales</a></div>
+        <div><div class="h">Jobseekers</div><a class="lnk"><span class="ic">🔔</span>Job Alerts</a><a class="lnk"><span class="ic">📄</span>CV Builder</a><a class="lnk"><span class="ic">💵</span>Salary Guide</a><a class="lnk"><span class="ic">🏆</span>Success Stories</a></div>
+      </div>
+      <!-- featured sidebar 200px -->
+      <div style="width:220px;display:flex;flex-direction:column;gap:10px">
+        <div class="h">Quick Tools</div>
+        <div class="card"><span class="ic">🤖</span><div><div class="ttl">AI CV Builder</div><div class="sub">ATS-ready in minutes</div></div></div>
+        <div class="card"><span class="ic">💵</span><div><div class="ttl">Salary Guide</div><div class="sub">Real UAE pay data</div></div></div>
+        <div class="card"><span class="ic">🛡️</span><div><div class="ttl">Scam Checker</div><div class="sub">Verify any job</div></div></div>
+        <div class="card"><span class="ic">⚡</span><div><div class="ttl">Swipe Jobs</div><div class="sub">Fast apply</div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

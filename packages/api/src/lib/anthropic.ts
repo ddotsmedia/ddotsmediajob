@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
+import { pickAI } from './ai-router';
 
 /**
  * AI provider layer. Prefers Google Gemini (free tier, via its OpenAI-compatible
@@ -53,21 +54,29 @@ export async function chat(
   messages: ChatMessage[],
   opts: { model?: string; maxTokens?: number } = {},
 ): Promise<string> {
-  if (useGemini) {
-    const res = await getGemini().chat.completions.create({
+  try {
+    if (useGemini) {
+      const res = await getGemini().chat.completions.create({
+        model: opts.model ?? MODEL_SMART,
+        max_tokens: opts.maxTokens ?? 1024,
+        messages: [{ role: 'system', content: system }, ...messages.map((m) => ({ role: m.role, content: m.content }))],
+      });
+      return res.choices[0]?.message?.content?.trim() ?? '';
+    }
+    const res = await getAnthropic().messages.create({
       model: opts.model ?? MODEL_SMART,
       max_tokens: opts.maxTokens ?? 1024,
-      messages: [{ role: 'system', content: system }, ...messages.map((m) => ({ role: m.role, content: m.content }))],
+      system,
+      messages: messages.map((m) => ({ role: m.role, content: m.content })),
     });
-    return res.choices[0]?.message?.content?.trim() ?? '';
+    return textOf(res);
+  } catch (err) {
+    // Primary provider failed → run the Groq/Gemini fallback chain.
+    console.error('[chat] primary failed, using pickAI fallback:', err instanceof Error ? err.message : err);
+    const prompt = messages.map((m) => `${m.role === 'assistant' ? 'Assistant' : 'User'}: ${m.content}`).join('\n\n');
+    const r = await pickAI(prompt, { system, maxTokens: opts.maxTokens, model: opts.model });
+    return r.text;
   }
-  const res = await getAnthropic().messages.create({
-    model: opts.model ?? MODEL_SMART,
-    max_tokens: opts.maxTokens ?? 1024,
-    system,
-    messages: messages.map((m) => ({ role: m.role, content: m.content })),
-  });
-  return textOf(res);
 }
 
 /** Force a single structured (tool/function) call and return the validated object. */
