@@ -18,6 +18,7 @@
 import bcrypt from 'bcryptjs';
 import { db, eq, count, users, jobs, salaryReports, blogPosts, amaSessions } from './index';
 import { BLOG_ARTICLES, renderArticle } from './blog-seed';
+import { SEO_ARTICLES_2026 } from './blog-seed-seo2026';
 import { EMIRATES, slugify } from '@ddots/shared';
 
 // Realistic UAE 2026 monthly base pay (AED), scaled per emirate to give the
@@ -181,6 +182,26 @@ async function main() {
   } else {
     console.log(`   blog: ${publishedCount} published already — skipped`);
   }
+
+  // ── 3b. SEO 2026 articles: always additive (ON CONFLICT DO NOTHING by slug) ──
+  const seo = await db
+    .insert(blogPosts)
+    .values(
+      SEO_ARTICLES_2026.map((a) => ({
+        slug: a.slug,
+        title: a.title,
+        excerpt: a.excerpt,
+        content: renderArticle(a),
+        authorId: actorId,
+        category: a.category,
+        tags: a.tags,
+        isPublished: true,
+        publishedAt: new Date(),
+      })),
+    )
+    .onConflictDoNothing()
+    .returning({ id: blogPosts.id });
+  console.log(`   blog(seo2026): inserted ${seo.length}/${SEO_ARTICLES_2026.length} new articles`);
 
   // ── 4. AMA sessions: seed 3 recorded sessions if the table is empty ──────
   const amaTotal = Number((await db.select({ n: count() }).from(amaSessions))[0]?.n ?? 0);
