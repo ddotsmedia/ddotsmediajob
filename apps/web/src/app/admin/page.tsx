@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Briefcase, Users, FileText, Building2, CheckSquare, Clock, TrendingUp } from 'lucide-react';
+import { Briefcase, Users, FileText, Building2, CheckSquare, Clock, TrendingUp, FilePen, ArrowRight } from 'lucide-react';
 import { categoryBySlug, timeAgo } from '@ddots/shared';
 import { getApi } from '@/trpc/server';
 import { StatCard } from '@/components/dashboard/stat-card';
@@ -23,6 +23,19 @@ export default async function AdminDashboard() {
           <Button asChild><Link href="/admin/approvals"><CheckSquare /> {stats.pendingJobs} to review</Link></Button>
         )}
       </div>
+
+      {stats.draftJobs > 0 && (
+        <Link
+          href="/admin/jobs/drafts"
+          className="flex items-center gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-amber-900 transition-colors hover:bg-amber-100"
+        >
+          <FilePen className="h-5 w-5 shrink-0 text-amber-600" />
+          <span className="flex-1 text-sm font-medium">
+            ⚠ {stats.draftJobs} draft{stats.draftJobs === 1 ? '' : 's'} pending review
+          </span>
+          <ArrowRight className="h-4 w-4 shrink-0" />
+        </Link>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard icon={Briefcase} label="Total Jobs" value={stats.jobs} />

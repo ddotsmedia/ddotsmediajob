@@ -17,6 +17,13 @@ export default function AdminJobsPage() {
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
   const jobs = trpc.admin.allJobs.useQuery({ q: q || undefined, status: status || undefined, page: 1 });
+  const adminStats = trpc.admin.stats.useQuery();
+  const TABS: { label: string; value: string; badge: number }[] = [
+    { label: 'All Jobs', value: '', badge: 0 },
+    { label: 'Drafts', value: 'draft', badge: adminStats.data?.draftJobs ?? 0 },
+    { label: 'Pending', value: 'pending', badge: adminStats.data?.pendingJobs ?? 0 },
+    { label: 'Expired', value: 'expired', badge: adminStats.data?.expiredJobs ?? 0 },
+  ];
 
   const inval = () => utils.admin.allJobs.invalidate();
   const feat = trpc.admin.setJobFeatured.useMutation({ onSuccess: () => { inval(); toast.success('Updated'); } });
@@ -71,7 +78,33 @@ export default function AdminJobsPage() {
 
   return (
     <div>
-      <h1 className="font-display text-2xl font-bold text-navy-900">All Jobs</h1>
+      <h1 className="font-display text-2xl font-bold text-navy-900">Jobs</h1>
+
+      {/* Status tabs — horizontal scroll on mobile, teal underline on active. */}
+      <div className="mt-4 -mx-1 flex gap-1 overflow-x-auto border-b px-1 scrollbar-hide">
+        {TABS.map((t) => {
+          const active = status === t.value;
+          return (
+            <button
+              key={t.value || 'all'}
+              type="button"
+              onClick={() => { setStatus(t.value); setSel(new Set()); }}
+              className={`relative flex shrink-0 items-center gap-2 whitespace-nowrap px-4 py-2.5 text-sm font-medium transition-colors ${
+                active ? 'text-teal-700' : 'text-navy-700/60 hover:text-navy-900'
+              }`}
+            >
+              {t.label}
+              {t.badge > 0 && (
+                <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${active ? 'bg-teal-100 text-teal-700' : 'bg-navy-100 text-navy-700'}`}>
+                  {t.badge}
+                </span>
+              )}
+              {active && <span className="absolute inset-x-0 -bottom-px h-0.5 bg-teal-600" />}
+            </button>
+          );
+        })}
+      </div>
+
       <div className="mt-4 flex flex-wrap gap-2">
         <div className="flex flex-1 items-center gap-2 rounded-lg border bg-white px-3">
           <Search className="h-4 w-4 text-navy-700/40" />

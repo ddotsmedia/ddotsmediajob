@@ -21,8 +21,10 @@ import {
   Layers,
   Bookmark,
   Sparkles,
+  FilePen,
 } from 'lucide-react';
 import { DashboardSidebar, MobileTabs, type NavItem } from '@/components/dashboard/sidebar';
+import { trpc } from '@/trpc/react';
 
 const NAV: NavItem[] = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
@@ -33,6 +35,7 @@ const NAV: NavItem[] = [
   { href: '/admin/tools/bookmarklet', label: 'Bookmarklet', icon: Bookmark },
   { href: '/admin/approvals', label: 'Job Approvals', icon: CheckSquare },
   { href: '/admin/jobs', label: 'All Jobs', icon: Briefcase },
+  { href: '/admin/jobs/drafts', label: 'Drafts', icon: FilePen },
   { href: '/admin/applications', label: 'Applications', icon: FileText },
   { href: '/admin/verifications', label: 'Verifications', icon: BadgeCheck },
   { href: '/admin/companies', label: 'Companies', icon: Building2 },
@@ -50,11 +53,14 @@ const NAV: NavItem[] = [
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const stats = trpc.admin.stats.useQuery(undefined, { staleTime: 60_000 });
+  const draftCount = stats.data?.draftJobs ?? 0;
+  const nav = NAV.map((n) => (n.href === '/admin/jobs/drafts' && draftCount > 0 ? { ...n, badge: draftCount } : n));
   return (
     <div className="mx-auto flex max-w-7xl">
-      <DashboardSidebar items={NAV} title="Admin" />
+      <DashboardSidebar items={nav} title="Admin" />
       <div className="min-w-0 flex-1">
-        <MobileTabs items={NAV} />
+        <MobileTabs items={nav} />
         <div className="p-4 md:p-8">{children}</div>
       </div>
     </div>

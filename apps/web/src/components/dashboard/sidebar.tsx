@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export type NavItem = { href: string; label: string; icon: LucideIcon };
+export type NavItem = { href: string; label: string; icon: LucideIcon; badge?: number };
 
 export function DashboardSidebar({ items, title }: { items: NavItem[]; title: string }) {
   const pathname = usePathname();
@@ -26,8 +26,11 @@ export function DashboardSidebar({ items, title }: { items: NavItem[]; title: st
                   active ? 'bg-teal-50 text-teal-700' : 'text-navy-700 hover:bg-navy-50',
                 )}
               >
-                <Icon className="h-4 w-4" />
-                {item.label}
+                <Icon className="h-4 w-4 shrink-0" />
+                <span className="flex-1">{item.label}</span>
+                {item.badge ? (
+                  <span className="rounded-full bg-amber-500 px-2 py-0.5 text-xs font-semibold text-white">{item.badge}</span>
+                ) : null}
               </Link>
             );
           })}
@@ -53,6 +56,7 @@ export function MobileTabs({ items }: { items: NavItem[] }) {
             )}
           >
             {item.label}
+            {item.badge ? <span className="ml-1.5 rounded-full bg-amber-500 px-1.5 py-0.5 text-xs font-semibold text-white">{item.badge}</span> : null}
           </Link>
         );
       })}
