@@ -12,12 +12,44 @@ import { SourceBadge } from '@/components/source-badge';
 
 const SOURCES = ['paste', 'whatsapp', 'whapi', 'telegram', 'csv', 'quick', 'url', 'manual'];
 
+type SenderMeta = { from?: string; fromName?: string | null; chatId?: string | null; chatName?: string | null; receivedAt?: string | null };
+
 type Draft = {
   id: string; title: string; description: string; categorySlug: string; emirateSlug: string; jobType: string;
   experienceLevel: string | null; salaryMin: number | null; salaryMax: number | null; contactWhatsapp: string | null;
   applyEmail: string | null; visaProvided: boolean; accommodationProvided: boolean; isUrgent: boolean; isFresher: boolean;
+  source: string; sourceMetadata?: SenderMeta | null;
   company?: { name: string | null } | null;
 };
+
+/** Digits only — for wa.me links. */
+function waDigits(raw?: string | null): string {
+  return (raw ?? '').replace(/\D/g, '');
+}
+
+/** Pretty UAE phone: +971 50 123 4567 (falls back to +<digits>). */
+function formatPhone(raw?: string | null): string | null {
+  const d = waDigits(raw);
+  if (!d) return null;
+  if (d.startsWith('971') && d.length === 12) {
+    const n = d.slice(3);
+    return `+971 ${n.slice(0, 2)} ${n.slice(2, 5)} ${n.slice(5)}`;
+  }
+  return `+${d}`;
+}
+
+function SenderCell({ meta }: { meta?: SenderMeta | null }) {
+  const phone = formatPhone(meta?.from);
+  if (!phone) return <span className="text-navy-700/40">—</span>;
+  return (
+    <div className="leading-tight">
+      {meta?.fromName && <span className="block text-xs text-navy-700/50">{meta.fromName}</span>}
+      <a href={`https://wa.me/${waDigits(meta?.from)}`} target="_blank" rel="noopener noreferrer" className="font-medium text-teal-700 hover:underline">
+        {phone}
+      </a>
+    </div>
+  );
+}
 
 export default function DraftsPage() {
   const utils = trpc.useUtils();
@@ -45,12 +77,13 @@ export default function DraftsPage() {
       <div className="mt-6 overflow-hidden rounded-xl border bg-white">
         {drafts.isLoading ? <Loader2 className="m-6 animate-spin text-teal-500" /> : (
           <table className="w-full text-sm">
-            <thead className="border-b bg-navy-50 text-left text-navy-700"><tr><th className="px-4 py-3">Title</th><th className="px-4 py-3">Source</th><th className="px-4 py-3">Created</th><th className="px-4 py-3"></th></tr></thead>
+            <thead className="border-b bg-navy-50 text-left text-navy-700"><tr><th className="px-4 py-3">Title</th><th className="px-4 py-3">Source</th><th className="px-4 py-3">Sender</th><th className="px-4 py-3">Created</th><th className="px-4 py-3"></th></tr></thead>
             <tbody>
               {drafts.data?.map((d) => (
                 <tr key={d.id} className="border-b last:border-0">
                   <td className="px-4 py-3 font-medium text-navy-900">{d.title}<span className="block text-xs font-normal text-navy-700/50">{d.company?.name ?? 'Confidential'}</span></td>
                   <td className="px-4 py-3"><SourceBadge source={d.source} /></td>
+                  <td className="px-4 py-3"><SenderCell meta={d.sourceMetadata as SenderMeta | null} /></td>
                   <td className="px-4 py-3 text-navy-700/50">Created {formatRelative(d.createdAt)}</td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-1">
@@ -61,7 +94,7 @@ export default function DraftsPage() {
                   </td>
                 </tr>
               ))}
-              {drafts.data?.length === 0 && <tr><td colSpan={4} className="px-4 py-12 text-center text-navy-700/60">No drafts.</td></tr>}
+              {drafts.data?.length === 0 && <tr><td colSpan={5} className="px-4 py-12 text-center text-navy-700/60">No drafts.</td></tr>}
             </tbody>
           </table>
         )}
@@ -117,6 +150,27 @@ function EditModal({ draft, onClose, onDone }: { draft: Draft; onClose: () => vo
         </div>
 
         <div className="flex-1 space-y-4 overflow-y-auto p-5">
+          {(() => {
+            const meta = draft.sourceMetadata as SenderMeta | null;
+            const phone = formatPhone(meta?.from);
+            if (!phone && draft.source !== 'whapi' && draft.source !== 'whatsapp') return null;
+            return (
+              <div className="rounded-lg border border-teal-100 bg-teal-50/60 p-3 text-sm text-navy-800">
+                {phone ? (
+                  <p>
+                    Received from: {meta?.fromName ? `${meta.fromName} ` : ''}
+                    <a href={`https://wa.me/${waDigits(meta?.from)}`} target="_blank" rel="noopener noreferrer" className="font-semibold text-teal-700 hover:underline">({phone})</a>
+                  </p>
+                ) : (
+                  <p>Received via {draft.source}</p>
+                )}
+                <p className="text-xs text-navy-700/60">
+                  Via: WhatsApp{meta?.receivedAt ? ` · ${new Date(meta.receivedAt).toLocaleString('en-AE')}` : ''}
+                </p>
+                {meta?.chatName && <p className="text-xs text-navy-700/60">Group: {meta.chatName}</p>}
+              </div>
+            );
+          })()}
           <Field label="Job Title"><Input value={f.title} onChange={(e) => set('title', e.target.value)} /></Field>
           <Field label="Company"><Input value={f.companyName} onChange={(e) => set('companyName', e.target.value)} placeholder="Confidential" /></Field>
           <div className="grid gap-4 sm:grid-cols-2">

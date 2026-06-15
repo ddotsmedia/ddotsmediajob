@@ -10,7 +10,10 @@ export async function GET() {
 
 type WhapiMsg = {
   from?: string;
+  from_name?: string;
   chat_id?: string;
+  chat_name?: string;
+  timestamp?: number;
   from_me?: boolean;
   type?: string;
   text?: { body?: string };
@@ -86,7 +89,14 @@ export async function POST(req: Request) {
       const rl = await rateLimit('import:whapi', 20, 3600); // max 20 AI extractions/hour
       if (!rl.ok) { if (from) await sendWhapiText(from, 'Too many imports this hour — try again later.'); break; }
       try {
-        const saved = await extractAndSaveDraft(text, 'whapi', { from, raw: text.slice(0, 1000) });
+        const saved = await extractAndSaveDraft(text, 'whapi', {
+          from,
+          fromName: m.from_name ?? m.chat_name ?? null,
+          chatId: m.chat_id ?? null,
+          chatName: m.chat_name ?? null,
+          receivedAt: m.timestamp ? new Date(m.timestamp * 1000).toISOString() : new Date().toISOString(),
+          raw: text.slice(0, 1000),
+        });
         if (!saved) { console.error('[whapi] extraction returned null (no admin user, or AI rejected the message)'); continue; }
         console.log('[whapi] draft created:', saved.slug);
         if (from) await sendWhapiText(from, `✅ Job draft created: ${saved.title}\nReview at https://ddotsmediajobs.com/admin/jobs/drafts`);
