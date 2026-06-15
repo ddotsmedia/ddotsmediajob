@@ -17,6 +17,7 @@ export type JobCardData = {
   salaryMax: number | null;
   salaryPeriod: string;
   salaryHidden: boolean;
+  salaryNegotiable?: boolean;
   isRemote: boolean;
   isUrgent: boolean;
   isFresher: boolean;
@@ -76,10 +77,15 @@ export function JobCard({ job }: { job: JobCardData }) {
             <span className="inline-flex items-center gap-1 capitalize">
               <Clock className="h-3.5 w-3.5" /> {job.jobType.replace('-', ' ')}
             </span>
-            <span className="inline-flex items-center gap-1 font-semibold text-teal-700">
-              <Banknote className="h-3.5 w-3.5" />
-              {formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod, job.salaryHidden)}
-            </span>
+            {(() => {
+              const s = formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod, job.salaryHidden, job.salaryNegotiable);
+              return (
+                <span className={`inline-flex items-center gap-1 font-semibold ${s === 'Salary not disclosed' ? 'text-navy-700/50' : 'text-teal-700'}`}>
+                  <Banknote className="h-3.5 w-3.5" />
+                  {s}
+                </span>
+              );
+            })()}
           </div>
 
           <div className="mt-3 flex flex-wrap items-center gap-2">

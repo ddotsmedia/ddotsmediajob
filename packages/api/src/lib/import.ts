@@ -57,6 +57,9 @@ export async function extractAndSaveDraft(text: string, source: string, sourceMe
     companyId = existing?.id ?? (await db.insert(companies).values({ slug, name: draft.company.trim(), industry: 'General' }).returning())[0]?.id ?? null;
   }
 
+  // Negotiable salary if the source text says so (EN/AR) — clear any figure.
+  const negotiable = /\bnegotiable\b|\bcompetitive\b|salary\s*tbd|to\s+be\s+(discussed|decided)|راتب\s*مفاوض|قابل\s*للتفاوض/i.test(text);
+
   const jobSlug = `${slugify(draft.title) || 'job'}-${Math.random().toString(36).slice(2, 7)}`;
   await db.insert(jobs).values({
     slug: jobSlug,
@@ -69,8 +72,9 @@ export async function extractAndSaveDraft(text: string, source: string, sourceMe
     location: draft.area || null,
     jobType: draft.jobType as never,
     experienceLevel: inferExperienceLevel(`${text} ${draft.requirements ?? ''}`) as never, // inferred from text, null if absent
-    salaryMin: draft.salaryMin || null,
-    salaryMax: draft.salaryMax || null,
+    salaryMin: negotiable ? null : draft.salaryMin || null,
+    salaryMax: negotiable ? null : draft.salaryMax || null,
+    salaryNegotiable: negotiable,
     visaProvided: draft.visaProvided,
     accommodationProvided: draft.accommodation,
     isRemote: draft.remote,

@@ -22,7 +22,7 @@ export type DraftInit = {
 
 const blank = {
   title: '', companyName: '', categorySlug: 'admin', emirateSlug: '', location: '',
-  jobType: 'full-time', salaryMin: '', salaryMax: '', salaryHidden: false,
+  jobType: 'full-time', salaryMin: '', salaryMax: '', salaryHidden: false, salaryNegotiable: false,
   visaProvided: false, accommodationProvided: false, isFresher: false, isRemote: false, isUrgent: false,
   freeZone: false, isAnonymous: false, isFeatured: false, contactWhatsapp: '', applyEmail: '', skills: '', benefits: '',
   description: '<p></p>',
@@ -85,8 +85,8 @@ export function AdminJobReviewForm({ draft, source = 'manual', onReset }: { draf
     return {
       title: f.title, description: f.description, companyName: f.companyName || undefined,
       categorySlug: f.categorySlug, emirateSlug: f.emirateSlug, location: f.location || undefined,
-      jobType: f.jobType, salaryMin: f.salaryMin ? Number(f.salaryMin) : null, salaryMax: f.salaryMax ? Number(f.salaryMax) : null,
-      salaryHidden: f.salaryHidden || (!f.salaryMin && !f.salaryMax), visaProvided: f.visaProvided, accommodationProvided: f.accommodationProvided,
+      jobType: f.jobType, salaryMin: f.salaryNegotiable ? null : f.salaryMin ? Number(f.salaryMin) : null, salaryMax: f.salaryNegotiable ? null : f.salaryMax ? Number(f.salaryMax) : null,
+      salaryHidden: !f.salaryNegotiable && (f.salaryHidden || (!f.salaryMin && !f.salaryMax)), salaryNegotiable: f.salaryNegotiable, visaProvided: f.visaProvided, accommodationProvided: f.accommodationProvided,
       isFresher: f.isFresher, isRemote: f.isRemote, isUrgent: f.isUrgent, isFeatured: f.isFeatured,
       freeZone: f.freeZone, isAnonymous: f.isAnonymous, contactWhatsapp: f.contactWhatsapp || undefined, applyEmail: f.applyEmail || undefined,
       skills: f.skills.split(',').map((s) => s.trim()).filter(Boolean),
@@ -108,7 +108,7 @@ export function AdminJobReviewForm({ draft, source = 'manual', onReset }: { draf
       onSuccess: (r: { slug: string }) => {
         if (blast) {
           const url = `https://ddotsmediajobs.com/jobs/${r.slug}`;
-          const msg = `📢 ${f.title}\n${f.companyName ? f.companyName + ' · ' : ''}${EMIRATES.find((e) => e.slug === f.emirateSlug)?.name}\n${formatSalary(Number(f.salaryMin) || null, Number(f.salaryMax) || null, 'monthly', f.salaryHidden)}\nApply: ${url}`;
+          const msg = `📢 ${f.title}\n${f.companyName ? f.companyName + ' · ' : ''}${EMIRATES.find((e) => e.slug === f.emirateSlug)?.name}\n${formatSalary(Number(f.salaryMin) || null, Number(f.salaryMax) || null, 'monthly', f.salaryHidden, f.salaryNegotiable)}\nApply: ${url}`;
           navigator.clipboard.writeText(msg);
           toast.success('Published + WhatsApp blast copied');
         } else {
@@ -140,7 +140,7 @@ export function AdminJobReviewForm({ draft, source = 'manual', onReset }: { draf
       <div className="space-y-1.5"><Label>Description</Label><TiptapEditor value={f.description} onChange={(v) => set('description', v)} /></div>
 
       <div className="flex flex-wrap gap-x-6 gap-y-2">
-        {([['visaProvided', 'Visa provided'], ['accommodationProvided', 'Accommodation'], ['isFresher', 'Freshers welcome'], ['isRemote', 'Remote'], ['isUrgent', 'Urgent'], ['freeZone', 'Free zone'], ['isAnonymous', 'Anonymous'], ['isFeatured', 'Featured'], ['salaryHidden', 'Hide salary']] as const).map(([k, lbl]) => (
+        {([['visaProvided', 'Visa provided'], ['accommodationProvided', 'Accommodation'], ['isFresher', 'Freshers welcome'], ['isRemote', 'Remote'], ['isUrgent', 'Urgent'], ['freeZone', 'Free zone'], ['isAnonymous', 'Anonymous'], ['isFeatured', 'Featured'], ['salaryHidden', 'Hide salary'], ['salaryNegotiable', 'Negotiable']] as const).map(([k, lbl]) => (
           <label key={k} className="flex items-center gap-2 text-sm text-navy-700">
             <input type="checkbox" checked={f[k]} onChange={(e) => set(k, e.target.checked)} className="h-4 w-4 rounded text-teal-600" /> {lbl}
           </label>

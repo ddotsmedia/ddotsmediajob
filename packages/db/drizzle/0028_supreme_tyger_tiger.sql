@@ -1,0 +1,1 @@
+ALTER TABLE "jobs" ADD COLUMN "salary_negotiable" boolean DEFAULT false NOT NULL;

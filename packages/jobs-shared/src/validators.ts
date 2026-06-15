@@ -50,6 +50,7 @@ export const jobFieldsSchema = z.object({
   salaryMax: z.number().int().nonnegative().nullable().optional(),
   salaryPeriod: z.enum(SALARY_PERIODS).default('monthly'),
   salaryHidden: z.boolean().default(false),
+  salaryNegotiable: z.boolean().default(false),
   isRemote: z.boolean().default(false),
   isUrgent: z.boolean().default(false),
   isFresher: z.boolean().default(false),

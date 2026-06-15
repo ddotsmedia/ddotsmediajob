@@ -67,7 +67,7 @@ export default function ManageJobsPage() {
                 <Badge variant={STATUS[job.status] ?? 'muted'} className="capitalize">{job.status}</Badge>
               </div>
               <p className="text-sm text-navy-700/60">
-                {formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod, job.salaryHidden)}
+                {formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod, job.salaryHidden, job.salaryNegotiable)}
               </p>
               {job.status === 'rejected' && job.rejectionReason && (
                 <p className="mt-1 text-xs text-red-600">Rejected: {job.rejectionReason}</p>

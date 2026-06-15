@@ -25,7 +25,9 @@ export function formatSalary(
   max?: number | null,
   period: string = 'monthly',
   hidden = false,
+  negotiable = false,
 ): string {
+  if (negotiable) return 'Negotiable';
   // Treat 0 the same as unset — a job either has a real figure or it doesn't.
   const lo = min && min > 0 ? min : null;
   const hi = max && max > 0 ? max : null;

@@ -188,7 +188,7 @@ export default async function JobDetailPage({ params }: Props) {
                   <Fact icon={MapPin} label="Location" value={job.location ?? emirate?.name ?? 'UAE'} />
                   <Fact icon={Clock} label="Job Type" value={job.jobType.replace('-', ' ')} />
                   <Fact icon={GraduationCap} label="Experience" value={expLabel(job.experienceLevel)} />
-                  <Fact icon={Banknote} label="Salary" value={formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod, job.salaryHidden)} />
+                  <Fact icon={Banknote} label="Salary" value={formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod, job.salaryHidden, job.salaryNegotiable)} valueClassName={formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod, job.salaryHidden, job.salaryNegotiable) === 'Salary not disclosed' ? 'text-navy-700/50' : 'text-teal-700'} />
                 </div>
               </CardContent>
             </Card>
@@ -258,7 +258,7 @@ export default async function JobDetailPage({ params }: Props) {
                   <ShareMenu jobId={job.id} title={job.title} url={`${SITE.url}/jobs/${job.slug}`} variant="button" />
                 </div>
                 <div className="mt-3">
-                  <ReferJobButton title={job.title} slug={job.slug} salary={formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod, job.salaryHidden)} emirate={emirate?.name ?? 'UAE'} company={job.isAnonymous ? null : job.company?.name} />
+                  <ReferJobButton title={job.title} slug={job.slug} salary={formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod, job.salaryHidden, job.salaryNegotiable)} emirate={emirate?.name ?? 'UAE'} company={job.isAnonymous ? null : job.company?.name} />
                 </div>
                 <p className="mt-3 text-center text-xs text-navy-700/50">{job.applicationCount} applicants · {job.viewCount} views</p>
               </CardContent>
@@ -282,18 +282,18 @@ export default async function JobDetailPage({ params }: Props) {
           </div>
         </div>
       </div>
-      <MobileApplyBar salary={formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod, job.salaryHidden)} />
+      <MobileApplyBar salary={formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod, job.salaryHidden, job.salaryNegotiable)} />
     </div>
   );
 }
 
-function Fact({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
+function Fact({ icon: Icon, label, value, valueClassName }: { icon: any; label: string; value: string; valueClassName?: string }) {
   return (
     <div className="flex items-start gap-2">
       <Icon className="mt-0.5 h-4 w-4 shrink-0 text-teal-600" />
       <div>
         <div className="text-xs text-navy-700/50">{label}</div>
-        <div className="text-sm font-semibold capitalize text-navy-900">{value}</div>
+        <div className={`text-sm font-semibold capitalize ${valueClassName ?? 'text-navy-900'}`}>{value}</div>
       </div>
     </div>
   );

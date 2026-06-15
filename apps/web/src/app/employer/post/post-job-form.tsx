@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 type Draft = {
   title: string; description: string; categorySlug: string; emirateSlug: string;
   jobType: string; experienceLevel: string; salaryMin: number | null; salaryMax: number | null;
+  salaryNegotiable: boolean;
   skills: string[]; benefits: string[]; isRemote: boolean; isFresher: boolean; isUrgent: boolean;
   freeZone: boolean; isAnonymous: boolean; visaProvided: boolean; accommodationProvided: boolean;
   contactWhatsapp: string; applyEmail: string;
@@ -22,7 +23,7 @@ type Draft = {
 
 const EMPTY: Draft = {
   title: '', description: '', categorySlug: 'it', emirateSlug: '', jobType: 'full-time',
-  experienceLevel: '', salaryMin: null, salaryMax: null, skills: [], benefits: [],
+  experienceLevel: '', salaryMin: null, salaryMax: null, salaryNegotiable: false, skills: [], benefits: [],
   isRemote: false, isFresher: false, isUrgent: false,
   freeZone: false, isAnonymous: false, visaProvided: false, accommodationProvided: false,
   contactWhatsapp: '', applyEmail: '',
@@ -59,12 +60,14 @@ export function PostJobForm() {
     step === 2 ? draft.salaryMin == null || draft.salaryMax == null || draft.salaryMax >= draft.salaryMin : true;
 
   function publish() {
-    const salaryHidden = draft.salaryMin == null && draft.salaryMax == null;
+    const salaryHidden = !draft.salaryNegotiable && draft.salaryMin == null && draft.salaryMax == null;
     create.mutate({
       ...draft,
       experienceLevel: draft.experienceLevel || undefined, // '' → undefined so it stays empty
       salaryPeriod: 'monthly',
       salaryHidden,
+      salaryMin: draft.salaryNegotiable ? null : draft.salaryMin,
+      salaryMax: draft.salaryNegotiable ? null : draft.salaryMax,
       visaStatus: 'any',
       contactWhatsapp: draft.contactWhatsapp.trim() || undefined,
       applyEmail: draft.applyEmail.trim() || undefined,
@@ -125,9 +128,13 @@ export function PostJobForm() {
         {step === 2 && (
           <>
             <div className="grid gap-5 sm:grid-cols-2">
-              <Field label="Salary min (AED/mo)"><Input type="number" value={draft.salaryMin ?? ''} onChange={(e) => set('salaryMin', e.target.value ? Number(e.target.value) : null)} /></Field>
-              <Field label="Salary max (AED/mo)"><Input type="number" value={draft.salaryMax ?? ''} onChange={(e) => set('salaryMax', e.target.value ? Number(e.target.value) : null)} /></Field>
+              <Field label="Salary min (AED/mo)"><Input type="number" disabled={draft.salaryNegotiable} value={draft.salaryNegotiable ? '' : draft.salaryMin ?? ''} onChange={(e) => set('salaryMin', e.target.value ? Number(e.target.value) : null)} /></Field>
+              <Field label="Salary max (AED/mo)"><Input type="number" disabled={draft.salaryNegotiable} value={draft.salaryNegotiable ? '' : draft.salaryMax ?? ''} onChange={(e) => set('salaryMax', e.target.value ? Number(e.target.value) : null)} /></Field>
             </div>
+            <label className="flex items-center gap-2 text-sm text-navy-700">
+              <input type="checkbox" checked={draft.salaryNegotiable} onChange={(e) => set('salaryNegotiable', e.target.checked)} className="h-4 w-4 rounded text-teal-600" />
+              Salary is negotiable <span className="text-xs text-navy-700/50">(salary will show as “Negotiable”)</span>
+            </label>
             <Field label="Skills (comma-separated)"><Textarea className="min-h-[80px] resize-y" value={draft.skills.join(', ')} onChange={(e) => set('skills', e.target.value.split(',').map((s) => s.trim()).filter(Boolean))} placeholder="e.g. Excel, IELTS 6.5, UAE driving licence, customer service" /></Field>
             <Field label="Benefits (comma-separated)"><Textarea className="min-h-[80px] resize-y" value={draft.benefits.join(', ')} onChange={(e) => set('benefits', e.target.value.split(',').map((s) => s.trim()).filter(Boolean))} placeholder="e.g. Visa, medical insurance, annual flight, accommodation" /></Field>
             <div className="grid gap-5 sm:grid-cols-2">
@@ -156,7 +163,7 @@ export function PostJobForm() {
             <div className="flex flex-wrap gap-2">
               <Badge variant="muted">{CATEGORIES.find((c) => c.slug === draft.categorySlug)?.name}</Badge>
               <Badge variant="outline">{EMIRATES.find((e) => e.slug === draft.emirateSlug)?.name}</Badge>
-              <Badge>{formatSalary(draft.salaryMin, draft.salaryMax, 'monthly')}</Badge>
+              <Badge>{formatSalary(draft.salaryMin, draft.salaryMax, 'monthly', false, draft.salaryNegotiable)}</Badge>
               {draft.isRemote && <Badge variant="success">Remote</Badge>}
               {draft.isUrgent && <Badge variant="urgent">Urgent</Badge>}
             </div>

@@ -230,9 +230,10 @@ function LatestJobCard({ job }: { job: RecentJob }) {
         <Badge variant="muted">{category}</Badge>
       </div>
       <div className="mt-auto flex items-center justify-between border-t pt-3 text-sm">
-        <span className="font-semibold text-teal-700">
-          {formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod, job.salaryHidden)}
-        </span>
+        {(() => {
+          const s = formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod, job.salaryHidden, job.salaryNegotiable);
+          return <span className={`font-semibold ${s === 'Salary not disclosed' ? 'text-navy-700/50' : 'text-teal-700'}`}>{s}</span>;
+        })()}
         <span className="inline-flex items-center gap-1 text-xs text-navy-700/50"><Clock className="h-3 w-3" /> {formatJobDate(job.publishedAt)}</span>
       </div>
     </Link>

@@ -146,7 +146,7 @@ export default function AdminJobsPage() {
                   <td className="px-4 py-3 text-navy-700/70">{j.company?.name ?? '—'}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-navy-700/60">{formatShort(j.publishedAt ?? j.createdAt)}</td>
                   <td className="px-4 py-3"><SourceBadge source={j.source} /></td>
-                  <td className="px-4 py-3 text-navy-700/70">{formatSalary(j.salaryMin, j.salaryMax, j.salaryPeriod, j.salaryHidden)}</td>
+                  <td className="px-4 py-3 text-navy-700/70">{formatSalary(j.salaryMin, j.salaryMax, j.salaryPeriod, j.salaryHidden, j.salaryNegotiable)}</td>
                   <td className="px-4 py-3">
                     <Select className="h-8 w-28 text-xs" value={j.status} onChange={(e) => setStatusM.mutate({ id: j.id, status: e.target.value as never })}>
                       {JOB_STATUS.map((s) => <option key={s} value={s} className="capitalize">{s}</option>)}
