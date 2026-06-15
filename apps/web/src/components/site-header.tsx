@@ -13,7 +13,7 @@ export function SiteHeader() {
   const { data: session } = useSession();
   const [open, setOpen] = useState(false);
   const role = session?.user?.role;
-  const dashHref = role === 'admin' ? '/admin' : role === 'employer' ? '/employer' : '/dashboard';
+  const dashHref = role === 'admin' ? '/admin' : role === 'employer' ? '/employer' : role === 'volunteer' ? '/volunteer' : '/dashboard';
 
   // Lock background scroll while the mobile menu is open.
   useEffect(() => {

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { signIn } from 'next-auth/react';
+import { signIn, getSession } from 'next-auth/react';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -11,11 +11,14 @@ import { Input, Label } from '@/components/ui/primitives';
 export function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const raw = params.get('callbackUrl') ?? '/dashboard';
+  const raw = params.get('callbackUrl');
   // Open-redirect guard: same-origin relative paths only.
-  const callbackUrl = raw.startsWith('/') && !raw.startsWith('//') ? raw : '/dashboard';
+  const explicitCallback = raw && raw.startsWith('/') && !raw.startsWith('//') ? raw : null;
   const [loading, setLoading] = useState(false);
   const [show2fa, setShow2fa] = useState(false);
+
+  const roleHome = (role?: string) =>
+    role === 'admin' ? '/admin' : role === 'employer' ? '/employer' : role === 'volunteer' ? '/volunteer' : '/dashboard';
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -27,19 +30,22 @@ export function LoginForm() {
       totp: String(form.get('totp') ?? ''),
       redirect: false,
     });
-    setLoading(false);
     if (res?.error) {
+      setLoading(false);
       toast.error('Invalid email or password');
       return;
     }
+    // Route to the correct panel for this role (unless a specific page was requested).
+    const session = await getSession();
+    setLoading(false);
     toast.success('Signed in');
-    router.push(callbackUrl);
+    router.push(explicitCallback ?? roleHome(session?.user?.role));
     router.refresh();
   }
 
   return (
     <div className="mt-6 space-y-4">
-      <Button variant="outline" className="w-full" onClick={() => signIn('google', { callbackUrl })}>
+      <Button variant="outline" className="w-full" onClick={() => signIn('google', { callbackUrl: explicitCallback ?? '/dashboard' })}>
         <GoogleIcon /> Continue with Google
       </Button>
 

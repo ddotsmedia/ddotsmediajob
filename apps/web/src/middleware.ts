@@ -31,6 +31,12 @@ export default auth((req) => {
     return NextResponse.redirect(new URL('/dashboard', req.nextUrl.origin));
   }
 
+  // /dashboard is the jobseeker home — send other roles to their own panel.
+  if (pathname === '/dashboard' || pathname.startsWith('/dashboard/')) {
+    const home = role === 'admin' ? '/admin' : role === 'employer' ? '/employer' : role === 'volunteer' ? '/volunteer' : null;
+    if (home) return NextResponse.redirect(new URL(home, req.nextUrl.origin));
+  }
+
   return NextResponse.next();
 });
 

@@ -59,13 +59,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const nav = NAV.map((n) => (n.href === '/admin/jobs/drafts' && draftCount > 0 ? { ...n, badge: draftCount } : n));
   return (
     <div className="mx-auto flex max-w-7xl">
-      <DashboardSidebar items={nav} title="Admin" />
+      <DashboardSidebar items={nav} title="Admin Panel" variant="dark" />
       <div className="min-w-0 flex-1">
         {/* Header action bar — Drafts quick access (mobile + desktop). */}
-        <div className="flex items-center justify-end gap-2 border-b bg-white px-4 py-2">
+        <div className="flex items-center justify-between gap-2 border-b border-navy-800 bg-navy-900 px-4 py-2">
+          <span className="text-sm font-semibold text-white/80">Admin</span>
           <Link
             href="/admin/jobs/drafts"
-            className="inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium text-navy-700 transition-colors hover:border-amber-400 hover:bg-amber-50"
+            className="inline-flex items-center gap-2 rounded-lg border border-white/15 px-3 py-1.5 text-sm font-medium text-navy-100/80 transition-colors hover:border-amber-400 hover:text-white"
           >
             <FilePen className="h-4 w-4" />
             Drafts
@@ -74,7 +75,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             )}
           </Link>
         </div>
-        <MobileTabs items={nav} />
+        <MobileTabs items={nav} variant="dark" />
         <div className="p-4 md:p-8">{children}</div>
       </div>
     </div>
