@@ -24,18 +24,26 @@ export default async function AdminDashboard() {
         )}
       </div>
 
-      {stats.draftJobs > 0 && (
+      {/* Quick actions */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Link
           href="/admin/jobs/drafts"
-          className="flex items-center gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-amber-900 transition-colors hover:bg-amber-100"
+          className={`flex items-center gap-3 rounded-xl border p-4 transition-colors ${
+            stats.draftJobs > 0
+              ? 'border-amber-300 bg-amber-50 hover:bg-amber-100'
+              : 'bg-white hover:border-teal-300'
+          }`}
         >
-          <FilePen className="h-5 w-5 shrink-0 text-amber-600" />
-          <span className="flex-1 text-sm font-medium">
-            ⚠ {stats.draftJobs} draft{stats.draftJobs === 1 ? '' : 's'} pending review
+          <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${stats.draftJobs > 0 ? 'bg-amber-500 text-white' : 'bg-navy-50 text-navy-500'}`}>
+            <FilePen className="h-5 w-5" />
           </span>
-          <ArrowRight className="h-4 w-4 shrink-0" />
+          <div className="min-w-0 flex-1">
+            <div className="font-display text-xl font-extrabold text-navy-900">{stats.draftJobs}</div>
+            <div className="text-sm text-navy-700/60">Job Drafts</div>
+          </div>
+          <ArrowRight className="h-4 w-4 shrink-0 text-navy-700/40" />
         </Link>
-      )}
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard icon={Briefcase} label="Total Jobs" value={stats.jobs} />
