@@ -6,12 +6,13 @@ import { trpc } from '@/trpc/react';
 import { Button } from '@/components/ui/button';
 import { Input, Label } from '@/components/ui/primitives';
 
-const INTEGRATIONS: { key: 'email' | 'storage' | 'search' | 'realtime' | 'analytics'; label: string; offHint: string }[] = [
+const INTEGRATIONS: { key: 'email' | 'storage' | 'search' | 'realtime' | 'analytics' | 'monitoring'; label: string; offHint: string }[] = [
   { key: 'email', label: 'Email (Resend)', offHint: 'Set RESEND_API_KEY (re_…) — emails are skipped until configured.' },
   { key: 'storage', label: 'File storage (Cloudflare R2)', offHint: 'Set R2_ACCOUNT_ID + keys — uploads are disabled until configured.' },
   { key: 'search', label: 'Search (Meilisearch)', offHint: 'Set MEILISEARCH_URL — search falls back to the database until configured.' },
   { key: 'realtime', label: 'Real-time (Pusher)', offHint: 'Set PUSHER_APP_ID/KEY/SECRET — notifications fall back to polling.' },
   { key: 'analytics', label: 'Analytics (Umami)', offHint: 'Set NEXT_PUBLIC_UMAMI_ID — analytics are disabled until configured.' },
+  { key: 'monitoring', label: 'Error monitoring (Sentry)', offHint: 'Set NEXT_PUBLIC_SENTRY_DSN — error reporting is off until configured.' },
 ];
 
 export default function AdminSettingsPage() {

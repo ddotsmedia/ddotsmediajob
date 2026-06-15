@@ -35,12 +35,18 @@ export function isAnalyticsConfigured(): boolean {
   return !!process.env.NEXT_PUBLIC_UMAMI_ID;
 }
 
+/** Sentry error monitoring is configured when a public DSN is set. */
+export function isMonitoringConfigured(): boolean {
+  return !!process.env.NEXT_PUBLIC_SENTRY_DSN;
+}
+
 export type IntegrationStatus = {
   email: boolean;
   storage: boolean;
   search: boolean;
   realtime: boolean;
   analytics: boolean;
+  monitoring: boolean;
 };
 
 export function integrationStatus(): IntegrationStatus {
@@ -50,5 +56,6 @@ export function integrationStatus(): IntegrationStatus {
     search: isSearchConfigured(),
     realtime: isRealtimeConfigured(),
     analytics: isAnalyticsConfigured(),
+    monitoring: isMonitoringConfigured(),
   };
 }
