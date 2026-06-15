@@ -14,6 +14,11 @@ export function slugify(input: string): string {
     .slice(0, 80);
 }
 
+/** Pluralise a job count: 1 → "1 job", else "N jobs" (locale-formatted). */
+export function formatJobCount(n: number): string {
+  return n === 1 ? '1 job' : `${n.toLocaleString('en-AE')} jobs`;
+}
+
 /** Format an AED salary range for display. */
 export function formatSalary(
   min?: number | null,

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight, Building2, Users, BriefcaseBusiness, CheckCircle2 } from 'lucide-react';
-import { CATEGORIES, EMIRATES, SITE } from '@ddots/shared';
+import { CATEGORIES, EMIRATES, SITE, formatJobCount } from '@ddots/shared';
 import { getApi } from '@/trpc/server';
 import { JobSearchBar } from '@/components/job-search-bar';
 import { JobCard } from '@/components/job-card';
@@ -68,11 +68,17 @@ export default async function HomePage() {
             in the <span className="text-teal-400">UAE</span>
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-navy-100/80">
-            Thousands of verified vacancies in Dubai, Abu Dhabi, Sharjah and beyond. Apply in one click.
+            UAE&apos;s WhatsApp-powered job portal · 76 groups · 80,000+ professionals
           </p>
           <div className="mx-auto mt-8 max-w-3xl">
             <JobSearchBar />
           </div>
+          <Link
+            href="/whatsapp-groups"
+            className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-teal-300 hover:text-teal-200 hover:underline"
+          >
+            💬 Join 80,000+ professionals on WhatsApp <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
           <div className="mt-6 flex flex-nowrap items-center gap-2 overflow-x-auto scrollbar-hide px-1 text-sm text-navy-100/70 sm:flex-wrap sm:justify-center sm:gap-x-3">
             <span className="shrink-0">Popular:</span>
             {['Driver', 'Accountant', 'Nurse', 'Sales', 'Receptionist'].map((t) => (
@@ -120,7 +126,7 @@ export default async function HomePage() {
               <span>
                 <span className="block font-semibold text-navy-900">{c.name}</span>
                 <span className="block text-xs text-navy-700/60">
-                  {(stats.byCategory[c.slug] ?? 0).toLocaleString('en-AE')} jobs
+                  {formatJobCount(stats.byCategory[c.slug] ?? 0)}
                 </span>
               </span>
             </Link>
