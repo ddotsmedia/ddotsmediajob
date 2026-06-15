@@ -15,6 +15,7 @@ export function LoginForm() {
   // Open-redirect guard: same-origin relative paths only.
   const callbackUrl = raw.startsWith('/') && !raw.startsWith('//') ? raw : '/dashboard';
   const [loading, setLoading] = useState(false);
+  const [show2fa, setShow2fa] = useState(false);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -23,6 +24,7 @@ export function LoginForm() {
     const res = await signIn('credentials', {
       email: String(form.get('email')),
       password: String(form.get('password')),
+      totp: String(form.get('totp') ?? ''),
       redirect: false,
     });
     setLoading(false);
@@ -57,6 +59,16 @@ export function LoginForm() {
           </div>
           <Input id="password" name="password" type="password" required placeholder="••••••••" autoComplete="current-password" />
         </div>
+        {show2fa ? (
+          <div className="space-y-1.5">
+            <Label htmlFor="totp">Authenticator code</Label>
+            <Input id="totp" name="totp" inputMode="numeric" autoComplete="one-time-code" placeholder="6-digit code or backup code" />
+          </div>
+        ) : (
+          <button type="button" onClick={() => setShow2fa(true)} className="text-xs font-medium text-teal-600 hover:underline">
+            Have two-factor authentication enabled?
+          </button>
+        )}
         <Button type="submit" className="w-full" disabled={loading}>
           {loading && <Loader2 className="animate-spin" />} Sign in
         </Button>

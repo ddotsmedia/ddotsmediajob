@@ -7,6 +7,7 @@ import { trpc } from '@/trpc/react';
 import { Button } from '@/components/ui/button';
 import { Input, Badge } from '@/components/ui/primitives';
 import { downloadCsv } from '@/lib/csv';
+import { TwoFactorCard } from '@/components/admin/two-factor-card';
 
 const SEV: Record<string, 'muted' | 'gold' | 'urgent'> = { info: 'muted', warn: 'gold', error: 'urgent', critical: 'urgent' };
 
@@ -36,6 +37,8 @@ export default function SecurityPage() {
         <Stat label="IDOR attempts" value={counts('IDOR_ATTEMPT')} accent />
         <Stat label="Webhooks" value={counts('WEBHOOK_RECEIVED')} />
       </div>
+
+      <TwoFactorCard />
 
       <div className="mt-6 rounded-xl border bg-white p-5">
         <h2 className="font-display text-sm font-bold text-navy-900">Block / unblock IP</h2>

@@ -16,7 +16,8 @@
     "@ddots/db": "workspace:*",
     "@ddots/shared": "workspace:*",
     "bcryptjs": "^2.4.3",
-    "next-auth": "5.0.0-beta.29"
+    "next-auth": "5.0.0-beta.29",
+    "otplib": "^13.4.1"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

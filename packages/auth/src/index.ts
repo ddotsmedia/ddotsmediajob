@@ -6,6 +6,9 @@ import { DrizzleAdapter } from '@auth/drizzle-adapter';
 import { db, users, accounts, sessions, verificationTokens, securityLogs, eq } from '@ddots/db';
 import { loginSchema, type UserRole } from '@ddots/shared';
 import { verifyPassword } from './password';
+import { decryptSecret, verifyTotp, consumeBackupCode } from './totp';
+
+export * from './totp';
 
 /** Record a failed login (fail-open — never throws, never blocks sign-in). */
 async function logFailedLogin(req: Request | undefined, reason: string): Promise<void> {
@@ -57,6 +60,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       credentials: {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
+        totp: { label: '2FA code', type: 'text' },
       },
       authorize: async (raw, request) => {
         const req = request as unknown as Request | undefined;
@@ -71,6 +75,24 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const ok = await verifyPassword(password, user.passwordHash);
         if (!ok) { await logFailedLogin(req, 'bad_password'); return null; }
+
+        // TOTP 2FA — only enforced for accounts that opted in (totpEnabled).
+        // Accounts without 2FA are unaffected and log in exactly as before.
+        if (user.totpEnabled && user.totpSecret) {
+          const code = typeof raw.totp === 'string' ? raw.totp.trim() : '';
+          if (!code) { await logFailedLogin(req, '2fa_required'); return null; }
+          const secret = await decryptSecret(user.totpSecret);
+          const totpOk = secret ? await verifyTotp(code, secret) : false;
+          if (!totpOk) {
+            // Allow a single-use backup code as fallback.
+            const usedHash = await consumeBackupCode(code, user.totpBackupCodes ?? []);
+            if (!usedHash) { await logFailedLogin(req, '2fa_invalid'); return null; }
+            await db
+              .update(users)
+              .set({ totpBackupCodes: (user.totpBackupCodes ?? []).filter((h) => h !== usedHash) })
+              .where(eq(users.id, user.id));
+          }
+        }
 
         return {
           id: user.id,

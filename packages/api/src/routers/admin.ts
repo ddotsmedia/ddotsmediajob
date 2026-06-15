@@ -25,6 +25,15 @@ import {
   ilike,
 } from '@ddots/db';
 import { slugify } from '@ddots/shared';
+import {
+  generateTotpSecret,
+  encryptSecret,
+  decryptSecret,
+  verifyTotp,
+  generateBackupCodes,
+  consumeBackupCode,
+} from '@ddots/auth';
+import { toDataURL } from 'qrcode';
 import { createJobFromWhatsApp, type ParsedJob } from '../lib/whatsapp';
 import { router, adminProcedure } from '../trpc';
 import { audit, notify, uniqueJobSlug } from '../lib/helpers';
@@ -849,4 +858,72 @@ export const adminRouter = router({
     await audit(ctx.session.user.id, 'admin.search.reindex', 'job', undefined, { indexed: rows.length });
     return { indexed: rows.length, configured: true };
   }),
+
+  /** Uptime monitor stats (written by the worker's 5-min health ping). */
+  uptimeStatus: adminProcedure.query(async ({ ctx }) => {
+    const row = await ctx.db.query.siteSettings.findFirst({ where: eq(siteSettings.key, 'uptime_monitor') });
+    const v = (row?.value ?? null) as { checks?: number; ups?: number; lastStatus?: string; lastCheckAt?: string; consecutiveFails?: number } | null;
+    if (!v || !v.checks) return { configured: false, percent: null, lastStatus: 'unknown', lastCheckAt: null, checks: 0 };
+    return {
+      configured: true,
+      percent: Math.round(((v.ups ?? 0) / v.checks) * 1000) / 10,
+      lastStatus: v.lastStatus ?? 'unknown',
+      lastCheckAt: v.lastCheckAt ?? null,
+      checks: v.checks,
+    };
+  }),
+
+  // ─── TOTP 2FA (opt-in for admins) ──────────────────────────────────
+  /** Current 2FA state for the signed-in admin. */
+  twoFactorStatus: adminProcedure.query(async ({ ctx }) => {
+    const u = await ctx.db.query.users.findFirst({
+      where: eq(users.id, ctx.session.user.id),
+      columns: { totpEnabled: true, totpBackupCodes: true },
+    });
+    return { enabled: u?.totpEnabled ?? false, backupCodesLeft: (u?.totpBackupCodes ?? []).length };
+  }),
+
+  /**
+   * Begin setup: generate a secret + QR. Stores the secret encrypted but leaves
+   * 2FA disabled until verified. Returns the QR data URL + otpauth URI.
+   */
+  twoFactorSetup: adminProcedure.mutation(async ({ ctx }) => {
+    const u = await ctx.db.query.users.findFirst({ where: eq(users.id, ctx.session.user.id) });
+    if (!u?.email) throw new TRPCError({ code: 'BAD_REQUEST', message: 'No account email' });
+    if (u.totpEnabled) throw new TRPCError({ code: 'BAD_REQUEST', message: '2FA already enabled' });
+    const { secret, otpauth } = generateTotpSecret(u.email);
+    await ctx.db.update(users).set({ totpSecret: await encryptSecret(secret) }).where(eq(users.id, u.id));
+    const qrDataUrl = await toDataURL(otpauth, { margin: 1, width: 220 });
+    return { otpauth, qrDataUrl };
+  }),
+
+  /** Verify the first code and enable 2FA; returns one-time backup codes. */
+  twoFactorEnable: adminProcedure
+    .input(z.object({ code: z.string().min(6).max(10) }))
+    .mutation(async ({ ctx, input }) => {
+      const u = await ctx.db.query.users.findFirst({ where: eq(users.id, ctx.session.user.id) });
+      if (!u?.totpSecret) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Run setup first' });
+      const secret = await decryptSecret(u.totpSecret);
+      if (!secret || !(await verifyTotp(input.code, secret))) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid code — try again' });
+      }
+      const { plain, hashed } = await generateBackupCodes();
+      await ctx.db.update(users).set({ totpEnabled: true, totpBackupCodes: hashed }).where(eq(users.id, u.id));
+      await audit(ctx.session.user.id, 'admin.2fa.enable', 'user', u.id);
+      return { backupCodes: plain };
+    }),
+
+  /** Disable 2FA (requires a valid current code or backup code). */
+  twoFactorDisable: adminProcedure
+    .input(z.object({ code: z.string().min(6).max(10) }))
+    .mutation(async ({ ctx, input }) => {
+      const u = await ctx.db.query.users.findFirst({ where: eq(users.id, ctx.session.user.id) });
+      if (!u?.totpEnabled || !u.totpSecret) throw new TRPCError({ code: 'BAD_REQUEST', message: '2FA not enabled' });
+      const secret = await decryptSecret(u.totpSecret);
+      const ok = (secret && (await verifyTotp(input.code, secret))) || (await consumeBackupCode(input.code, u.totpBackupCodes ?? []));
+      if (!ok) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid code' });
+      await ctx.db.update(users).set({ totpEnabled: false, totpSecret: null, totpBackupCodes: [] }).where(eq(users.id, u.id));
+      await audit(ctx.session.user.id, 'admin.2fa.disable', 'user', u.id);
+      return { ok: true };
+    }),
 });

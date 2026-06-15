@@ -20,6 +20,7 @@ export default function AdminSettingsPage() {
   const settings = trpc.admin.getSettings.useQuery();
   const integrations = trpc.content.integrations.useQuery(undefined, { staleTime: 60_000 });
   const searchStatus = trpc.admin.searchStatus.useQuery(undefined, { staleTime: 30_000 });
+  const uptime = trpc.admin.uptimeStatus.useQuery(undefined, { staleTime: 60_000 });
   const reindex = trpc.admin.reindexJobs.useMutation({
     onSuccess: (r) => { searchStatus.refetch(); toast.success(r.configured ? `Re-indexed ${r.indexed} jobs` : 'Meilisearch not configured'); },
     onError: (e) => toast.error(e.message),
@@ -87,6 +88,26 @@ export default function AdminSettingsPage() {
             </Button>
           </div>
         </div>
+      </div>
+
+      <div className="mt-6 rounded-xl border bg-white p-6">
+        <h2 className="font-display text-lg font-bold text-navy-900">Uptime</h2>
+        <p className="text-sm text-navy-700/60">Health checks run every 5 minutes from the worker. Admins are emailed after 3 consecutive failures.</p>
+        {uptime.data?.configured ? (
+          <div className="mt-3 flex flex-wrap items-center gap-4">
+            <div>
+              <div className="font-display text-2xl font-extrabold text-navy-900">{uptime.data.percent}%</div>
+              <div className="text-xs text-navy-700/50">uptime over {uptime.data.checks} checks</div>
+            </div>
+            <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${uptime.data.lastStatus === 'up' ? 'bg-green-50 text-green-700' : uptime.data.lastStatus === 'down' ? 'bg-red-50 text-red-700' : 'bg-navy-50 text-navy-500'}`}>
+              <span className={`h-2 w-2 rounded-full ${uptime.data.lastStatus === 'up' ? 'bg-green-500' : uptime.data.lastStatus === 'down' ? 'bg-red-500' : 'bg-navy-300'}`} />
+              {uptime.data.lastStatus === 'up' ? 'Operational' : uptime.data.lastStatus === 'down' ? 'Down' : 'Unknown'}
+            </span>
+            {uptime.data.lastCheckAt && <span className="text-xs text-navy-700/50">last check {new Date(uptime.data.lastCheckAt).toLocaleString('en-AE')}</span>}
+          </div>
+        ) : (
+          <p className="mt-3 text-sm text-navy-700/50">No checks recorded yet — the worker populates this within 5 minutes of starting.</p>
+        )}
       </div>
 
       <div className="mt-6 rounded-xl border bg-white p-6">

@@ -61,6 +61,10 @@ export const users = pgTable(
     plan: varchar('plan', { length: 20 }).default('free').notNull(), // free | premium
     premiumUntil: timestamp('premium_until', { withTimezone: true }),
     lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
+    // TOTP 2FA (opt-in; admins only enforced). Secret stored AES-256-GCM encrypted.
+    totpSecret: text('totp_secret'),
+    totpEnabled: boolean('totp_enabled').default(false).notNull(),
+    totpBackupCodes: jsonb('totp_backup_codes').$type<string[]>().default([]).notNull(),
     ...timestamps,
   },
   (t) => [uniqueIndex('users_email_idx').on(t.email)],

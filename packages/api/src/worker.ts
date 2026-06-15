@@ -25,7 +25,7 @@ import {
 import { formatSalary, CATEGORIES } from '@ddots/shared';
 import { QUEUE, bullConnection, enqueueEmail, jobAlertsQueue, maintenanceQueue, type EmailJob, type SearchSyncJob, type AlertScanJob, type AiScoringJob, type MaintenanceJob, type JobEventJob } from './lib/queue';
 import { expireStaleJobs } from './lib/helpers';
-import { sendEmailJob } from './lib/email';
+import { sendEmailJob, sendAlertEmail } from './lib/email';
 import { ensureJobsCollection, upsertJobDocument, deleteJobDocument, jobToDocument } from './lib/typesense';
 import { ensureJobsIndex as ensureMeiliIndex, upsertJob as meiliUpsert, deleteJob as meiliDelete, jobRowToDoc } from './lib/meili';
 import { structured, MATCH_TOOL, MODEL_SMART, MODEL_FAST, type MatchResult } from './lib/anthropic';
@@ -325,6 +325,62 @@ async function expireTick() {
 }
 void expireTick(); // run once on startup
 setInterval(() => void expireTick(), 60 * 60 * 1000); // hourly
+
+// ── Uptime monitor: ping /api/health every 5 min ─────────
+// Tracks rolling uptime % in site_settings; emails admins after 3 consecutive
+// failures (once per outage). Fail-open: never throws out of the tick.
+type UptimeState = { checks: number; ups: number; consecutiveFails: number; alerted: boolean; lastStatus: 'up' | 'down' | 'unknown'; lastCheckAt: string };
+const UPTIME_KEY = 'uptime_monitor';
+
+async function uptimeTick() {
+  try {
+    let up = false;
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 10_000);
+      const res = await fetch(`${APP_URL}/api/health`, { signal: ctrl.signal, cache: 'no-store' });
+      clearTimeout(timer);
+      up = res.ok;
+    } catch {
+      up = false;
+    }
+
+    const row = await db.query.siteSettings.findFirst({ where: eq(siteSettings.key, UPTIME_KEY) });
+    const prev = (row?.value as UptimeState | undefined) ?? { checks: 0, ups: 0, consecutiveFails: 0, alerted: false, lastStatus: 'unknown' as const, lastCheckAt: new Date().toISOString() };
+
+    const next: UptimeState = {
+      checks: prev.checks + 1,
+      ups: prev.ups + (up ? 1 : 0),
+      consecutiveFails: up ? 0 : prev.consecutiveFails + 1,
+      alerted: up ? false : prev.alerted,
+      lastStatus: up ? 'up' : 'down',
+      lastCheckAt: new Date().toISOString(),
+    };
+
+    // 3 consecutive failures → alert admins once per outage.
+    if (!up && next.consecutiveFails >= 3 && !prev.alerted) {
+      const admins = await db.query.users.findMany({ where: eq(users.role, 'admin'), columns: { email: true } });
+      const to = admins.map((a) => a.email).filter((e): e is string => !!e);
+      if (to.length) {
+        const sent = await sendAlertEmail(
+          to,
+          '🔴 DdotsMediaJobs is DOWN',
+          `Health check at ${APP_URL}/api/health failed ${next.consecutiveFails} times in a row (last check ${next.lastCheckAt}). Please investigate.`,
+        );
+        if (sent) next.alerted = true;
+      }
+    }
+
+    await db
+      .insert(siteSettings)
+      .values({ key: UPTIME_KEY, value: next })
+      .onConflictDoUpdate({ target: siteSettings.key, set: { value: next } });
+  } catch (err) {
+    console.error('[uptime] tick failed:', err instanceof Error ? err.message : err);
+  }
+}
+setTimeout(() => void uptimeTick(), 30_000); // first check 30s after boot
+setInterval(() => void uptimeTick(), 5 * 60 * 1000); // every 5 min
 
 // ── Schedule repeatable alert scans ──────────────────────
 async function scheduleAlertScans() {

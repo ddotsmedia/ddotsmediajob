@@ -22,6 +22,23 @@ function getResend(): Resend {
 
 const FROM = process.env.EMAIL_FROM ?? 'DdotsMediaJobs <jobs@ddotsmediajobs.com>';
 
+/** Send a plain operational alert email (e.g. uptime). No-op if email unconfigured. */
+export async function sendAlertEmail(to: string | string[], subject: string, message: string): Promise<boolean> {
+  if (!isEmailConfigured()) return false;
+  try {
+    await getResend().emails.send({
+      from: FROM,
+      to,
+      subject,
+      html: `<div style="font-family:system-ui,sans-serif;color:#0f172a"><h2 style="color:#2a9aa4">${subject}</h2><p>${message}</p></div>`,
+    });
+    return true;
+  } catch (err) {
+    console.error('[alert-email] send failed:', err instanceof Error ? err.message : err);
+    return false;
+  }
+}
+
 /** Render an email job to subject + HTML. */
 async function renderEmail(job: EmailJob): Promise<{ subject: string; html: string }> {
   switch (job.type) {
