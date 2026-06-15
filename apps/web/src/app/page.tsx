@@ -210,7 +210,6 @@ type RecentJob = inferRouterOutputs<AppRouter>['jobs']['recent'][number];
 
 function LatestJobCard({ job }: { job: RecentJob }) {
   const fresh = isNew(job.publishedAt);
-  const hasSalary = job.salaryMin != null || job.salaryMax != null;
   const emirate = emirateBySlug(job.emirateSlug)?.name ?? job.emirateSlug;
   const category = categoryBySlug(job.categorySlug)?.name ?? job.categorySlug;
   return (
@@ -232,7 +231,7 @@ function LatestJobCard({ job }: { job: RecentJob }) {
       </div>
       <div className="mt-auto flex items-center justify-between border-t pt-3 text-sm">
         <span className="font-semibold text-teal-700">
-          {hasSalary ? formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod, job.salaryHidden) : 'Negotiable'}
+          {formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod, job.salaryHidden)}
         </span>
         <span className="inline-flex items-center gap-1 text-xs text-navy-700/50"><Clock className="h-3 w-3" /> {formatJobDate(job.publishedAt)}</span>
       </div>

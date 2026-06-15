@@ -26,12 +26,15 @@ export function formatSalary(
   period: string = 'monthly',
   hidden = false,
 ): string {
-  if (hidden || (min == null && max == null)) return 'Salary not disclosed';
+  // Treat 0 the same as unset — a job either has a real figure or it doesn't.
+  const lo = min && min > 0 ? min : null;
+  const hi = max && max > 0 ? max : null;
+  if (hidden || (lo == null && hi == null)) return 'Salary not disclosed';
   const fmt = (n: number) => `AED ${n.toLocaleString('en-AE')}`;
   const suffix = period === 'monthly' ? '/mo' : period === 'yearly' ? '/yr' : period === 'daily' ? '/day' : '/hr';
-  if (min != null && max != null) return `${fmt(min)} – ${fmt(max)}${suffix}`;
-  if (min != null) return `From ${fmt(min)}${suffix}`;
-  return `Up to ${fmt(max as number)}${suffix}`;
+  if (lo != null && hi != null) return `${fmt(lo)} – ${fmt(hi)}${suffix}`;
+  if (lo != null) return `From ${fmt(lo)}${suffix}`;
+  return `Up to ${fmt(hi as number)}${suffix}`;
 }
 
 /** Relative "time ago" string. */
