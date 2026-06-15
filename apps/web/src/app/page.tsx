@@ -1,14 +1,18 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight, Building2, Users, BriefcaseBusiness, CheckCircle2 } from 'lucide-react';
-import { CATEGORIES, EMIRATES, SITE, formatJobCount } from '@ddots/shared';
+import type { inferRouterOutputs } from '@trpc/server';
+import type { AppRouter } from '@ddots/api';
+import { CATEGORIES, EMIRATES, SITE, formatJobCount, formatJobDate, isNew, formatSalary, categoryBySlug, emirateBySlug } from '@ddots/shared';
 import { getApi } from '@/trpc/server';
 import { JobSearchBar } from '@/components/job-search-bar';
 import { JobCard } from '@/components/job-card';
 import { CategoryIcon } from '@/components/category-icon';
+import { MapPin, Clock } from 'lucide-react';
 import { NumberTicker } from '@/components/magic/number-ticker';
 import { GridPattern } from '@/components/magic/grid-pattern';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/primitives';
 
 export const revalidate = 300; // ISR — refresh stats/featured every 5 min
 
@@ -23,9 +27,10 @@ const EMPTY_STATS = { byCategory: {} as Record<string, number>, byEmirate: {} as
 
 export default async function HomePage() {
   const api = await getApi();
-  const [stats, featured] = await Promise.all([
+  const [stats, featured, recent] = await Promise.all([
     api.jobs.stats().catch(() => EMPTY_STATS),
     api.jobs.featured({ limit: 6 }).catch(() => [] as Awaited<ReturnType<typeof api.jobs.featured>>),
+    api.jobs.recent({ limit: 6 }).catch(() => [] as Awaited<ReturnType<typeof api.jobs.recent>>),
   ]);
 
   const jsonLd = [
@@ -110,8 +115,31 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ── Categories ─────────────────────────────────── */}
+      {/* ── Latest Jobs (primary) ──────────────────────── */}
       <section className="mx-auto max-w-7xl px-4 py-16">
+        <SectionHead title="Latest Jobs" subtitle="Freshly posted roles across the UAE" href="/jobs" />
+        {recent.length === 0 ? (
+          <div className="mt-8 rounded-2xl border border-dashed bg-white p-10 text-center">
+            <p className="font-display text-lg font-bold text-navy-900">No jobs yet</p>
+            <p className="mt-1 text-navy-700/60">Be the first to hire on DdotsMediaJobs.</p>
+            <Button asChild variant="accent" className="mt-4"><Link href="/employer/post">Post the first job <ArrowRight /></Link></Button>
+          </div>
+        ) : (
+          <>
+            <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {recent.map((job) => (
+                <LatestJobCard key={job.id} job={job} />
+              ))}
+            </div>
+            <div className="mt-8 text-center">
+              <Button asChild variant="outline" size="lg"><Link href="/jobs">View all jobs <ArrowRight /></Link></Button>
+            </div>
+          </>
+        )}
+      </section>
+
+      {/* ── Categories ─────────────────────────────────── */}
+      <section className="mx-auto max-w-7xl border-t px-4 py-16">
         <SectionHead title="Browse by Category" subtitle="Find roles in your field across every emirate" href="/jobs" />
         <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
           {CATEGORIES.map((c) => (
@@ -189,6 +217,40 @@ export default async function HomePage() {
         </div>
       </section>
     </>
+  );
+}
+
+type RecentJob = inferRouterOutputs<AppRouter>['jobs']['recent'][number];
+
+function LatestJobCard({ job }: { job: RecentJob }) {
+  const fresh = isNew(job.publishedAt);
+  const hasSalary = job.salaryMin != null || job.salaryMax != null;
+  const emirate = emirateBySlug(job.emirateSlug)?.name ?? job.emirateSlug;
+  const category = categoryBySlug(job.categorySlug)?.name ?? job.categorySlug;
+  return (
+    <Link
+      href={`/jobs/${job.slug}`}
+      className="group flex flex-col gap-3 rounded-xl border bg-white p-5 transition-all hover:-translate-y-0.5 hover:border-teal-300 hover:shadow-md"
+    >
+      <div className="flex items-start justify-between gap-2">
+        <h3 className="font-display font-bold leading-snug text-navy-900 group-hover:text-teal-600">{job.title}</h3>
+        <span className="flex shrink-0 gap-1">
+          {fresh && <Badge className="bg-green-100 text-green-700">NEW</Badge>}
+          {job.source === 'whapi' && <Badge className="bg-[#25D366]/15 text-[#1a8a4d]">via WhatsApp</Badge>}
+        </span>
+      </div>
+      <p className="text-sm text-navy-700/70">{job.company?.name ?? 'Confidential Company'}</p>
+      <div className="flex flex-wrap items-center gap-2 text-xs text-navy-700/60">
+        <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {emirate}</span>
+        <Badge variant="muted">{category}</Badge>
+      </div>
+      <div className="mt-auto flex items-center justify-between border-t pt-3 text-sm">
+        <span className="font-semibold text-teal-700">
+          {hasSalary ? formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod, job.salaryHidden) : 'Negotiable'}
+        </span>
+        <span className="inline-flex items-center gap-1 text-xs text-navy-700/50"><Clock className="h-3 w-3" /> {formatJobDate(job.publishedAt)}</span>
+      </div>
+    </Link>
   );
 }
 

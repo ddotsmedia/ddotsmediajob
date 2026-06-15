@@ -153,6 +153,17 @@ export const jobsRouter = router({
       }),
   ),
 
+  /** Most recently published active jobs (homepage Latest Jobs feed). */
+  recent: publicProcedure.input(z.object({ limit: z.number().min(1).max(24).default(6) }).optional()).query(
+    async ({ ctx, input }) =>
+      ctx.db.query.jobs.findMany({
+        where: eq(jobs.status, 'active'),
+        orderBy: [desc(jobs.publishedAt)],
+        limit: input?.limit ?? 6,
+        with: { company: { columns: { name: true, logoUrl: true } } },
+      }),
+  ),
+
   /** Active walk-in interviews still open (walk_in_last_date >= today, or no last date). */
   walkIns: publicProcedure
     .input(z.object({ limit: z.number().min(1).max(100).default(50), emirate: z.string().optional(), category: z.string().optional() }))
