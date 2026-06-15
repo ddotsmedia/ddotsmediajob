@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { db, jobs, users, companies, notifications, eq } from '@ddots/db';
-import { slugify, inferExperienceLevel } from '@ddots/shared';
+import { slugify, inferExperienceLevel, JOB_TYPES } from '@ddots/shared';
 import { structured, JOB_DRAFT_TOOL, MODEL_FAST, MODEL_SMART, type JobDraft } from './anthropic';
 import { detectLanguage } from './ai-router';
 import { wrapUserContent } from './security';
@@ -14,41 +14,59 @@ const SYSTEM_AR =
   'حوّل المواقع إلى slug الإمارة الصحيح (مثل دبي=dubai، أبوظبي=abu-dhabi، الشارقة=sharjah). ' +
   'حوّل الأرقام العربية إلى إنجليزية (٣٠٠٠ → 3000). إذا لم يُذكر الراتب استخدم 0. حدّد مستوى الثقة لكل حقل.';
 
-// Job keywords in English + Arabic (مطلوب=required, وظيفة=job, شاغر=vacancy, راتب=salary).
-const JOB_KEYWORDS = /hiring|vacanc|required|wanted|recruit|\bjobs?\b|positions?|urgently|walk[\s-]?in|salary|send\s+cv|candidate|مطلوب|وظيفة|شاغر|راتب|توظيف/i;
+// Job keywords in English + Arabic (مطلوب=required, وظيفة=job, شاغر=vacancy, راتب=salary, نبحث=seeking, فرصة عمل=job opportunity).
+const JOB_KEYWORDS =
+  /hiring|now hiring|vacanc|required|wanted|recruit|\bjobs?\b|job opening|positions?|position available|urgently|walk[\s-]?in|salary|send\s+(cv|resume)|whatsapp\s+cv|candidate|looking for|we\s+(are\s+)?(looking|need)|seeking|opening|opportunit(y|ies)|career opportunity|join our team|apply now|مطلوب|وظيفة|شاغر|راتب|توظيف|نبحث|فرصة\s*عمل/i;
 
 /** Quick keyword gate so we don't burn AI on non-job chatter. */
 export function isJobMessage(text: string): boolean {
   return JOB_KEYWORDS.test(text);
 }
 
-// Validate the AI response before any DB write.
+// Lenient — every field optional. We apply safe defaults rather than throw, so a
+// partial AI response still yields a reviewable DRAFT instead of a Zod crash.
 const draftSchema = z
   .object({
-    title: z.string().min(1).max(200),
-    description: z.string().min(1),
-    categorySlug: z.string().min(1).max(40),
-    emirate: z.string().min(1).max(40),
-    jobType: z.string().min(1).max(30),
+    title: z.string().max(200).optional(),
+    description: z.string().optional(),
+    categorySlug: z.string().max(40).optional(),
+    emirate: z.string().max(40).optional(),
+    jobType: z.string().max(30).optional(),
+    company: z.string().max(200).optional(),
   })
   .passthrough();
+
+const DEFAULT_JOB_TYPE = 'full-time';
 
 export type SavedDraft = { title: string; slug: string };
 
 /** Extract a job from free text via Haiku and save a DRAFT (never auto-published). */
 export async function extractAndSaveDraft(text: string, source: string, sourceMetadata?: Record<string, unknown>): Promise<SavedDraft | null> {
+ try {
   // Arabic messages → Arabic-optimised prompt + Sonnet (better Arabic); else Haiku.
   const isArabic = detectLanguage(text) === 'ar';
-  const draft = await structured<JobDraft>(
+  const raw = await structured<JobDraft>(
     isArabic ? SYSTEM_AR : SYSTEM,
     `${isArabic ? 'استخرج تفاصيل الوظيفة من النص التالي' : 'Extract the job posting from this message'}:\n\n${wrapUserContent(text)}`,
     JOB_DRAFT_TOOL,
     { model: isArabic ? MODEL_SMART : MODEL_FAST, maxTokens: 1800 },
   );
-  draftSchema.parse(draft); // throws if the model returned junk
+
+  // Never throw on a partial response — coerce + default instead.
+  const parsed = draftSchema.safeParse(raw);
+  const d = (parsed.success ? parsed.data : (raw ?? {})) as Partial<JobDraft> & Record<string, unknown>;
+  const draft: JobDraft = {
+    ...(raw as JobDraft),
+    title: (d.title?.toString().trim() || 'Untitled Job').slice(0, 200),
+    description: d.description?.toString().trim() || d.title?.toString().trim() || 'See original message for details.',
+    categorySlug: d.categorySlug?.toString().trim() || 'general',
+    emirate: d.emirate?.toString().trim() || 'dubai',
+    jobType: (JOB_TYPES as readonly string[]).includes(String(d.jobType)) ? String(d.jobType) : DEFAULT_JOB_TYPE,
+    company: (d.company as string | undefined)?.toString().trim() || '',
+  } as JobDraft;
 
   const admin = await db.query.users.findFirst({ where: eq(users.role, 'admin') });
-  if (!admin) return null;
+  if (!admin) { console.error('[import] no admin user — cannot save draft'); return null; }
 
   let companyId: string | null = null;
   if (draft.company?.trim()) {
@@ -98,6 +116,10 @@ export async function extractAndSaveDraft(text: string, source: string, sourceMe
     );
   }
   return { title: draft.title, slug: jobSlug };
+ } catch (err) {
+   console.error('[import] extractAndSaveDraft failed:', err instanceof Error ? (err.stack ?? err.message) : err);
+   return null;
+ }
 }
 
 /** One-line scam-risk verdict for a pasted job message (Haiku). Best-effort. */

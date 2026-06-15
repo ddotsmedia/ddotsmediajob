@@ -8,7 +8,29 @@ export async function GET() {
   return NextResponse.json({ ok: true });
 }
 
-type WhapiMsg = { from?: string; chat_id?: string; from_me?: boolean; text?: { body?: string }; image?: { caption?: string }; video?: { caption?: string } };
+type WhapiMsg = {
+  from?: string;
+  chat_id?: string;
+  from_me?: boolean;
+  type?: string;
+  text?: { body?: string };
+  link_preview?: { body?: string; description?: string };
+  image?: { caption?: string };
+  video?: { caption?: string };
+  document?: { caption?: string };
+};
+
+const TEXTUAL_TYPES = ['text', 'link_preview', 'image', 'video', 'document'];
+
+// Pull usable text from any supported message shape.
+const getText = (m: WhapiMsg): string =>
+  (m.text?.body ||
+    m.link_preview?.body ||
+    m.link_preview?.description ||
+    m.image?.caption ||
+    m.video?.caption ||
+    m.document?.caption ||
+    '').trim();
 
 // Whapi.cloud webhook → extract job → DRAFT + reply. Always returns 200 (Whapi retries non-200).
 export async function POST(req: Request) {
@@ -49,7 +71,9 @@ export async function POST(req: Request) {
   try {
     for (const m of messages) {
       if (m.from_me) { console.log('[whapi] skip: from_me'); continue; }
-      const text = (m.text?.body ?? m.image?.caption ?? m.video?.caption ?? '').trim();
+      // Skip non-textual events fast (reactions, statuses, calls, etc.).
+      if (m.type && !TEXTUAL_TYPES.includes(m.type)) { console.log('[whapi] skip: type', m.type); continue; }
+      const text = getText(m);
       const from = m.from ?? m.chat_id ?? '';
       if (text.length < 15) { console.log('[whapi] skip: too short', text.length); continue; }
 
