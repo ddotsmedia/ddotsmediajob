@@ -87,6 +87,33 @@ export async function rateLimit(
   }
 }
 
+// ─── Redis JSON cache (fail-open, cache-aside) ──────────────────────
+/**
+ * Cache-aside helper. Returns cached JSON for `key` if present; otherwise
+ * runs `fetch`, stores the result with `ttlSec`, and returns it. Any Redis
+ * failure (down/unreachable) falls through to a direct `fetch()` call so
+ * pages never break when Redis is unavailable.
+ */
+export async function cached<T>(key: string, ttlSec: number, fetch: () => Promise<T>): Promise<T> {
+  let r: ReturnType<typeof getRedis> | null = null;
+  try {
+    r = getRedis();
+    const hit = await r.get(`cache:${key}`);
+    if (hit) return JSON.parse(hit) as T;
+  } catch {
+    r = null; // Redis down → skip read, fetch fresh below
+  }
+  const fresh = await fetch();
+  if (r) {
+    try {
+      await r.set(`cache:${key}`, JSON.stringify(fresh), 'EX', ttlSec);
+    } catch {
+      /* ignore write failure */
+    }
+  }
+  return fresh;
+}
+
 /** Throwing wrapper for use inside tRPC procedures. */
 export async function enforceRateLimit(key: string, limit: number, windowSec: number): Promise<void> {
   const { ok, retryAfter } = await rateLimit(key, limit, windowSec);

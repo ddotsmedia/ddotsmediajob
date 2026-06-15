@@ -25,6 +25,7 @@ import { enqueueSearchSync, enqueueJobEvent } from '../lib/queue';
 import { generateJobFromPrompt } from '../lib/anthropic';
 import { isSearchConfigured, searchJobs, suggest as meiliSuggest } from '../lib/meili';
 import { similarJobIds } from '../lib/embeddings';
+import { cached } from '../lib/security';
 
 export const jobsRouter = router({
   /** Public: fetch up to 3 active jobs by slug for side-by-side comparison. */
@@ -172,7 +173,9 @@ export const jobsRouter = router({
     }),
 
   /** Per-category / per-emirate counts for landing pages. */
-  stats: publicProcedure.query(async ({ ctx }) => {
+  stats: publicProcedure.query(async ({ ctx }) =>
+    // Cached 5 min in Redis; fail-open to a direct DB query if Redis is down.
+    cached('homepage:stats', 300, async () => {
     const [byCategory, byEmirate, totals, seekers] = await Promise.all([
       ctx.db
         .select({ slug: jobs.categorySlug, value: count() })
@@ -193,7 +196,8 @@ export const jobsRouter = router({
       totalActive: totals[0]?.value ?? 0,
       totalSeekers: seekers[0]?.value ?? 0,
     };
-  }),
+    }),
+  ),
 
   /** Employer: list own jobs. */
   mine: employerProcedure.query(async ({ ctx }) =>
