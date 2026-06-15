@@ -1,14 +1,13 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowRight, Building2, Users, BriefcaseBusiness, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, MapPin, Clock } from 'lucide-react';
 import type { inferRouterOutputs } from '@trpc/server';
 import type { AppRouter } from '@ddots/api';
-import { CATEGORIES, EMIRATES, SITE, formatJobCount, formatJobDate, isNew, formatSalary, categoryBySlug, emirateBySlug } from '@ddots/shared';
+import { CATEGORIES, EMIRATES, SITE, formatJobDate, isNew, formatSalary, categoryBySlug, emirateBySlug } from '@ddots/shared';
 import { getApi } from '@/trpc/server';
 import { JobSearchBar } from '@/components/job-search-bar';
 import { JobCard } from '@/components/job-card';
 import { CategoryIcon } from '@/components/category-icon';
-import { MapPin, Clock } from 'lucide-react';
 import { NumberTicker } from '@/components/magic/number-ticker';
 import { GridPattern } from '@/components/magic/grid-pattern';
 import { Button } from '@/components/ui/button';
@@ -63,39 +62,31 @@ export default async function HomePage() {
       <section className="relative overflow-hidden bg-navy-900 text-white">
         <GridPattern />
         <div className="pointer-events-none absolute -right-24 top-1/2 h-96 w-96 -translate-y-1/2 rounded-full bg-teal-500/20 blur-3xl" />
-        <div className="relative z-10 mx-auto max-w-5xl px-4 py-20 text-center md:py-28">
-          <span className="inline-flex items-center gap-2 rounded-full border border-teal-400/30 bg-teal-400/10 px-4 py-1.5 text-sm font-medium text-teal-300">
-            <CheckCircle2 className="h-4 w-4" /> {stats.totalActive.toLocaleString('en-AE')}+ live jobs across the UAE
-          </span>
-          <h1 className="mt-6 font-display text-3xl font-extrabold leading-tight sm:text-4xl md:text-6xl">
-            Find Your Next Job
-            <br />
-            in the <span className="text-teal-400">UAE</span>
+        <div className="relative z-10 mx-auto max-w-3xl px-4 py-10 text-center md:py-14">
+          <h1 className="font-display text-3xl font-extrabold leading-tight sm:text-4xl md:text-5xl">
+            Find Your Next Job in the <span className="text-teal-400">UAE</span>
           </h1>
-          <p className="mx-auto mt-4 max-w-2xl text-lg text-navy-100/80">
+          <p className="mx-auto mt-3 max-w-2xl text-base text-navy-100/80 md:text-lg">
             UAE&apos;s WhatsApp-powered job portal · 76 groups · 80,000+ professionals
           </p>
-          <div className="mx-auto mt-8 max-w-3xl">
+          <div className="mx-auto mt-6 max-w-3xl">
             <JobSearchBar />
           </div>
           <Link
             href="/whatsapp-groups"
-            className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-teal-300 hover:text-teal-200 hover:underline"
+            className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-teal-300 hover:text-teal-200 hover:underline"
           >
             💬 Join 80,000+ professionals on WhatsApp <ArrowRight className="h-3.5 w-3.5" />
           </Link>
-          <div className="mt-6 flex flex-nowrap items-center gap-2 overflow-x-auto scrollbar-hide px-1 text-sm text-navy-100/70 sm:flex-wrap sm:justify-center sm:gap-x-3">
+          <div className="mt-4 flex flex-nowrap items-center gap-2 overflow-x-auto scrollbar-hide px-1 text-sm text-navy-100/70 sm:flex-wrap sm:justify-center sm:gap-x-3">
             <span className="shrink-0">Popular:</span>
-            {['Driver', 'Accountant', 'Nurse', 'Sales', 'Receptionist'].map((t) => (
-              <Link key={t} href={`/jobs?q=${t}`} className="shrink-0 rounded-full bg-white/10 px-3 py-1 hover:bg-white/20">
-                {t}
-              </Link>
-            ))}
             {[
+              { l: 'Driver', h: '/jobs?q=Driver' },
+              { l: 'Nurse', h: '/jobs?q=Nurse' },
+              { l: 'Accountant', h: '/jobs?q=Accountant' },
               { l: 'Walk-in', h: '/jobs/walk-in-interview-dubai' },
-              { l: 'Urgent Hiring', h: '/jobs/urgent-hiring-uae' },
               { l: 'Visa Provided', h: '/jobs/visa-provided' },
-              { l: 'Work from Home', h: '/jobs/remote' },
+              { l: 'Urgent Hiring', h: '/jobs/urgent-hiring-uae' },
             ].map((p) => (
               <Link key={p.h} href={p.h} className="shrink-0 rounded-full bg-white/10 px-3 py-1 hover:bg-white/20">
                 {p.l}
@@ -105,13 +96,13 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ── Stats ──────────────────────────────────────── */}
-      <section className="border-b bg-white">
-        <div className="mx-auto grid max-w-7xl grid-cols-2 gap-6 px-4 py-12 md:grid-cols-4">
-          <Stat icon={BriefcaseBusiness} value={stats.totalActive} suffix="+" label="Active Jobs" />
-          <Stat icon={Building2} value={stats.byCategory ? Object.keys(stats.byCategory).length : 12} label="Industries" />
-          <Stat icon={MapPinCount} value={7} label="Emirates Covered" />
-          <Stat icon={Users} value={stats.totalSeekers} suffix="+" label="Jobseekers" />
+      {/* ── Stats bar (dark strip) ─────────────────────── */}
+      <section className="border-t border-navy-800 bg-[#0c1425]">
+        <div className="mx-auto grid max-w-5xl grid-cols-2 gap-px px-4 py-8 text-center md:grid-cols-4">
+          <DarkStat value={stats.totalActive} suffix="+" label="Active Jobs" />
+          <DarkStat value={76} label="WA Groups" />
+          <DarkStat value={7} label="Emirates" />
+          <DarkStat value={stats.totalSeekers} suffix="+" label="Jobseekers" />
         </div>
       </section>
 
@@ -138,27 +129,22 @@ export default async function HomePage() {
         )}
       </section>
 
-      {/* ── Categories ─────────────────────────────────── */}
-      <section className="mx-auto max-w-7xl border-t px-4 py-16">
-        <SectionHead title="Browse by Category" subtitle="Find roles in your field across every emirate" href="/jobs" />
-        <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {CATEGORIES.map((c) => (
-            <Link
-              key={c.slug}
-              href={`/category/${c.slug}`}
-              className="group flex items-center gap-3 rounded-xl border bg-white p-3 transition-all hover:-translate-y-0.5 hover:border-teal-300 hover:shadow-md sm:p-4"
-            >
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-600 transition-colors group-hover:bg-teal-500 group-hover:text-white sm:h-11 sm:w-11">
-                <CategoryIcon name={c.icon} className="h-5 w-5" />
-              </span>
-              <span>
-                <span className="block font-semibold text-navy-900">{c.name}</span>
-                <span className="block text-xs text-navy-700/60">
-                  {formatJobCount(stats.byCategory[c.slug] ?? 0)}
-                </span>
-              </span>
-            </Link>
-          ))}
+      {/* ── Category pills (compact, horizontal scroll) ── */}
+      <section className="mx-auto max-w-7xl px-4 pb-4">
+        <div className="flex items-center gap-3">
+          <span className="shrink-0 text-sm font-semibold text-navy-700">Browse Categories:</span>
+          <div className="flex flex-nowrap gap-2 overflow-x-auto scrollbar-hide py-1">
+            {CATEGORIES.map((c) => (
+              <Link
+                key={c.slug}
+                href={`/category/${c.slug}`}
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm text-navy-700 transition-colors hover:border-teal-400 hover:bg-teal-50 hover:text-teal-700"
+              >
+                <CategoryIcon name={c.icon} className="h-3.5 w-3.5" />
+                {c.name}
+              </Link>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -254,24 +240,15 @@ function LatestJobCard({ job }: { job: RecentJob }) {
   );
 }
 
-function Stat({ icon: Icon, value, label, suffix }: { icon: any; value: number; label: string; suffix?: string }) {
+function DarkStat({ value, label, suffix }: { value: number; label: string; suffix?: string }) {
   return (
-    <div className="flex items-center gap-3">
-      <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-teal-50 text-teal-600">
-        <Icon className="h-6 w-6" />
-      </span>
-      <div>
-        <div className="font-display text-2xl font-extrabold text-navy-900">
-          <NumberTicker value={value} suffix={suffix} />
-        </div>
-        <div className="text-sm text-navy-700/60">{label}</div>
+    <div className="px-2 py-1">
+      <div className="font-display text-2xl font-extrabold text-teal-400 md:text-3xl">
+        <NumberTicker value={value} suffix={suffix} />
       </div>
+      <div className="mt-0.5 text-xs font-medium text-navy-100/50 md:text-sm">{label}</div>
     </div>
   );
-}
-
-function MapPinCount(props: { className?: string }) {
-  return <Building2 {...props} />;
 }
 
 function SectionHead({ title, subtitle, href }: { title: string; subtitle?: string; href?: string }) {
