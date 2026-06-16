@@ -105,7 +105,8 @@ export async function enqueueJobEvent(job: JobEventJob): Promise<void> {
 }
 
 export async function enqueueWhapiImport(job: WhapiImportJob): Promise<void> {
-  // Dedup at queue level by messageId when present.
+  // Dedup at queue level by messageId. BullMQ forbids ':' (and other chars) in custom jobId — sanitize.
   const messageId = job.sourceMetadata?.messageId ? String(job.sourceMetadata.messageId) : undefined;
-  await whapiImportQueue().add('import', job, { ...defaultOpts, attempts: 2, jobId: messageId ? `whapi:${messageId}` : undefined });
+  const safeId = messageId ? `whapi-${messageId.replace(/[^a-zA-Z0-9-_]/g, '-')}` : undefined;
+  await whapiImportQueue().add('import', job, { ...defaultOpts, attempts: 2, jobId: safeId });
 }
