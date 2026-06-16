@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { MapPin, Briefcase, Clock, Banknote, Zap, BadgeCheck, Sparkles } from 'lucide-react';
-import { formatSalary, formatJobDate, isNew, emirateBySlug, categoryBySlug } from '@ddots/shared';
+import { formatSalary, formatJobDate, isNew, emirateBySlug, categoryBySlug, expiryDaysLeft } from '@ddots/shared';
 import { Badge } from './ui/primitives';
 import { WhatsappApplyButton } from './whatsapp-apply-button';
 import { CompareButton } from './compare-button';
@@ -31,6 +31,7 @@ export type JobCardData = {
   contactWhatsapp?: string | null;
   applicationCount?: number;
   publishedAt: Date | string | null;
+  expiresAt?: Date | string | null;
   createdAt: Date | string;
   company?: { name: string | null; logoUrl?: string | null; isVerified?: boolean | null } | null;
 };
@@ -62,6 +63,7 @@ export function JobCard({ job }: { job: JobCardData }) {
             </h3>
             {isNew(job.publishedAt ?? job.createdAt) && <Badge variant="success"><Sparkles className="mr-1 h-3 w-3" /> New</Badge>}
             {job.isFeatured && <Badge>Featured</Badge>}
+            <ExpiryBadge expiresAt={job.expiresAt} />
           </div>
           <p className="flex items-center gap-1 text-sm text-navy-700/70">
             {job.isAnonymous ? 'Confidential Company' : (job.company?.name ?? 'Confidential')}
@@ -134,4 +136,18 @@ export function JobCard({ job }: { job: JobCardData }) {
       </div>
     </div>
   );
+}
+
+/** Colored expiry countdown pill (amber 7-14d, orange 3-7d, red <3d). Hidden otherwise. */
+function ExpiryBadge({ expiresAt }: { expiresAt?: Date | string | null }) {
+  const days = expiryDaysLeft(expiresAt);
+  if (days == null || days < 0 || days > 14) return null;
+  const cls =
+    days < 3
+      ? 'bg-red-100 text-red-700'
+      : days < 7
+        ? 'bg-orange-100 text-orange-700'
+        : 'bg-amber-100 text-amber-700';
+  const text = days === 0 ? 'Expires today' : days === 1 ? 'Expires in 1 day' : `Expires in ${days} days`;
+  return <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${cls}`}>{text}{days < 3 ? ' ⚡' : ''}</span>;
 }

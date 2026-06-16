@@ -12,6 +12,7 @@ import {
   emirateBySlug,
   categoryBySlug,
   expLabel,
+  expiryDaysLeft,
   UAE_TZ,
   SITE,
 } from '@ddots/shared';
@@ -190,6 +191,16 @@ export default async function JobDetailPage({ params }: Props) {
                   <Fact icon={GraduationCap} label="Experience" value={expLabel(job.experienceLevel)} />
                   <Fact icon={Banknote} label="Salary" value={formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod, job.salaryHidden, job.salaryNegotiable)} valueClassName={formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod, job.salaryHidden, job.salaryNegotiable) === 'Salary not disclosed' ? 'text-navy-700/50' : 'text-teal-700'} />
                 </div>
+                {(() => {
+                  const days = expiryDaysLeft(job.expiresAt);
+                  if (days == null || days < 0) return null;
+                  const urgent = days < 3;
+                  return (
+                    <p className={`mt-4 border-t pt-4 text-sm font-medium ${urgent ? 'text-red-600' : 'text-navy-700/70'}`}>
+                      {urgent ? '⚡ ' : '🗓 '}Applications close: {formatDateTime(job.expiresAt)}{urgent ? ` — only ${days === 0 ? 'today' : `${days} day${days === 1 ? '' : 's'} left`}!` : ''}
+                    </p>
+                  );
+                })()}
               </CardContent>
             </Card>
 

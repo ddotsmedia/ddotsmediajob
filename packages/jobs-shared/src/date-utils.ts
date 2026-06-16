@@ -82,6 +82,15 @@ export function isExpired(deadline: Date | string | null | undefined): boolean {
 }
 
 /** "Expires in 14 days" / "Expires tomorrow" / "Expires today" / "Expired 2 days ago". */
+/** Whole days until a deadline in UAE time (negative = past, null = no deadline). */
+export function expiryDaysLeft(deadline: Date | string | null | undefined): number | null {
+  const dt = toDate(deadline);
+  if (!dt) return null;
+  const today = uaeYmd(new Date());
+  const target = uaeYmd(dt);
+  return Math.round((new Date(`${target}T00:00:00`).getTime() - new Date(`${today}T00:00:00`).getTime()) / 86_400_000);
+}
+
 export function timeUntilExpiry(deadline: Date | string | null | undefined): string {
   const dt = toDate(deadline);
   if (!dt) return '';
