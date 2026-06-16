@@ -6,6 +6,7 @@ import { Loader2, Save, FlaskConical, MessageCircle } from 'lucide-react';
 import { trpc } from '@/trpc/react';
 import { Button } from '@/components/ui/button';
 import { Input, Label, Textarea } from '@/components/ui/primitives';
+import { Switch } from '@/components/ui/switch';
 
 const toLines = (a: string[]) => a.join('\n');
 const fromLines = (s: string) => s.split('\n').map((x) => x.trim()).filter(Boolean);
@@ -84,9 +85,18 @@ export default function WhapiSettingsPage() {
 
       {/* Section 2 — Required fields */}
       <Card title="Required fields">
-        <Toggle k="requireSalary" label="Require salary to be mentioned" />
-        <Toggle k="requireContact" label="Require a contact number/email" />
-        <Toggle k="requireLocation" label="Require a location/emirate" />
+        <div className="flex items-center justify-between py-2">
+          <label className="text-sm text-navy-700">Require salary to be mentioned</label>
+          <Switch checked={f.requireSalary} onCheckedChange={(v) => set('requireSalary', v)} aria-label="Require salary" />
+        </div>
+        <div className="flex items-center justify-between py-2">
+          <label className="text-sm text-navy-700">Require a contact number/email</label>
+          <Switch checked={f.requireContact} onCheckedChange={(v) => set('requireContact', v)} aria-label="Require contact" />
+        </div>
+        <div className="flex items-center justify-between py-2">
+          <label className="text-sm text-navy-700">Require a location/emirate</label>
+          <Switch checked={f.requireLocation} onCheckedChange={(v) => set('requireLocation', v)} aria-label="Require location" />
+        </div>
         <p className="text-xs text-navy-700/50">Messages missing a required field are skipped with a reason.</p>
       </Card>
 
