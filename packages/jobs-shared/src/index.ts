@@ -37,6 +37,14 @@ export function matchBadge(score: number): { label: string; cls: string } | null
   return null;
 }
 
+/** Employer response-speed badge from avg first-response hours (null = no badge). */
+export function responseBadge(hours: number | null | undefined): { label: string; cls: string } | null {
+  if (hours == null) return null;
+  if (hours < 2) return { label: '⚡ Responds quickly', cls: 'bg-green-100 text-green-700' };
+  if (hours < 24) return { label: '✅ Active employer', cls: 'bg-teal-100 text-teal-700' };
+  return null;
+}
+
 /** Pluralise a job count: 1 → "1 job", else "N jobs" (locale-formatted). */
 export function formatJobCount(n: number): string {
   return n === 1 ? '1 job' : `${n.toLocaleString('en-AE')} jobs`;

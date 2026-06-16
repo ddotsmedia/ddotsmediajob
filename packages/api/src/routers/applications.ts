@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
-import { jobs, applications, eq, and, desc, sql } from '@ddots/db';
+import { jobs, applications, employerProfiles, eq, and, desc, sql } from '@ddots/db';
 import { applySchema, updateApplicationStatusSchema } from '@ddots/shared';
 import { router, publicProcedure, protectedProcedure, employerProcedure } from '../trpc';
 import { audit, notify } from '../lib/helpers';
@@ -205,11 +205,26 @@ export const applicationsRouter = router({
     if (app.job.employerId !== ctx.session.user.id && ctx.session.user.role !== 'admin') {
       throw new TRPCError({ code: 'FORBIDDEN' });
     }
+    // Stamp first response time (any status off the inbound states) for the response-time badge.
+    const isResponse = input.status !== 'applied' && input.status !== 'quick_apply';
     const [updated] = await ctx.db
       .update(applications)
-      .set({ status: input.status, employerNote: input.note })
+      .set({ status: input.status, employerNote: input.note, ...(isResponse && !app.respondedAt ? { respondedAt: new Date() } : {}) })
       .where(eq(applications.id, input.applicationId))
       .returning();
+
+    // Recompute the employer's average first-response time (hours) over their jobs.
+    if (isResponse && !app.respondedAt) {
+      const [agg] = await ctx.db
+        .select({ hrs: sql<number>`round(avg(extract(epoch from ${applications.respondedAt} - ${applications.createdAt}) / 3600))::int` })
+        .from(applications)
+        .innerJoin(jobs, eq(applications.jobId, jobs.id))
+        .where(and(eq(jobs.employerId, app.job.employerId), sql`${applications.respondedAt} is not null`));
+      if (agg?.hrs != null) {
+        await ctx.db.update(employerProfiles).set({ responseHours: agg.hrs }).where(eq(employerProfiles.userId, app.job.employerId));
+      }
+    }
+
     if (app.seekerId) {
       await notify(app.seekerId, 'application-status', `Your application is now "${input.status}"`, {
         body: app.job.title,

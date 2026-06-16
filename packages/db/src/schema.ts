@@ -168,6 +168,7 @@ export const employerProfiles = pgTable('employer_profiles', {
   glassdoorUrl: varchar('glassdoor_url', { length: 300 }),
   tourImageUrl: text('tour_image_url'), // Phase 15: 360° office tour
   cultureProfileAi: jsonb('culture_profile_ai').$type<Record<string, unknown>>(), // Phase 10 employer culture summary
+  responseHours: integer('response_hours'), // avg hours to first respond to an application (null = unknown)
   ...timestamps,
 });
 
@@ -331,6 +332,7 @@ export const applications = pgTable(
     aiSummary: text('ai_summary'),
     fraudScore: integer('fraud_score'),
     employerNote: text('employer_note'),
+    respondedAt: timestamp('responded_at', { withTimezone: true }), // first employer response (for response-time badge)
     ...timestamps,
   },
   (t) => [

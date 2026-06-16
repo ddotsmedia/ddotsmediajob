@@ -13,6 +13,7 @@ import {
   categoryBySlug,
   expLabel,
   expiryDaysLeft,
+  responseBadge,
   UAE_TZ,
   SITE,
 } from '@ddots/shared';
@@ -279,6 +280,10 @@ export default async function JobDetailPage({ params }: Props) {
                 <div className="mt-3">
                   <ReferJobButton title={job.title} slug={job.slug} salary={formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod, job.salaryHidden, job.salaryNegotiable)} emirate={emirate?.name ?? 'UAE'} company={job.isAnonymous ? null : job.company?.name} />
                 </div>
+                {(() => {
+                  const b = responseBadge(job.employerResponseHours);
+                  return b ? <div className="mt-3 text-center"><span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${b.cls}`}>{b.label}</span></div> : null;
+                })()}
                 <div className="mt-3"><JobAiTools jobId={job.id} /></div>
                 <p className="mt-3 text-center text-xs text-navy-700/50">{job.applicationCount} applicants · {job.viewCount} views</p>
                 {job.viewCount > 5 && <p className="mt-1 text-center text-xs font-medium text-teal-700">👁 {job.viewCount.toLocaleString('en-AE')} people viewed this job</p>}

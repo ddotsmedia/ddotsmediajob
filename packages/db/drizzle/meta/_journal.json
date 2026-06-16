@@ -218,6 +218,13 @@
       "when": 1781614327210,
       "tag": "0030_groovy_guardian",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1781617551501,
+      "tag": "0031_fixed_spirit",
+      "breakpoints": true
     }
   ]
 }

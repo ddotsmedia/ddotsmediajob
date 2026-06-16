@@ -6,6 +6,7 @@ import {
   savedJobs,
   applications,
   jobseekerProfiles,
+  employerProfiles,
   users,
   eq,
   and,
@@ -150,7 +151,8 @@ export const jobsRouter = router({
       throw new TRPCError({ code: 'NOT_FOUND', message: 'Job not found.' });
     }
     await ctx.db.update(jobs).set({ viewCount: sql`${jobs.viewCount} + 1` }).where(eq(jobs.id, job.id));
-    return job;
+    const ep = job.employerId ? await ctx.db.query.employerProfiles.findFirst({ where: eq(employerProfiles.userId, job.employerId), columns: { responseHours: true } }) : null;
+    return { ...job, employerResponseHours: ep?.responseHours ?? null };
   }),
 
   /** Featured jobs for the homepage. */
