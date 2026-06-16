@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { extractAndSaveDraft, isJobMessage, sendWhapiText, quickScamVerdict } from '@ddots/api/lib/import';
-import { rateLimit } from '@ddots/api/lib/security';
+import { isJobMessage, sendWhapiText, quickScamVerdict } from '@ddots/api/lib/import';
+import { enqueueWhapiImport } from '@ddots/api/lib/queue';
 import { getWhapiSettings, evaluateCriteria, SKIP_LABEL } from '@ddots/api/lib/whapi-criteria';
 
 const SCAM_INTENT = /scam check|check this job|is this (a )?scam|تحقق/i;
@@ -10,6 +10,7 @@ export async function GET() {
 }
 
 type WhapiMsg = {
+  id?: string;
   from?: string;
   from_name?: string;
   chat_id?: string;
@@ -99,13 +100,13 @@ export async function POST(req: Request) {
         continue;
       }
 
-      const rl = await rateLimit('import:whapi', 20, 3600); // max 20 AI extractions/hour
-      if (!rl.ok) { if (from) await sendWhapiText(from, 'Too many imports this hour — try again later.'); break; }
+      // Hand AI extraction to the rate-limited queue and return 200 instantly.
       try {
-        const saved = await extractAndSaveDraft(
+        await enqueueWhapiImport({
           text,
-          'whapi',
-          {
+          source: 'whapi',
+          sourceMetadata: {
+            messageId: m.id ?? null,
             from,
             fromName: m.from_name ?? m.chat_name ?? null,
             chatId: m.chat_id ?? null,
@@ -113,17 +114,12 @@ export async function POST(req: Request) {
             receivedAt: m.timestamp ? new Date(m.timestamp * 1000).toISOString() : new Date().toISOString(),
             raw: text.slice(0, 1000),
           },
-          { autoPublish: settings.autoPublish },
-        );
-        if (!saved) { console.error('[whapi] extraction returned null (no admin user, or AI rejected the message)'); continue; }
-        console.log(`[whapi] ${settings.autoPublish ? 'published' : 'draft created'}:`, saved.slug);
-        if (settings.replyOnSuccess && from) {
-          const link = `https://ddotsmediajobs.com/admin/jobs/drafts`;
-          const msg = (settings.successMessage ?? '✅ Job created: [title]').replace('[title]', saved.title).replace('[link]', link);
-          await sendWhapiText(from, msg);
-        }
+          autoPublish: settings.autoPublish,
+          reply: from ? { to: from, onSuccess: settings.replyOnSuccess, successMessage: settings.successMessage } : null,
+        });
+        console.log('[whapi] queued for import:', m.id ?? '(no id)');
       } catch (err) {
-        console.error('[whapi] extraction error:', err instanceof Error ? err.message : err);
+        console.error('[whapi] enqueue error:', err instanceof Error ? err.message : err);
       }
     }
   } catch (err) {

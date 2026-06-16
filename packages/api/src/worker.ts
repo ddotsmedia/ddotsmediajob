@@ -23,7 +23,8 @@ import {
   isNotNull,
 } from '@ddots/db';
 import { formatSalary, CATEGORIES } from '@ddots/shared';
-import { QUEUE, bullConnection, enqueueEmail, jobAlertsQueue, maintenanceQueue, type EmailJob, type SearchSyncJob, type AlertScanJob, type AiScoringJob, type MaintenanceJob, type JobEventJob } from './lib/queue';
+import { QUEUE, bullConnection, enqueueEmail, jobAlertsQueue, maintenanceQueue, type EmailJob, type SearchSyncJob, type AlertScanJob, type AiScoringJob, type MaintenanceJob, type JobEventJob, type WhapiImportJob } from './lib/queue';
+import { extractAndSaveDraft, sendWhapiText } from './lib/import';
 import { expireStaleJobs } from './lib/helpers';
 import { sendEmailJob, sendAlertEmail } from './lib/email';
 import { ensureJobsCollection, upsertJobDocument, deleteJobDocument, jobToDocument } from './lib/typesense';
@@ -313,6 +314,23 @@ new Worker<JobEventJob>(
   },
   { connection, concurrency: 2 },
 ).on('failed', (job, err) => console.error(`[job-events] ${job?.id} failed:`, err.message));
+
+// ── Whapi import worker (AI extraction, rate-limited 5/min) ──
+// Webhook enqueues here and returns 200 instantly; the limiter serialises AI
+// calls so providers never see a 429 burst.
+new Worker<WhapiImportJob>(
+  QUEUE.whapiImport,
+  async (job) => {
+    const { text, source, sourceMetadata, autoPublish, reply } = job.data;
+    const saved = await extractAndSaveDraft(text, source, sourceMetadata, { autoPublish });
+    if (saved && reply?.onSuccess && reply.to) {
+      const link = 'https://ddotsmediajobs.com/admin/jobs/drafts';
+      const msg = (reply.successMessage ?? '✅ Job created: [title]').replace('[title]', saved.title).replace('[link]', link);
+      await sendWhapiText(reply.to, msg);
+    }
+  },
+  { connection, concurrency: 1, limiter: { max: 5, duration: 60_000 } },
+).on('failed', (job, err) => console.error(`[whapi-import] ${job?.id} failed:`, err.message));
 
 // ── Auto-expire stale jobs (in-process hourly tick) ──────
 async function expireTick() {

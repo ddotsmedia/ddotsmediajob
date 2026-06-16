@@ -29,7 +29,16 @@ export const QUEUE = {
   aiScoring: 'ai-scoring',
   maintenance: 'maintenance',
   jobEvents: 'job-events',
+  whapiImport: 'whapi-import',
 } as const;
+
+export type WhapiImportJob = {
+  text: string;
+  source: string;
+  sourceMetadata: Record<string, unknown>;
+  autoPublish: boolean;
+  reply?: { to: string; onSuccess: boolean; successMessage: string | null } | null;
+};
 
 export type AiScoringJob = { applicationId: string };
 export type MaintenanceJob = { task: 'cv-cleanup' | 'trending-skills' };
@@ -70,6 +79,7 @@ export const jobAlertsQueue = () => makeQueue<AlertScanJob>(QUEUE.jobAlerts);
 export const aiScoringQueue = () => makeQueue<AiScoringJob>(QUEUE.aiScoring);
 export const maintenanceQueue = () => makeQueue<MaintenanceJob>(QUEUE.maintenance);
 export const jobEventsQueue = () => makeQueue<JobEventJob>(QUEUE.jobEvents);
+export const whapiImportQueue = () => makeQueue<WhapiImportJob>(QUEUE.whapiImport);
 
 const defaultOpts: JobsOptions = {
   attempts: 3,
@@ -92,4 +102,10 @@ export async function enqueueAiScoring(job: AiScoringJob): Promise<void> {
 
 export async function enqueueJobEvent(job: JobEventJob): Promise<void> {
   await jobEventsQueue().add(job.event, job, { ...defaultOpts, attempts: 2 });
+}
+
+export async function enqueueWhapiImport(job: WhapiImportJob): Promise<void> {
+  // Dedup at queue level by messageId when present.
+  const messageId = job.sourceMetadata?.messageId ? String(job.sourceMetadata.messageId) : undefined;
+  await whapiImportQueue().add('import', job, { ...defaultOpts, attempts: 2, jobId: messageId ? `whapi:${messageId}` : undefined });
 }

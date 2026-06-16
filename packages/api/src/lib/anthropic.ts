@@ -39,6 +39,20 @@ function getGemini(): OpenAI {
   return gemini;
 }
 
+const GROQ_KEY = process.env.GROQ_API_KEY;
+const GROQ_MODEL = process.env.GROQ_MODEL ?? 'llama-3.3-70b-versatile';
+let groq: OpenAI | null = null;
+function getGroq(): OpenAI {
+  groq ??= new OpenAI({ apiKey: GROQ_KEY, baseURL: 'https://api.groq.com/openai/v1', timeout: 30_000, maxRetries: 1 });
+  return groq;
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const isRateLimit = (err: unknown): boolean => {
+  const e = err as { status?: number; message?: string };
+  return e?.status === 429 || /\b429\b|rate.?limit|too many requests|quota/i.test(e?.message ?? '');
+};
+
 export type ChatMessage = { role: 'user' | 'assistant'; content: string };
 
 const textOf = (res: Anthropic.Message) =>
@@ -80,37 +94,7 @@ export async function chat(
 }
 
 /** Force a single structured (tool/function) call and return the validated object. */
-export async function structured<T>(
-  system: string,
-  userContent: string,
-  tool: Anthropic.Tool,
-  opts: { model?: string; maxTokens?: number } = {},
-): Promise<T> {
-  if (useGemini) {
-    const res = await getGemini().chat.completions.create({
-      model: opts.model ?? MODEL_SMART,
-      max_tokens: opts.maxTokens ?? 1200,
-      messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: userContent },
-      ],
-      tools: [
-        {
-          type: 'function',
-          function: {
-            name: tool.name,
-            description: tool.description,
-            parameters: tool.input_schema as Record<string, unknown>,
-          },
-        },
-      ],
-      tool_choice: { type: 'function', function: { name: tool.name } },
-    });
-    const call = res.choices[0]?.message?.tool_calls?.[0];
-    if (!call) throw new Error(`AI did not return ${tool.name}.`);
-    return JSON.parse(call.function.arguments) as T;
-  }
-
+async function structuredViaAnthropic<T>(system: string, userContent: string, tool: Anthropic.Tool, opts: { model?: string; maxTokens?: number }): Promise<T> {
   const res = await getAnthropic().messages.create({
     model: opts.model ?? MODEL_SMART,
     max_tokens: opts.maxTokens ?? 1200,
@@ -122,6 +106,66 @@ export async function structured<T>(
   const toolUse = res.content.find((c): c is Anthropic.ToolUseBlock => c.type === 'tool_use');
   if (!toolUse) throw new Error(`AI did not return ${tool.name}.`);
   return toolUse.input as T;
+}
+
+async function structuredViaOpenAICompat<T>(client: OpenAI, model: string, system: string, userContent: string, tool: Anthropic.Tool, opts: { maxTokens?: number }): Promise<T> {
+  const res = await client.chat.completions.create({
+    model,
+    max_tokens: opts.maxTokens ?? 1200,
+    messages: [
+      { role: 'system', content: system },
+      { role: 'user', content: userContent },
+    ],
+    tools: [{ type: 'function', function: { name: tool.name, description: tool.description, parameters: tool.input_schema as Record<string, unknown> } }],
+    tool_choice: { type: 'function', function: { name: tool.name } },
+  });
+  const call = res.choices[0]?.message?.tool_calls?.[0];
+  if (!call) throw new Error(`AI did not return ${tool.name}.`);
+  return JSON.parse(call.function.arguments) as T;
+}
+
+/**
+ * Structured tool-call with a resilient provider chain. Tries the preferred
+ * provider, then falls back to the others on 429/rate-limit (1s backoff between
+ * attempts) so a single provider's rate limit never fails the call.
+ */
+export async function structured<T>(
+  system: string,
+  userContent: string,
+  tool: Anthropic.Tool,
+  opts: { model?: string; maxTokens?: number } = {},
+): Promise<T> {
+  type Attempt = { name: string; run: () => Promise<T> };
+  const anthropicAttempt: Attempt | null = process.env.ANTHROPIC_API_KEY
+    ? { name: 'anthropic', run: () => structuredViaAnthropic<T>(system, userContent, tool, opts) }
+    : null;
+  const geminiAttempt: Attempt | null = GEMINI_KEY
+    ? { name: 'gemini', run: () => structuredViaOpenAICompat<T>(getGemini(), process.env.GEMINI_MODEL_FAST ?? 'gemini-2.5-flash', system, userContent, tool, opts) }
+    : null;
+  const groqAttempt: Attempt | null = GROQ_KEY
+    ? { name: 'groq', run: () => structuredViaOpenAICompat<T>(getGroq(), GROQ_MODEL, system, userContent, tool, opts) }
+    : null;
+
+  // Preferred provider first, then the rest as fallbacks.
+  const ordered = (useGemini
+    ? [geminiAttempt, groqAttempt, anthropicAttempt]
+    : [anthropicAttempt, groqAttempt, geminiAttempt]
+  ).filter((a): a is Attempt => a !== null);
+
+  if (!ordered.length) throw new Error('No AI provider configured (set ANTHROPIC_API_KEY / GEMINI_API_KEY / GROQ_API_KEY).');
+
+  let lastErr: unknown;
+  for (let i = 0; i < ordered.length; i++) {
+    const a = ordered[i]!;
+    try {
+      return await a.run();
+    } catch (err) {
+      lastErr = err;
+      console.error(`[structured] ${a.name} failed${isRateLimit(err) ? ' (rate limited)' : ''}:`, err instanceof Error ? err.message : err);
+      if (i < ordered.length - 1) await sleep(1000); // backoff before next provider
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error('All AI providers failed.');
 }
 
 /**
