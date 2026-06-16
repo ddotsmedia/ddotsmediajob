@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { MapPin, Briefcase, Clock, Banknote, Zap, BadgeCheck, Sparkles } from 'lucide-react';
-import { formatSalary, formatJobDate, isNew, emirateBySlug, categoryBySlug, expiryDaysLeft } from '@ddots/shared';
+import { formatSalary, formatJobDate, isNew, emirateBySlug, categoryBySlug, expiryDaysLeft, matchBadge } from '@ddots/shared';
 import { Badge } from './ui/primitives';
 import { WhatsappApplyButton } from './whatsapp-apply-button';
 import { CompareButton } from './compare-button';
@@ -33,6 +33,7 @@ export type JobCardData = {
   publishedAt: Date | string | null;
   expiresAt?: Date | string | null;
   createdAt: Date | string;
+  matchScore?: number;
   company?: { name: string | null; logoUrl?: string | null; isVerified?: boolean | null } | null;
 };
 
@@ -64,6 +65,10 @@ export function JobCard({ job }: { job: JobCardData }) {
             {isNew(job.publishedAt ?? job.createdAt) && <Badge variant="success"><Sparkles className="mr-1 h-3 w-3" /> New</Badge>}
             {job.isFeatured && <Badge>Featured</Badge>}
             <ExpiryBadge expiresAt={job.expiresAt} />
+            {(() => {
+              const b = typeof job.matchScore === 'number' ? matchBadge(job.matchScore) : null;
+              return b ? <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${b.cls}`}>{b.label}</span> : null;
+            })()}
           </div>
           <p className="flex items-center gap-1 text-sm text-navy-700/70">
             {job.isAnonymous ? 'Confidential Company' : (job.company?.name ?? 'Confidential')}

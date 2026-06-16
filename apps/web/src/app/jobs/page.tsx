@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { jobFilterSchema } from '@ddots/shared';
+import { jobFilterSchema, computeMatchScore } from '@ddots/shared';
+import { auth } from '@ddots/auth';
 import { getApi } from '@/trpc/server';
 import { JobCard } from '@/components/job-card';
 import { JobFilters } from '@/components/job-filters';
@@ -24,9 +25,19 @@ type SP = Record<string, string | string[] | undefined>;
 
 export default async function JobsPage({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams;
-  const filter = jobFilterSchema.parse(sp);
+  const wantMatch = sp.sort === 'match';
+  const filter = jobFilterSchema.parse({ ...sp, sort: wantMatch ? 'newest' : sp.sort });
   const api = await getApi();
   const { jobs, total, page, totalPages } = await api.jobs.list(filter);
+
+  // Logged-in seekers: attach a deterministic match score per card.
+  const session = await auth();
+  const seeker = session?.user?.role === 'jobseeker' ? await api.jobseekers.me().catch(() => null) : null;
+  let cards = jobs as Array<(typeof jobs)[number] & { matchScore?: number }>;
+  if (seeker) {
+    cards = jobs.map((j) => ({ ...j, matchScore: computeMatchScore(seeker, j) }));
+    if (wantMatch) cards = [...cards].sort((a, b) => (b.matchScore ?? 0) - (a.matchScore ?? 0));
+  }
 
   const makeHref = (p: number) => {
     const params = new URLSearchParams();
@@ -60,15 +71,11 @@ export default async function JobsPage({ searchParams }: { searchParams: Promise
               <span className="font-semibold text-navy-900">{total.toLocaleString('en-AE')}</span> jobs found
             </p>
             <form>
-              <Select
-                name="sort"
-                defaultValue={filter.sort}
-                className="h-9 w-44"
-                // progressive: submit on change handled client-side via SortSelect would be ideal; keep simple GET
-              >
+              <Select name="sort" defaultValue={wantMatch ? 'match' : filter.sort} className="h-9 w-44">
                 <option value="newest">Newest first</option>
                 <option value="relevance">Most relevant</option>
                 <option value="salary">Highest salary</option>
+                {seeker && <option value="match">Best matches</option>}
               </Select>
             </form>
           </div>
@@ -83,7 +90,7 @@ export default async function JobsPage({ searchParams }: { searchParams: Promise
             </div>
           ) : (
             <div className="space-y-4">
-              {jobs.map((job) => (
+              {cards.map((job) => (
                 <JobCard key={job.id} job={job} />
               ))}
             </div>

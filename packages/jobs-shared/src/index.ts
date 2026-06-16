@@ -14,6 +14,29 @@ export function slugify(input: string): string {
     .slice(0, 80);
 }
 
+/** Deterministic seeker↔job fit score (0–100): category 30, emirate 20, experience 20, skills 30. */
+export type MatchSeeker = { categorySlug?: string | null; emirateSlug?: string | null; experienceLevel?: string | null; skills?: string[] | null };
+export type MatchJob = { categorySlug: string; emirateSlug: string; experienceLevel?: string | null; skills?: string[] | null };
+export function computeMatchScore(s: MatchSeeker, j: MatchJob): number {
+  let score = 0;
+  if (s.categorySlug && s.categorySlug === j.categorySlug) score += 30;
+  if (s.emirateSlug && s.emirateSlug === j.emirateSlug) score += 20;
+  if (s.experienceLevel && j.experienceLevel && s.experienceLevel === j.experienceLevel) score += 20;
+  const ss = (s.skills ?? []).map((x) => x.toLowerCase().trim()).filter(Boolean);
+  const js = (j.skills ?? []).map((x) => x.toLowerCase().trim()).filter(Boolean);
+  if (js.length && ss.length) {
+    const overlap = js.filter((k) => ss.includes(k)).length;
+    score += Math.round((overlap / js.length) * 30);
+  }
+  return Math.min(100, score);
+}
+export function matchBadge(score: number): { label: string; cls: string } | null {
+  if (score >= 90) return { label: '🎯 Perfect match', cls: 'bg-teal-100 text-teal-700' };
+  if (score >= 70) return { label: '✅ Strong match', cls: 'bg-green-100 text-green-700' };
+  if (score >= 50) return { label: '👍 Good match', cls: 'bg-blue-100 text-blue-700' };
+  return null;
+}
+
 /** Pluralise a job count: 1 → "1 job", else "N jobs" (locale-formatted). */
 export function formatJobCount(n: number): string {
   return n === 1 ? '1 job' : `${n.toLocaleString('en-AE')} jobs`;
