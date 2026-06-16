@@ -133,7 +133,7 @@ export default function AdminJobsPage() {
             <thead className="border-b bg-navy-50 text-left text-navy-700">
               <tr>
                 <th className="px-4 py-3"><input type="checkbox" checked={allSelected} onChange={toggleAll} aria-label="Select all" /></th>
-                <th className="px-4 py-3">Title</th><th className="px-4 py-3">Company</th><th className="px-4 py-3">Posted</th><th className="px-4 py-3">Source</th><th className="px-4 py-3">Salary</th><th className="px-4 py-3">Status</th><th className="px-4 py-3"></th>
+                <th className="px-4 py-3">Title</th><th className="px-4 py-3">Company</th><th className="px-4 py-3">Posted</th><th className="px-4 py-3">Source</th><th className="px-4 py-3">Salary</th><th className="px-4 py-3">Views</th><th className="px-4 py-3">Status</th><th className="px-4 py-3"></th>
               </tr>
             </thead>
             <tbody>
@@ -147,6 +147,7 @@ export default function AdminJobsPage() {
                   <td className="whitespace-nowrap px-4 py-3 text-navy-700/60">{formatShort(j.publishedAt ?? j.createdAt)}</td>
                   <td className="px-4 py-3"><SourceBadge source={j.source} /></td>
                   <td className="px-4 py-3 text-navy-700/70">{formatSalary(j.salaryMin, j.salaryMax, j.salaryPeriod, j.salaryHidden, j.salaryNegotiable)}</td>
+                  <td className="px-4 py-3 text-navy-700/60">{j.viewCount ?? 0}</td>
                   <td className="px-4 py-3">
                     <Select className="h-8 w-28 text-xs" value={j.status} onChange={(e) => setStatusM.mutate({ id: j.id, status: e.target.value as never })}>
                       {JOB_STATUS.map((s) => <option key={s} value={s} className="capitalize">{s}</option>)}
@@ -164,7 +165,7 @@ export default function AdminJobsPage() {
                   </td>
                 </tr>
               ))}
-              {rows.length === 0 && <tr><td colSpan={8} className="px-4 py-12 text-center text-navy-700/60">No jobs.</td></tr>}
+              {rows.length === 0 && <tr><td colSpan={9} className="px-4 py-12 text-center text-navy-700/60">No jobs.</td></tr>}
             </tbody>
           </table>
         )}

@@ -18,6 +18,7 @@ import {
 } from '@ddots/shared';
 import { getApi } from '@/trpc/server';
 import { JobActions } from '@/components/job-actions';
+import { JobViewTracker } from '@/components/job-view-tracker';
 import { MatchScoreCard } from '@/components/ai/match-score';
 import { SkillGap } from '@/components/ai/skill-gap';
 import { ShareMenu } from '@/components/share-menu';
@@ -133,6 +134,7 @@ export default async function JobDetailPage({ params }: Props) {
 
   return (
     <div className="bg-navy-50/30">
+      <JobViewTracker slug={job.slug} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       <div className="mx-auto max-w-7xl px-4 py-8 pb-32 lg:pb-8">
@@ -166,6 +168,7 @@ export default async function JobDetailPage({ params }: Props) {
                       <h1 className="font-display text-xl font-bold text-navy-900 sm:text-2xl">{job.title}</h1>
                       {job.isUrgent && <Badge variant="urgent">Urgent</Badge>}
                       {job.isFeatured && <Badge>Featured</Badge>}
+                      {job.viewCount > 50 && <Badge variant="urgent">🔥 Popular</Badge>}
                     </div>
                     <p className="mt-1 flex items-center gap-1 text-navy-700">
                       {job.isAnonymous ? `Confidential Company · ${categoryBySlug(job.categorySlug)?.name ?? ''}` : (job.company?.name ?? 'Confidential')}
@@ -272,6 +275,7 @@ export default async function JobDetailPage({ params }: Props) {
                   <ReferJobButton title={job.title} slug={job.slug} salary={formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod, job.salaryHidden, job.salaryNegotiable)} emirate={emirate?.name ?? 'UAE'} company={job.isAnonymous ? null : job.company?.name} />
                 </div>
                 <p className="mt-3 text-center text-xs text-navy-700/50">{job.applicationCount} applicants · {job.viewCount} views</p>
+                {job.viewCount > 5 && <p className="mt-1 text-center text-xs font-medium text-teal-700">👁 {job.viewCount.toLocaleString('en-AE')} people viewed this job</p>}
               </CardContent>
             </Card>
 
