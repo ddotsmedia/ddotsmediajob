@@ -15,6 +15,8 @@ import {
   sql,
   avg,
   count,
+  ilike,
+  gte,
 } from '@ddots/db';
 import { slugify } from '@ddots/shared';
 import { router, publicProcedure, adminProcedure, protectedProcedure } from '../trpc';
@@ -225,6 +227,47 @@ export const contentRouter = router({
         .groupBy(salaryReports.jobTitle, salaryReports.categorySlug)
         .orderBy(desc(sql`avg(${salaryReports.salaryMonthly})`));
       return rows;
+    }),
+
+  /** Compare a salary against reported market data + find jobs paying more. */
+  salaryCompare: publicProcedure
+    .input(
+      z.object({
+        title: z.string().min(2).max(160),
+        salary: z.number().int().positive(),
+        emirateSlug: z.string().max(40).optional(),
+        categorySlug: z.string().max(40).optional(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const conds = [ilike(salaryReports.jobTitle, `%${input.title}%`)];
+      if (input.emirateSlug) conds.push(eq(salaryReports.emirateSlug, input.emirateSlug));
+      const [agg] = await ctx.db
+        .select({
+          avg: sql<number>`coalesce(round(avg(${salaryReports.salaryMonthly})),0)::int`,
+          min: sql<number>`coalesce(min(${salaryReports.salaryMonthly}),0)::int`,
+          max: sql<number>`coalesce(max(${salaryReports.salaryMonthly}),0)::int`,
+          samples: count(),
+        })
+        .from(salaryReports)
+        .where(and(...conds));
+
+      const market = agg ?? { avg: 0, min: 0, max: 0, samples: 0 };
+      const verdict = market.samples === 0 ? 'no_data' : input.salary >= market.avg * 1.1 ? 'above' : input.salary <= market.avg * 0.9 ? 'below' : 'at';
+
+      // Jobs paying more than the user's current salary.
+      const jobConds = [eq(jobs.status, 'active'), gte(jobs.salaryMax, input.salary)];
+      if (input.categorySlug) jobConds.push(eq(jobs.categorySlug, input.categorySlug));
+      else jobConds.push(ilike(jobs.title, `%${input.title}%`));
+      const higher = await ctx.db.query.jobs.findMany({
+        where: and(...jobConds),
+        orderBy: [desc(jobs.salaryMax)],
+        limit: 3,
+        columns: { slug: true, title: true, salaryMin: true, salaryMax: true, salaryPeriod: true, salaryHidden: true, salaryNegotiable: true, emirateSlug: true },
+        with: { company: { columns: { name: true } } },
+      });
+
+      return { market, verdict, higher };
     }),
 
   submitSalary: protectedProcedure
