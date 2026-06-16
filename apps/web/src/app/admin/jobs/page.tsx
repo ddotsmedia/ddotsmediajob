@@ -129,11 +129,11 @@ export default function AdminJobsPage() {
 
       <div className="mt-6 overflow-x-auto rounded-xl border bg-white">
         {jobs.isLoading ? <Loader2 className="m-6 animate-spin text-teal-500" /> : (
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[960px] text-sm">
             <thead className="border-b bg-navy-50 text-left text-navy-700">
               <tr>
                 <th className="px-4 py-3"><input type="checkbox" checked={allSelected} onChange={toggleAll} aria-label="Select all" /></th>
-                <th className="px-4 py-3">Title</th><th className="px-4 py-3">Company</th><th className="px-4 py-3">Posted</th><th className="px-4 py-3">Source</th><th className="px-4 py-3">Salary</th><th className="px-4 py-3">Views</th><th className="px-4 py-3">Status</th><th className="px-4 py-3"></th>
+                <th className="px-4 py-3">Title</th><th className="px-4 py-3">Company</th><th className="px-4 py-3">Posted</th><th className="px-4 py-3">Source</th><th className="px-4 py-3">Salary</th><th className="px-4 py-3">Views</th><th className="px-4 py-3">Status</th><th className="sticky right-0 bg-navy-50 px-4 py-3"></th>
               </tr>
             </thead>
             <tbody>
@@ -153,7 +153,7 @@ export default function AdminJobsPage() {
                       {JOB_STATUS.map((s) => <option key={s} value={s} className="capitalize">{s}</option>)}
                     </Select>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="sticky right-0 bg-white px-4 py-3 shadow-[-8px_0_8px_-8px_rgba(0,0,0,0.1)]">
                     <div className="flex items-center justify-end gap-1">
                       <Button variant="ghost" size="icon" onClick={() => feat.mutate({ id: j.id, featured: !j.isFeatured })} title="Toggle featured">
                         <Star className={j.isFeatured ? 'fill-gold-500 text-gold-500' : ''} />

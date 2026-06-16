@@ -14,7 +14,7 @@ export function DashboardSidebar({ items, title, variant = 'light' }: { items: N
   const pathname = usePathname();
   const dark = variant === 'dark';
   return (
-    <aside className={cn('hidden w-60 shrink-0 border-r lg:block', dark ? 'border-navy-800 bg-navy-900' : 'bg-white')}>
+    <aside className={cn('hidden w-52 shrink-0 border-r lg:block', dark ? 'border-navy-800 bg-navy-900' : 'bg-white')}>
       <div className="sticky top-16 p-4">
         <p className={cn('px-3 pb-2 text-xs font-bold uppercase tracking-wider', dark ? 'text-white/40' : 'text-navy-700/40')}>{title}</p>
         <nav className="space-y-1">
