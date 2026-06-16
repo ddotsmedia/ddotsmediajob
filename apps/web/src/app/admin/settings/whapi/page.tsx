@@ -27,29 +27,39 @@ export default function WhapiSettingsPage() {
   const q = trpc.admin.whapiSettings.useQuery();
   const [f, setF] = useState<Form | null>(null);
   const [testText, setTestText] = useState('');
-  const set = <K extends keyof Form>(k: K, v: Form[K]) => setF((s) => (s ? { ...s, [k]: v } : s));
 
   useEffect(() => {
-    if (q.data && !f) {
-      setF({
-        minTextLength: q.data.minTextLength,
-        requireSalary: q.data.requireSalary, requireContact: q.data.requireContact, requireLocation: q.data.requireLocation,
-        allowedGroups: toLines(q.data.allowedGroups), blockedNumbers: toCsv(q.data.blockedNumbers),
-        blockedKeywords: toCsv(q.data.blockedKeywords), customKeywords: toCsv(q.data.customKeywords),
-        blockOwnMessages: q.data.blockOwnMessages, autoPublish: q.data.autoPublish,
-        replyOnSuccess: q.data.replyOnSuccess, replyOnSkip: q.data.replyOnSkip,
-        successMessage: q.data.successMessage ?? '', skipMessage: q.data.skipMessage ?? '',
-      });
-    }
-  }, [q.data, f]);
+    if (!q.data) return;
+    setF({
+      minTextLength: q.data.minTextLength,
+      requireSalary: q.data.requireSalary, requireContact: q.data.requireContact, requireLocation: q.data.requireLocation,
+      allowedGroups: toLines(q.data.allowedGroups), blockedNumbers: toCsv(q.data.blockedNumbers),
+      blockedKeywords: toCsv(q.data.blockedKeywords), customKeywords: toCsv(q.data.customKeywords),
+      blockOwnMessages: q.data.blockOwnMessages, autoPublish: q.data.autoPublish,
+      replyOnSuccess: q.data.replyOnSuccess, replyOnSkip: q.data.replyOnSkip,
+      successMessage: q.data.successMessage ?? '', skipMessage: q.data.skipMessage ?? '',
+    });
+    // Set once when data first arrives.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q.data]);
 
   const save = trpc.admin.saveWhapiSettings.useMutation({
-    onSuccess: () => { utils.admin.whapiSettings.invalidate(); toast.success('Saved'); },
-    onError: (e) => toast.error(e.message),
+    onSuccess: () => { utils.admin.whapiSettings.invalidate(); toast.success('Settings saved'); },
+    onError: (e) => toast.error(e.message || 'Save failed'),
   });
   const test = trpc.admin.testWhapiCriteria.useMutation();
 
-  if (!f) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-teal-500" /></div>;
+  // Skeleton until settings load — never render a half-initialised form.
+  if (q.isLoading || !f) {
+    return (
+      <div className="max-w-3xl animate-pulse space-y-4">
+        <div className="h-8 w-64 rounded bg-navy-100" />
+        {[0, 1, 2, 3, 4].map((i) => <div key={i} className="h-40 rounded-xl bg-navy-100/70" />)}
+      </div>
+    );
+  }
+
+  const set = <K extends keyof Form>(k: K, v: Form[K]) => setF((s) => (s ? { ...s, [k]: v } : s));
 
   function onSave() {
     if (!f) return;
@@ -64,13 +74,6 @@ export default function WhapiSettingsPage() {
     });
   }
 
-  const Toggle = ({ k, label, hint }: { k: keyof Form; label: string; hint?: string }) => (
-    <label className="flex items-start gap-2 text-sm text-navy-700">
-      <input type="checkbox" checked={Boolean(f[k])} onChange={(e) => set(k, e.target.checked as Form[typeof k])} className="mt-0.5 h-4 w-4 rounded text-teal-600" />
-      <span>{label}{hint && <span className="block text-xs text-navy-700/50">{hint}</span>}</span>
-    </label>
-  );
-
   return (
     <div className="max-w-3xl">
       <div className="flex items-center gap-2"><MessageCircle className="h-5 w-5 text-[#25D366]" /><h1 className="font-display text-2xl font-bold text-navy-900">WhatsApp Import Settings</h1></div>
@@ -78,46 +81,51 @@ export default function WhapiSettingsPage() {
 
       {/* Section 1 — Detection */}
       <Card title="Detection criteria">
-        <Field label="Minimum text length"><Input type="number" value={f.minTextLength} onChange={(e) => set('minTextLength', Number(e.target.value))} className="w-32" /></Field>
-        <Field label="Custom job keywords (comma-separated)"><Input value={f.customKeywords} onChange={(e) => set('customKeywords', e.target.value)} placeholder="e.g. hiring now, walk in, مطلوب" /></Field>
-        <Field label="Blocked keywords (comma-separated)"><Input value={f.blockedKeywords} onChange={(e) => set('blockedKeywords', e.target.value)} placeholder="e.g. mlm, investment, crypto" /></Field>
+        <Field label="Minimum text length">
+          <Input type="number" value={f.minTextLength} onChange={(e) => set('minTextLength', Number(e.target.value))} className="w-32" />
+        </Field>
+        <Field label="Custom job keywords (comma-separated)">
+          <Input value={f.customKeywords} onChange={(e) => set('customKeywords', e.target.value)} placeholder="e.g. hiring now, walk in, مطلوب" />
+        </Field>
+        <Field label="Blocked keywords (comma-separated)">
+          <Input value={f.blockedKeywords} onChange={(e) => set('blockedKeywords', e.target.value)} placeholder="e.g. mlm, investment, crypto" />
+        </Field>
       </Card>
 
       {/* Section 2 — Required fields */}
       <Card title="Required fields">
-        <div className="flex items-center justify-between py-2">
-          <label className="text-sm text-navy-700">Require salary to be mentioned</label>
-          <Switch checked={f.requireSalary} onCheckedChange={(v) => set('requireSalary', v)} aria-label="Require salary" />
-        </div>
-        <div className="flex items-center justify-between py-2">
-          <label className="text-sm text-navy-700">Require a contact number/email</label>
-          <Switch checked={f.requireContact} onCheckedChange={(v) => set('requireContact', v)} aria-label="Require contact" />
-        </div>
-        <div className="flex items-center justify-between py-2">
-          <label className="text-sm text-navy-700">Require a location/emirate</label>
-          <Switch checked={f.requireLocation} onCheckedChange={(v) => set('requireLocation', v)} aria-label="Require location" />
-        </div>
+        <SwitchRow label="Require salary to be mentioned" checked={f.requireSalary} onChange={(v) => set('requireSalary', v)} />
+        <SwitchRow label="Require a contact number/email" checked={f.requireContact} onChange={(v) => set('requireContact', v)} />
+        <SwitchRow label="Require a location/emirate" checked={f.requireLocation} onChange={(v) => set('requireLocation', v)} />
         <p className="text-xs text-navy-700/50">Messages missing a required field are skipped with a reason.</p>
       </Card>
 
       {/* Section 3 — Number filtering */}
       <Card title="Number & group filtering">
-        <Field label="Allowed group chat IDs (one per line — empty = all groups)"><Textarea className="min-h-[80px]" value={f.allowedGroups} onChange={(e) => set('allowedGroups', e.target.value)} placeholder="123456789@g.us" /></Field>
-        <Field label="Blocked numbers (comma-separated)"><Input value={f.blockedNumbers} onChange={(e) => set('blockedNumbers', e.target.value)} placeholder="971501234567, 971559876543" /></Field>
-        <Toggle k="blockOwnMessages" label="Block own messages (skip from_me)" />
+        <Field label="Allowed group chat IDs (one per line — empty = all groups)">
+          <Textarea className="min-h-[80px]" value={f.allowedGroups} onChange={(e) => set('allowedGroups', e.target.value)} placeholder="123456789@g.us" />
+        </Field>
+        <Field label="Blocked numbers (comma-separated)">
+          <Input value={f.blockedNumbers} onChange={(e) => set('blockedNumbers', e.target.value)} placeholder="971501234567, 971559876543" />
+        </Field>
+        <SwitchRow label="Block own messages (skip from_me)" checked={f.blockOwnMessages} onChange={(v) => set('blockOwnMessages', v)} />
       </Card>
 
       {/* Section 4 — Auto actions */}
       <Card title="Auto actions">
-        <Toggle k="autoPublish" label="Auto-publish valid jobs (skip draft review)" hint="⚠ Jobs will be published live without review." />
-        <Toggle k="replyOnSuccess" label="Reply on success" />
-        <Field label="Success message ([title] and [link] are replaced)"><Input value={f.successMessage} onChange={(e) => set('successMessage', e.target.value)} placeholder="✅ Job draft created! Review: [link]" /></Field>
-        <Toggle k="replyOnSkip" label="Reply on skip" />
-        <Field label="Skip message ([reason] is replaced)"><Input value={f.skipMessage} onChange={(e) => set('skipMessage', e.target.value)} placeholder="Not added: [reason]" /></Field>
+        <SwitchRow label="Auto-publish valid jobs (skip draft review)" hint="⚠ Jobs will be published live without review." checked={f.autoPublish} onChange={(v) => set('autoPublish', v)} />
+        <SwitchRow label="Reply on success" checked={f.replyOnSuccess} onChange={(v) => set('replyOnSuccess', v)} />
+        <Field label="Success message ([title] and [link] are replaced)">
+          <Input value={f.successMessage} onChange={(e) => set('successMessage', e.target.value)} placeholder="✅ Job draft created! Review: [link]" />
+        </Field>
+        <SwitchRow label="Reply on skip" checked={f.replyOnSkip} onChange={(v) => set('replyOnSkip', v)} />
+        <Field label="Skip message ([reason] is replaced)">
+          <Input value={f.skipMessage} onChange={(e) => set('skipMessage', e.target.value)} placeholder="Not added: [reason]" />
+        </Field>
       </Card>
 
       <Button onClick={onSave} disabled={save.isPending} className="mt-4">
-        {save.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Save settings
+        {save.isPending ? <><Loader2 className="h-4 w-4 animate-spin" /> Saving…</> : <><Save className="h-4 w-4" /> Save settings</>}
       </Button>
 
       {/* Section 5 — Test */}
@@ -137,6 +145,19 @@ export default function WhapiSettingsPage() {
           </div>
         )}
       </Card>
+    </div>
+  );
+}
+
+// ── Top-level helpers (stable identity — never recreated on render) ──
+function SwitchRow({ label, hint, checked, onChange }: { label: string; hint?: string; checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <div className="flex items-center justify-between gap-4 py-2">
+      <span className="text-sm text-navy-700">
+        {label}
+        {hint && <span className="block text-xs text-navy-700/50">{hint}</span>}
+      </span>
+      <Switch checked={checked} onCheckedChange={onChange} aria-label={label} />
     </div>
   );
 }
