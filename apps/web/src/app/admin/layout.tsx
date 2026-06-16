@@ -22,6 +22,7 @@ import {
   Bookmark,
   Sparkles,
   FilePen,
+  Tags,
 } from 'lucide-react';
 import Link from 'next/link';
 import { DashboardSidebar, MobileTabs, type NavItem } from '@/components/dashboard/sidebar';
@@ -37,6 +38,7 @@ const NAV: NavItem[] = [
   { href: '/admin/approvals', label: 'Job Approvals', icon: CheckSquare },
   { href: '/admin/jobs', label: 'All Jobs', icon: Briefcase },
   { href: '/admin/jobs/drafts', label: 'Drafts', icon: FilePen },
+  { href: '/admin/categories', label: 'Categories', icon: Tags },
   { href: '/admin/applications', label: 'Applications', icon: FileText },
   { href: '/admin/verifications', label: 'Verifications', icon: BadgeCheck },
   { href: '/admin/companies', label: 'Companies', icon: Building2 },

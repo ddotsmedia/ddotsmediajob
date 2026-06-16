@@ -585,6 +585,24 @@ export const shortLinks = pgTable(
   (t) => [uniqueIndex('short_links_code_idx').on(t.code), index('short_links_job_idx').on(t.jobId)],
 );
 
+// ─── Job categories (admin-managed; mirrors the static CATEGORIES) ──
+export const jobCategories = pgTable(
+  'job_categories',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    slug: varchar('slug', { length: 60 }).notNull(),
+    name: varchar('name', { length: 120 }).notNull(),
+    nameAr: varchar('name_ar', { length: 120 }),
+    icon: varchar('icon', { length: 60 }),
+    parentId: uuid('parent_id'),
+    sortOrder: integer('sort_order').default(0).notNull(),
+    isActive: boolean('is_active').default(true).notNull(),
+    jobCount: integer('job_count').default(0).notNull(),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex('job_categories_slug_idx').on(t.slug)],
+);
+
 // ─── Whapi import settings (single-row config) ───────────
 export const whapiSettings = pgTable('whapi_settings', {
   id: uuid('id').defaultRandom().primaryKey(),

@@ -17,9 +17,11 @@ import {
   whatsappBotLogs,
   securityLogs,
   whapiSettings,
+  jobCategories,
   eq,
   and,
   desc,
+  asc,
   gte,
   count,
   sql,
@@ -47,6 +49,7 @@ import { isIndexingConfigured, submitUrl } from '../lib/google-indexing';
 import { ensureVectorSetup, upsertJobEmbedding } from '../lib/embeddings';
 import { blockIp, unblockIp, ipBlockingEnabled } from '../lib/security-log';
 import { getWhapiSettings, invalidateWhapiSettings, evaluateCriteria, SKIP_LABEL } from '../lib/whapi-criteria';
+import { invalidateCategories } from '../lib/categories';
 import { isJobMessage } from '../lib/import';
 
 /** Shared shape for admin-created jobs (from any of the 6 ingestion methods). */
@@ -864,6 +867,39 @@ export const adminRouter = router({
     await bulkUpsert(rows.map((r) => jobRowToDoc(r, r.company?.name)));
     await audit(ctx.session.user.id, 'admin.search.reindex', 'job', undefined, { indexed: rows.length });
     return { indexed: rows.length, configured: true };
+  }),
+
+  // ─── Job categories (admin-managed) ────────────────────────────────
+  getCategories: adminProcedure.query(({ ctx }) => ctx.db.query.jobCategories.findMany({ orderBy: [asc(jobCategories.sortOrder), asc(jobCategories.name)] })),
+
+  createCategory: adminProcedure
+    .input(z.object({ name: z.string().min(2).max(120), nameAr: z.string().max(120).optional(), slug: z.string().min(2).max(60).optional(), icon: z.string().max(60).optional(), parentId: z.string().uuid().nullable().optional(), sortOrder: z.number().int().default(0), isActive: z.boolean().default(true) }))
+    .mutation(async ({ ctx, input }) => {
+      const slug = slugify(input.slug || input.name);
+      await ctx.db.insert(jobCategories).values({ slug, name: input.name, nameAr: input.nameAr || null, icon: input.icon || null, parentId: input.parentId ?? null, sortOrder: input.sortOrder, isActive: input.isActive }).onConflictDoNothing();
+      await invalidateCategories();
+      await audit(ctx.session.user.id, 'admin.category.create', 'job_categories', undefined, { slug });
+      return { ok: true, slug };
+    }),
+
+  updateCategory: adminProcedure
+    .input(z.object({ id: z.string().uuid(), name: z.string().min(2).max(120), nameAr: z.string().max(120).nullable().optional(), icon: z.string().max(60).nullable().optional(), parentId: z.string().uuid().nullable().optional(), sortOrder: z.number().int(), isActive: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db.update(jobCategories).set({ name: input.name, nameAr: input.nameAr ?? null, icon: input.icon ?? null, parentId: input.parentId ?? null, sortOrder: input.sortOrder, isActive: input.isActive }).where(eq(jobCategories.id, input.id));
+      await invalidateCategories();
+      await audit(ctx.session.user.id, 'admin.category.update', 'job_categories', input.id);
+      return { ok: true };
+    }),
+
+  deleteCategory: adminProcedure.input(z.object({ id: z.string().uuid() })).mutation(async ({ ctx, input }) => {
+    const cat = await ctx.db.query.jobCategories.findFirst({ where: eq(jobCategories.id, input.id) });
+    if (!cat) throw new TRPCError({ code: 'NOT_FOUND' });
+    const [used] = await ctx.db.select({ n: count() }).from(jobs).where(eq(jobs.categorySlug, cat.slug));
+    if ((used?.n ?? 0) > 0) throw new TRPCError({ code: 'BAD_REQUEST', message: `Cannot delete — ${used!.n} job(s) use this category.` });
+    await ctx.db.delete(jobCategories).where(eq(jobCategories.id, input.id));
+    await invalidateCategories();
+    await audit(ctx.session.user.id, 'admin.category.delete', 'job_categories', input.id, { slug: cat.slug });
+    return { ok: true };
   }),
 
   // ─── Whapi import settings ─────────────────────────────────────────

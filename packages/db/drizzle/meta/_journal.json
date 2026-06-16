@@ -225,6 +225,13 @@
       "when": 1781617551501,
       "tag": "0031_fixed_spirit",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1781628951032,
+      "tag": "0032_silky_agent_brand",
+      "breakpoints": true
     }
   ]
 }

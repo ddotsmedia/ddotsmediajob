@@ -22,6 +22,7 @@ import { slugify } from '@ddots/shared';
 import { router, publicProcedure, adminProcedure, protectedProcedure } from '../trpc';
 import { sanitizeHtml } from '../lib/security';
 import { integrationStatus } from '../lib/integrations';
+import { getCategoriesCached } from '../lib/categories';
 
 const blogInput = z.object({
   title: z.string().min(3).max(200),
@@ -299,6 +300,9 @@ export const contentRouter = router({
 
   /** Which optional integrations are configured — drives graceful-degradation UI. */
   integrations: publicProcedure.query(() => integrationStatus()),
+
+  /** Public active categories (Redis-cached 1h). */
+  categories: publicProcedure.query(() => getCategoriesCached()),
 
   /** Public announcement banner config (site_settings key: announcement_banner). */
   announcement: publicProcedure.query(async ({ ctx }) => {
