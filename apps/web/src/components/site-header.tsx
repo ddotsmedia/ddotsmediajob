@@ -8,9 +8,25 @@ import { Logo } from './logo';
 import { Button } from './ui/button';
 import { NotificationBell } from './notification-bell';
 import { DesktopMegaNav, MobileMegaNav } from './mega-nav';
+import { useLocale } from '@/lib/i18n';
+
+function LangToggle() {
+  const { locale, setLocale } = useLocale();
+  return (
+    <button
+      type="button"
+      onClick={() => setLocale(locale === 'ar' ? 'en' : 'ar')}
+      className="rounded-md border border-navy-200 px-2 py-1 text-xs font-semibold text-navy-700 hover:bg-navy-50"
+      aria-label="Toggle language"
+    >
+      {locale === 'ar' ? 'EN' : 'عربي'}
+    </button>
+  );
+}
 
 export function SiteHeader() {
   const { data: session } = useSession();
+  const { t } = useLocale();
   const [open, setOpen] = useState(false);
   const role = session?.user?.role;
   const dashHref = role === 'admin' ? '/admin' : role === 'employer' ? '/employer' : role === 'volunteer' ? '/volunteer' : '/dashboard';
@@ -41,24 +57,28 @@ export function SiteHeader() {
           </div>
 
           <div className="hidden items-center gap-3 md:flex">
+            <LangToggle />
             <Button asChild variant="accent" size="sm">
-              <Link href="/employer/post"><Briefcase /> Post a Job</Link>
+              <Link href="/employer/post"><Briefcase /> {t('nav.postJob')}</Link>
             </Button>
             {session ? (
               <>
                 <NotificationBell />
-                <Button asChild variant="ghost" size="sm"><Link href={dashHref}><LayoutDashboard /> Dashboard</Link></Button>
-                <Button variant="outline" size="sm" onClick={() => signOut({ callbackUrl: '/' })}><LogOut /> Sign out</Button>
+                <Button asChild variant="ghost" size="sm"><Link href={dashHref}><LayoutDashboard /> {t('nav.dashboard')}</Link></Button>
+                <Button variant="outline" size="sm" onClick={() => signOut({ callbackUrl: '/' })}><LogOut /> {t('nav.signout')}</Button>
               </>
             ) : (
               <>
                 <span className="mx-1 h-5 w-px bg-navy-100" />
-                <Button asChild variant="outline" size="sm"><Link href="/login">Log in</Link></Button>
-                <Button asChild variant="accent" size="sm"><Link href="/register">Sign up</Link></Button>
+                <Button asChild variant="outline" size="sm"><Link href="/login">{t('nav.login')}</Link></Button>
+                <Button asChild variant="accent" size="sm"><Link href="/register">{t('nav.signup')}</Link></Button>
               </>
             )}
           </div>
 
+          <div className="flex items-center gap-1 md:hidden">
+            <LangToggle />
+          </div>
           <button type="button" className="flex h-11 w-11 items-center justify-center md:hidden" onClick={() => setOpen((v) => !v)} aria-label="Toggle menu">
             {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>

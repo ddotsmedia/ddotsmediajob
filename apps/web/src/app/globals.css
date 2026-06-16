@@ -170,6 +170,11 @@ label {
 .ticker-pause:hover .animate-ticker { animation-play-state: paused; }
 @media (prefers-reduced-motion: reduce) { .animate-ticker { animation: none; } }
 
+/* Arabic / RTL: use an Arabic-friendly font stack and mirror layout. */
+[dir='rtl'] body {
+  font-family: 'Noto Kufi Arabic', 'Tahoma', 'Segoe UI', var(--font-dm-sans), sans-serif;
+}
+
 /* iOS safe-area helpers. */
 .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
 .pt-safe { padding-top: env(safe-area-inset-top); }
