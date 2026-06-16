@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db, jobs, applications, eq, and, gte, count, desc } from '@ddots/db';
 import { extractAndSaveDraft, isJobMessage, sendTelegram } from '@ddots/api/lib/import';
+import { conciergeReply } from '@ddots/api/lib/whatsapp';
 import { rateLimit } from '@ddots/api/lib/security';
 
 const DRAFTS_LINK = 'https://ddotsmediajobs.com/admin/jobs/drafts';
@@ -81,7 +82,9 @@ export async function POST(req: Request) {
   if (!rl.ok) { await sendTelegram(chatId, 'Too many imports this hour — try again later.'); return NextResponse.json({ ok: true }); }
 
   if (text.length < 15 || !isJobMessage(text)) {
-    await sendTelegram(chatId, 'Send a job vacancy message to create a draft.');
+    // Not a job posting → Zainab concierge (search / salary / gratuity / chat).
+    const reply = await conciergeReply(text, String(chatId));
+    await sendTelegram(chatId, reply);
     return NextResponse.json({ ok: true });
   }
 
