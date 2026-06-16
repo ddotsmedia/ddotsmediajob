@@ -57,8 +57,12 @@ export default function DraftsPage() {
   const [editing, setEditing] = useState<Draft | null>(null);
   const drafts = trpc.admin.draftJobs.useQuery(source ? { source } : undefined);
   const inval = () => utils.admin.draftJobs.invalidate();
-  const publish = trpc.admin.publishDraft.useMutation({ onSuccess: () => { inval(); toast.success('Published live'); } });
-  const del = trpc.admin.deleteJob.useMutation({ onSuccess: () => { inval(); toast.success('Deleted'); } });
+  // Drop a row from the cached list immediately (no wait for refetch), then revalidate.
+  const removeLocal = (id: string) => {
+    utils.admin.draftJobs.setData(source ? { source } : undefined, (prev) => prev?.filter((d) => d.id !== id));
+  };
+  const publish = trpc.admin.publishDraft.useMutation({ onSuccess: (_d, vars) => { removeLocal(vars.id); inval(); toast.success('Published live'); } });
+  const del = trpc.admin.deleteJob.useMutation({ onSuccess: (_d, vars) => { removeLocal(vars.id); inval(); toast.success('Deleted'); } });
 
   return (
     <div>

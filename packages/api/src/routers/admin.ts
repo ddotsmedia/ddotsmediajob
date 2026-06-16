@@ -669,9 +669,11 @@ export const adminRouter = router({
       .set({ status: 'active', publishedAt: new Date() })
       .where(eq(jobs.id, input.id))
       .returning();
+    if (!job) throw new TRPCError({ code: 'NOT_FOUND', message: 'Draft not found.' });
+    console.log(`[admin] publishDraft ${input.id} -> status=${job.status} (was draft)`);
     await enqueueSearchSync({ type: 'upsert', jobId: input.id });
     await audit(ctx.session.user.id, 'admin.job.publish', 'job', input.id);
-    return { ok: true, slug: job!.slug };
+    return { ok: true, slug: job.slug };
   }),
 
   /** Edit a draft's fields without changing its status. */
