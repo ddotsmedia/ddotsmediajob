@@ -7,10 +7,47 @@ import { audit, notify } from '../lib/helpers';
 import { enqueueEmail, enqueueAiScoring } from '../lib/queue';
 import { presignUpload } from '../lib/r2';
 import { enforceRateLimit, assertUploadType } from '../lib/security';
+import { sendWhapiText } from '../lib/import';
 
 const ipOf = (ctx: { headers?: Headers }) => ctx.headers?.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
 
 export const applicationsRouter = router({
+  /** No-login Quick Apply: name + WhatsApp; notifies employer via Whapi. */
+  quickApply: publicProcedure
+    .input(
+      z.object({
+        jobId: z.string().uuid(),
+        name: z.string().trim().min(2).max(160),
+        whatsapp: z.string().trim().min(6).max(30),
+        experienceYears: z.string().trim().max(20).optional(),
+        message: z.string().trim().max(200).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      await enforceRateLimit(`quickapply:${ipOf(ctx)}`, 3, 3600); // 3 per IP per hour
+      const job = await ctx.db.query.jobs.findFirst({
+        where: eq(jobs.id, input.jobId),
+        with: { company: { columns: { name: true } } },
+      });
+      if (!job || job.status !== 'active') throw new TRPCError({ code: 'NOT_FOUND', message: 'Job not available.' });
+
+      await ctx.db.insert(applications).values({
+        jobId: input.jobId,
+        guestName: input.name,
+        guestPhone: input.whatsapp,
+        coverLetter: input.message || null,
+        status: 'quick_apply',
+      });
+      await ctx.db.update(jobs).set({ applicationCount: sql`${jobs.applicationCount} + 1` }).where(eq(jobs.id, job.id));
+
+      const dest = (job.contactWhatsapp ?? '').replace(/\D/g, '');
+      if (dest) {
+        const msg = `New application for ${job.title}:\nName: ${input.name} | WA: ${input.whatsapp}\nExperience: ${input.experienceYears || '—'} | ${input.message || ''}\nVia DdotsMediaJobs.com`;
+        await sendWhapiText(dest, msg).catch(() => {});
+      }
+      return { ok: true };
+    }),
+
   /** Jobseeker: submit an application to a job. */
   submit: protectedProcedure.input(applySchema).mutation(async ({ ctx, input }) => {
     await enforceRateLimit(`apply:${ctx.session.user.id}`, 20, 3600);

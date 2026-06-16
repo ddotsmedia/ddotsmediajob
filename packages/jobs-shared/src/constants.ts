@@ -108,7 +108,7 @@ export type SalaryPeriod = (typeof SALARY_PERIODS)[number];
 export const JOB_STATUS = ['draft', 'pending', 'active', 'rejected', 'expired', 'closed', 'filled'] as const;
 export type JobStatus = (typeof JOB_STATUS)[number];
 
-export const APPLICATION_STATUS = ['applied', 'reviewing', 'shortlisted', 'interview', 'offered', 'hired', 'rejected', 'withdrawn'] as const;
+export const APPLICATION_STATUS = ['applied', 'quick_apply', 'reviewing', 'shortlisted', 'interview', 'offered', 'hired', 'rejected', 'withdrawn'] as const;
 export type ApplicationStatus = (typeof APPLICATION_STATUS)[number];
 
 export const USER_ROLES = ['jobseeker', 'employer', 'admin', 'volunteer'] as const;

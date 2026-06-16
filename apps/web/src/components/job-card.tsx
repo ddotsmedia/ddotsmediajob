@@ -3,10 +3,12 @@ import { MapPin, Briefcase, Clock, Banknote, Zap, BadgeCheck, Sparkles } from 'l
 import { formatSalary, formatJobDate, isNew, emirateBySlug, categoryBySlug, expiryDaysLeft, matchBadge } from '@ddots/shared';
 import { Badge } from './ui/primitives';
 import { WhatsappApplyButton } from './whatsapp-apply-button';
+import { QuickApplyButton } from './quick-apply-button';
 import { CompareButton } from './compare-button';
 import { cn } from '@/lib/utils';
 
 export type JobCardData = {
+  id?: string;
   slug: string;
   title: string;
   emirateSlug: string;
@@ -131,6 +133,7 @@ export function JobCard({ job }: { job: JobCardData }) {
           contactWhatsapp={job.contactWhatsapp}
           className="flex-1"
         />
+        {job.id && <QuickApplyButton jobId={job.id} />}
         <Link
           href={`/jobs/${job.slug}`}
           className="relative z-10 rounded-lg border border-teal-300 px-3 py-2 text-sm font-semibold text-teal-700 hover:bg-teal-50"

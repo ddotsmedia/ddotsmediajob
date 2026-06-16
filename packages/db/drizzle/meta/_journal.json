@@ -211,6 +211,13 @@
       "when": 1781583132120,
       "tag": "0029_dusty_talos",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1781614327210,
+      "tag": "0030_groovy_guardian",
+      "breakpoints": true
     }
   ]
 }

@@ -19,6 +19,7 @@ import {
 import { getApi } from '@/trpc/server';
 import { JobActions } from '@/components/job-actions';
 import { JobViewTracker } from '@/components/job-view-tracker';
+import { QuickApplyButton } from '@/components/quick-apply-button';
 import { MatchScoreCard } from '@/components/ai/match-score';
 import { SkillGap } from '@/components/ai/skill-gap';
 import { ShareMenu } from '@/components/share-menu';
@@ -268,6 +269,9 @@ export default async function JobDetailPage({ params }: Props) {
                   applyWhatsapp={job.applyWhatsapp}
                   contactWhatsapp={job.contactWhatsapp}
                 />
+                <div className="mt-3">
+                  <QuickApplyButton jobId={job.id} className="w-full" />
+                </div>
                 <div className="mt-3">
                   <ShareMenu jobId={job.id} title={job.title} url={`${SITE.url}/jobs/${job.slug}`} variant="button" />
                 </div>
