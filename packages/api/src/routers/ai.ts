@@ -18,7 +18,7 @@ import {
   type JobDraft,
 } from '../lib/anthropic';
 import { applications, sql } from '@ddots/db';
-import { enforceRateLimit, isJailbreakAttempt, wrapUserContent, ssrfSafeFetchText } from '../lib/security';
+import { enforceRateLimit, isJailbreakAttempt, wrapUserContent, ssrfSafeFetchText, cached } from '../lib/security';
 
 /** Rate-limit AI usage per user + reject prompt-injection attempts. */
 async function guardAi(ctx: { session: { user: { id: string; role: string } } }, text?: string): Promise<void> {
@@ -369,17 +369,36 @@ export const aiRouter = router({
 
   /** Cover letter generator (Haiku). */
   coverLetter: protectedProcedure
-    .input(z.object({ jobId: z.string().uuid(), tone: z.enum(['professional', 'casual', 'enthusiastic']).default('professional') }))
+    .input(z.object({ jobId: z.string().uuid(), tone: z.enum(['professional', 'casual', 'enthusiastic']).default('professional'), language: z.enum(['en', 'ar']).default('en') }))
     .mutation(async ({ ctx, input }) => {
+      await enforceRateLimit(`ai:coverletter:${ctx.session.user.id}`, 5, 86_400); // 5/day
       const job = await ctx.db.query.jobs.findFirst({ where: eq(jobs.id, input.jobId) });
       if (!job) throw new TRPCError({ code: 'NOT_FOUND' });
       const profile = await loadProfileText(ctx.db, ctx.session.user.id);
+      const lang = input.language === 'ar' ? 'Arabic' : 'English';
       const reply = await chat(
-        `You are a UAE job-application writer. Write a concise 3-paragraph cover letter in a ${input.tone} tone. No placeholders — use the candidate details given. Return only the letter body.`,
+        `You are a UAE job-application writer. Write a concise 3-paragraph cover letter in ${lang} in a ${input.tone} tone. No placeholders — use the candidate details given. Return only the letter body.`,
         [{ role: 'user', content: `JOB: ${job.title}\n${job.description.slice(0, 1500)}\n\nCANDIDATE:\n${profile}\n\nName: ${ctx.session.user.name ?? ''}` }],
         { model: MODEL_FAST, maxTokens: 700 },
       );
       return { coverLetter: reply };
+    }),
+
+  /** Interview prep pack for a specific job — cached per job for 24h. */
+  jobInterviewQuestions: protectedProcedure
+    .input(z.object({ jobId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      await enforceRateLimit(`ai:interviewq:${ctx.session.user.id}`, 10, 86_400);
+      const job = await ctx.db.query.jobs.findFirst({ where: eq(jobs.id, input.jobId) });
+      if (!job) throw new TRPCError({ code: 'NOT_FOUND' });
+      const content = await cached(`interviewq:${input.jobId}`, 86_400, () =>
+        chat(
+          'You are a UAE interview coach. From the job description, produce a markdown prep pack with exactly: 3 Technical questions, 3 Behavioural questions, 2 Culture-fit questions, 2 UAE-specific questions. Under each question add a one-line "Answer framework:" hint. Use clear ## section headings.',
+          [{ role: 'user', content: `JOB: ${job.title}\n${job.description.slice(0, 2500)}` }],
+          { model: MODEL_SMART, maxTokens: 1600 },
+        ),
+      );
+      return { content };
     }),
 
   /** Social media post generator for a job (Haiku, employer). */

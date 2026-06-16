@@ -20,6 +20,7 @@ import { getApi } from '@/trpc/server';
 import { JobActions } from '@/components/job-actions';
 import { JobViewTracker } from '@/components/job-view-tracker';
 import { QuickApplyButton } from '@/components/quick-apply-button';
+import { JobAiTools } from '@/components/job-ai-tools';
 import { MatchScoreCard } from '@/components/ai/match-score';
 import { SkillGap } from '@/components/ai/skill-gap';
 import { ShareMenu } from '@/components/share-menu';
@@ -278,6 +279,7 @@ export default async function JobDetailPage({ params }: Props) {
                 <div className="mt-3">
                   <ReferJobButton title={job.title} slug={job.slug} salary={formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod, job.salaryHidden, job.salaryNegotiable)} emirate={emirate?.name ?? 'UAE'} company={job.isAnonymous ? null : job.company?.name} />
                 </div>
+                <div className="mt-3"><JobAiTools jobId={job.id} /></div>
                 <p className="mt-3 text-center text-xs text-navy-700/50">{job.applicationCount} applicants · {job.viewCount} views</p>
                 {job.viewCount > 5 && <p className="mt-1 text-center text-xs font-medium text-teal-700">👁 {job.viewCount.toLocaleString('en-AE')} people viewed this job</p>}
               </CardContent>
