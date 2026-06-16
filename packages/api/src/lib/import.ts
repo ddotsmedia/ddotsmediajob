@@ -54,6 +54,26 @@ const EMIRATE_MAP: Record<string, string> = {
   fujairah: 'fujairah', الفجيرة: 'fujairah',
   'umm al quwain': 'umm-al-quwain', 'umm-al-quwain': 'umm-al-quwain', 'أم القيوين': 'umm-al-quwain',
 };
+// Keyword category detection — AI frequently over-defaults to 'it'. Used as a
+// fallback when the model returns 'it' or nothing.
+function detectCategory(text: string): string {
+  const t = text.toLowerCase();
+  if (/driver|driving|delivery|transport|logistics|chauffeur|سائق/.test(t)) return 'driving';
+  if (/nurse|doctor|medical|hospital|pharmacy|healthcare|clinical|ممرض|طبيب/.test(t)) return 'healthcare';
+  if (/accountant|finance|audit|tax|bookkeeping|accounting|محاسب/.test(t)) return 'finance';
+  if (/sales|marketing|business development|retail|مبيعات/.test(t)) return 'sales';
+  if (/construction|civil engineer|architect|site engineer|mason/.test(t)) return 'construction';
+  if (/hotel|chef|cook|waiter|housekeeping|restaurant|hospitality/.test(t)) return 'hospitality';
+  if (/teacher|tutor|trainer|lecturer|school|education|معلم/.test(t)) return 'education';
+  if (/security|guard|safety|surveillance|حارس/.test(t)) return 'security';
+  if (/software|developer|programmer|web developer|app developer|it support/.test(t)) return 'it';
+  if (/beauty|salon|spa|makeup|hair|nail|aesthetics/.test(t)) return 'beauty';
+  if (/manufacturing|factory|production|operator|technician|maintenance/.test(t)) return 'manufacturing';
+  if (/\bhr\b|human resources|recruitment|talent acquisition|payroll/.test(t)) return 'admin';
+  if (/admin|office|clerk|data entry|secretary|coordinator|typist|receptionist|مساعد/.test(t)) return 'admin';
+  return 'general';
+}
+
 function normalizeEmirate(raw: string | undefined | null): string | null {
   const key = (raw ?? '').toString().trim().toLowerCase().replace(/[-_]/g, ' ').replace(/\s+/g, ' ');
   if (!key) return null;
@@ -101,11 +121,14 @@ export async function extractAndSaveDraft(text: string, source: string, sourceMe
       );
       const parsed = draftSchema.safeParse(raw);
       const d = (parsed.success ? parsed.data : (raw ?? {})) as Partial<JobDraft> & Record<string, unknown>;
+      // AI over-defaults to 'it'; fall back to keyword detection when it returns 'it' or nothing.
+      const aiCategory = d.categorySlug?.toString().trim().toLowerCase() || '';
+      const finalCategory = aiCategory && aiCategory !== 'it' ? aiCategory : detectCategory(text);
       draft = {
         ...(raw as JobDraft),
         title: (d.title?.toString().trim() || 'Untitled Job').slice(0, 200),
         description: d.description?.toString().trim() || d.title?.toString().trim() || 'See original message for details.',
-        categorySlug: d.categorySlug?.toString().trim() || 'general',
+        categorySlug: finalCategory,
         emirate: normalizeEmirate(d.emirate as string | undefined) ?? 'dubai',
         jobType: (JOB_TYPES as readonly string[]).includes(String(d.jobType)) ? String(d.jobType) : DEFAULT_JOB_TYPE,
         company: (d.company as string | undefined)?.toString().trim() || '',
