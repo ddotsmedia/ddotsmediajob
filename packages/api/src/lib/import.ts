@@ -44,6 +44,22 @@ const draftSchema = z
 
 const DEFAULT_JOB_TYPE = 'full-time';
 
+// Map free-text emirate (slug / EN / AR) to a canonical slug. Empty → null (location unknown).
+const EMIRATE_MAP: Record<string, string> = {
+  dubai: 'dubai', دبي: 'dubai',
+  'abu dhabi': 'abu-dhabi', 'abu-dhabi': 'abu-dhabi', abudhabi: 'abu-dhabi', أبوظبي: 'abu-dhabi', 'أبو ظبي': 'abu-dhabi',
+  sharjah: 'sharjah', الشارقة: 'sharjah',
+  ajman: 'ajman', عجمان: 'ajman',
+  'ras al khaimah': 'ras-al-khaimah', 'ras-al-khaimah': 'ras-al-khaimah', rak: 'ras-al-khaimah', 'رأس الخيمة': 'ras-al-khaimah',
+  fujairah: 'fujairah', الفجيرة: 'fujairah',
+  'umm al quwain': 'umm-al-quwain', 'umm-al-quwain': 'umm-al-quwain', 'أم القيوين': 'umm-al-quwain',
+};
+function normalizeEmirate(raw: string | undefined | null): string | null {
+  const key = (raw ?? '').toString().trim().toLowerCase().replace(/[-_]/g, ' ').replace(/\s+/g, ' ');
+  if (!key) return null;
+  return EMIRATE_MAP[key] ?? EMIRATE_MAP[key.replace(/ /g, '-')] ?? null;
+}
+
 export type SavedDraft = { title: string; slug: string };
 
 async function notifyAdmins(source: string, title: string): Promise<void> {
@@ -90,9 +106,16 @@ export async function extractAndSaveDraft(text: string, source: string, sourceMe
         title: (d.title?.toString().trim() || 'Untitled Job').slice(0, 200),
         description: d.description?.toString().trim() || d.title?.toString().trim() || 'See original message for details.',
         categorySlug: d.categorySlug?.toString().trim() || 'general',
-        emirate: d.emirate?.toString().trim() || 'dubai',
+        emirate: normalizeEmirate(d.emirate as string | undefined) ?? 'dubai',
         jobType: (JOB_TYPES as readonly string[]).includes(String(d.jobType)) ? String(d.jobType) : DEFAULT_JOB_TYPE,
         company: (d.company as string | undefined)?.toString().trim() || '',
+        // Optional booleans — default false when the model omits them.
+        visaProvided: Boolean(d.visaProvided),
+        accommodation: Boolean(d.accommodation),
+        freshersWelcome: Boolean(d.freshersWelcome),
+        remote: Boolean(d.remote),
+        urgent: Boolean(d.urgent),
+        freeZone: Boolean(d.freeZone),
       } as JobDraft;
     } catch (err) {
       aiError = err instanceof Error ? err.message : String(err);

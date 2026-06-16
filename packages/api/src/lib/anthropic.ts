@@ -108,6 +108,24 @@ async function structuredViaAnthropic<T>(system: string, userContent: string, to
   return toolUse.input as T;
 }
 
+// Groq's tool-calling is unreliable with large/strict schemas — ask for plain JSON instead.
+async function structuredViaJson<T>(client: OpenAI, model: string, system: string, userContent: string, tool: Anthropic.Tool, opts: { maxTokens?: number }): Promise<T> {
+  const props = (tool.input_schema as { properties?: Record<string, unknown> }).properties ?? {};
+  const fields = Object.keys(props).join(', ');
+  const res = await client.chat.completions.create({
+    model,
+    max_tokens: opts.maxTokens ?? 1200,
+    response_format: { type: 'json_object' },
+    messages: [
+      { role: 'system', content: `${system}\nReturn ONLY a valid JSON object (no prose, no markdown) with these optional fields: ${fields}. Omit any field you cannot determine.` },
+      { role: 'user', content: userContent },
+    ],
+  });
+  const raw = res.choices[0]?.message?.content ?? '{}';
+  const json = raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1) || '{}';
+  return JSON.parse(json) as T;
+}
+
 async function structuredViaOpenAICompat<T>(client: OpenAI, model: string, system: string, userContent: string, tool: Anthropic.Tool, opts: { maxTokens?: number }): Promise<T> {
   const res = await client.chat.completions.create({
     model,
@@ -143,7 +161,7 @@ export async function structured<T>(
     ? { name: 'gemini', run: () => structuredViaOpenAICompat<T>(getGemini(), process.env.GEMINI_MODEL_FAST ?? 'gemini-2.5-flash', system, userContent, tool, opts) }
     : null;
   const groqAttempt: Attempt | null = GROQ_KEY
-    ? { name: 'groq', run: () => structuredViaOpenAICompat<T>(getGroq(), GROQ_MODEL, system, userContent, tool, opts) }
+    ? { name: 'groq', run: () => structuredViaJson<T>(getGroq(), GROQ_MODEL, system, userContent, tool, opts) }
     : null;
 
   // Preferred provider first, then the rest as fallbacks.
@@ -365,7 +383,7 @@ export const JOB_DRAFT_TOOL: Anthropic.Tool = {
     properties: {
       title: { type: 'string' },
       company: { type: 'string', description: 'Hiring company name, or empty string if unknown' },
-      emirate: { type: 'string', enum: ['dubai', 'abu-dhabi', 'sharjah', 'ajman', 'ras-al-khaimah', 'fujairah', 'umm-al-quwain'], description: 'UAE emirate slug — OMIT entirely if the location is not stated in the source. Do not guess or default to Dubai.' },
+      emirate: { type: 'string', description: 'UAE emirate (slug or name, EN/AR) — empty string if the location is not stated. Do not guess or default to Dubai.' },
       area: { type: 'string' },
       categorySlug: { type: 'string', enum: ['it', 'healthcare', 'finance', 'sales', 'construction', 'hospitality', 'driving', 'education', 'admin', 'manufacturing', 'security', 'beauty'] },
       jobType: { type: 'string', enum: ['full-time', 'part-time', 'contract', 'temporary', 'internship', 'freelance'] },
@@ -396,9 +414,10 @@ export const JOB_DRAFT_TOOL: Anthropic.Tool = {
           salary: { type: 'string', enum: ['high', 'medium', 'low'] },
           jobType: { type: 'string', enum: ['high', 'medium', 'low'] },
         },
-        required: ['title', 'company', 'emirate', 'category', 'salary', 'jobType'],
       },
     },
-    required: ['title', 'company', 'area', 'categorySlug', 'jobType', 'salaryMin', 'salaryMax', 'visaProvided', 'accommodation', 'freshersWelcome', 'remote', 'urgent', 'freeZone', 'description', 'requirements', 'benefits', 'tags', 'contactWhatsapp', 'contactEmail', 'deadline', 'vacancies', 'confidence'],
+    // All fields optional — Groq/Gemini struggle with large `required` lists + strict
+    // enums. import.ts coerces/defaults everything (title, category, emirate, jobType, booleans).
+    required: ['title'],
   },
 };
