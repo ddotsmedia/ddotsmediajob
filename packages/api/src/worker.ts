@@ -23,7 +23,7 @@ import {
   isNotNull,
 } from '@ddots/db';
 import { formatSalary, CATEGORIES } from '@ddots/shared';
-import { QUEUE, bullConnection, enqueueEmail, jobAlertsQueue, maintenanceQueue, type EmailJob, type SearchSyncJob, type AlertScanJob, type AiScoringJob, type MaintenanceJob, type JobEventJob, type WhapiImportJob } from './lib/queue';
+import { QUEUE, bullConnection, getRedis, enqueueEmail, jobAlertsQueue, maintenanceQueue, type EmailJob, type SearchSyncJob, type AlertScanJob, type AiScoringJob, type MaintenanceJob, type JobEventJob, type WhapiImportJob } from './lib/queue';
 import { extractAndSaveDraft, sendWhapiText } from './lib/import';
 import { expireStaleJobs } from './lib/helpers';
 import { sendEmailJob, sendAlertEmail } from './lib/email';
@@ -286,6 +286,41 @@ new Worker<JobEventJob>(
         );
       }
       console.log(`[proactive-match] notified ${seekers.length} seeker(s) for job ${j.id}`);
+
+      // WhatsApp outbound alerts: matching active WA alerts, max 3 WA/user/day.
+      try {
+        const waAlerts = await db.query.jobAlerts.findMany({
+          where: and(eq(jobAlerts.isActive, true), eq(jobAlerts.channel, 'whatsapp'), isNotNull(jobAlerts.whatsappNumber)),
+          limit: 500,
+        });
+        const redis = getRedis();
+        const day = new Date().toISOString().slice(0, 10);
+        const seenNumbers = new Set<string>();
+        for (const a of waAlerts) {
+          // Match: each set filter must agree with the job.
+          if (a.categorySlug && a.categorySlug !== j.categorySlug) continue;
+          if (a.emirateSlug && a.emirateSlug !== j.emirateSlug) continue;
+          if (a.jobType && a.jobType !== j.jobType) continue;
+          if (a.keywords) {
+            const kw = a.keywords.toLowerCase();
+            if (!(`${j.title} ${j.description}`.toLowerCase().includes(kw))) continue;
+          }
+          const num = (a.whatsappNumber ?? '').replace(/\D/g, '');
+          if (!num || seenNumbers.has(num)) continue;
+          seenNumbers.add(num);
+          // Daily cap: 3 WA alerts per user per day.
+          const capKey = `waalert:${a.userId}:${day}`;
+          const n = await redis.incr(capKey);
+          if (n === 1) await redis.expire(capKey, 86_400);
+          if (n > 3) continue;
+          await sendWhapiText(
+            num,
+            `🆕 New job: ${j.title}\n${j.location ?? j.emirateSlug}\nApply: ${APP_URL}/jobs/${j.slug}\n\nReply STOP to unsubscribe from WhatsApp alerts.`,
+          ).catch(() => {});
+        }
+      } catch (err) {
+        console.error('[wa-alerts] failed:', err instanceof Error ? err.message : err);
+      }
       return;
     }
 

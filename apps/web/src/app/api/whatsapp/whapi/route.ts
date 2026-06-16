@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { isJobMessage, sendWhapiText, quickScamVerdict } from '@ddots/api/lib/import';
 import { enqueueWhapiImport } from '@ddots/api/lib/queue';
 import { getWhapiSettings, evaluateCriteria, SKIP_LABEL } from '@ddots/api/lib/whapi-criteria';
+import { db, jobAlerts, eq, and, sql } from '@ddots/db';
 
 const SCAM_INTENT = /scam check|check this job|is this (a )?scam|تحقق/i;
 
@@ -85,6 +86,20 @@ export async function POST(req: Request) {
       const chatId = m.chat_id ?? '';
 
       // Scam-check intent is always answered regardless of import criteria.
+      // STOP → unsubscribe this number from WhatsApp job alerts.
+      if (/^\s*(stop|unsubscribe|الغاء|إلغاء)\s*$/i.test(text)) {
+        const num = (m.from ?? '').replace(/\D/g, '');
+        if (num) {
+          await db
+            .update(jobAlerts)
+            .set({ isActive: false })
+            .where(and(eq(jobAlerts.channel, 'whatsapp'), sql`regexp_replace(${jobAlerts.whatsappNumber}, '[^0-9]', '', 'g') = ${num}`))
+            .catch((e) => console.error('[whapi] unsubscribe failed:', e));
+          await sendWhapiText(m.from ?? num, '✅ You have been unsubscribed from WhatsApp job alerts. Reply anytime to re-enable in your dashboard.').catch(() => {});
+        }
+        continue;
+      }
+
       if (SCAM_INTENT.test(text)) {
         if (from) await sendWhapiText(from, await quickScamVerdict(text));
         continue;
