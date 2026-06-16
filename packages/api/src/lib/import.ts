@@ -14,13 +14,19 @@ const SYSTEM_AR =
   'حوّل المواقع إلى slug الإمارة الصحيح (مثل دبي=dubai، أبوظبي=abu-dhabi، الشارقة=sharjah). ' +
   'حوّل الأرقام العربية إلى إنجليزية (٣٠٠٠ → 3000). إذا لم يُذكر الراتب استخدم 0. حدّد مستوى الثقة لكل حقل.';
 
-// Job keywords in English + Arabic (مطلوب=required, وظيفة=job, شاغر=vacancy, راتب=salary, نبحث=seeking, فرصة عمل=job opportunity).
+// Job keywords across the UAE's main jobseeker languages: English, Arabic,
+// Malayalam, Hindi, Tagalog and Urdu.
 const JOB_KEYWORDS =
-  /hiring|now hiring|vacanc|required|wanted|recruit|\bjobs?\b|job opening|positions?|position available|urgently|walk[\s-]?in|salary|send\s+(cv|resume)|whatsapp\s+cv|candidate|looking for|we\s+(are\s+)?(looking|need)|seeking|opening|opportunit(y|ies)|career opportunity|join our team|apply now|مطلوب|وظيفة|شاغر|راتب|توظيف|نبحث|فرصة\s*عمل/i;
+  /hiring|now hiring|vacanc|required|wanted|recruit|\bjobs?\b|job opening|positions?|position available|urgently|walk[\s-]?in|salary|send\s+(cv|resume)|whatsapp\s+cv|candidate|looking for|we\s+(are\s+)?(looking|need)|seeking|opening|opportunit(y|ies)|career opportunity|join our team|apply now|مطلوب|وظيفة|شاغر|راتب|توظيف|نبحث|فرصة\s*عمل|ആവശ്യമുണ്ട്|ജോലി|വേക്കൻസി|സാലറി|ഹയർ|നിയമനം|അവസരം|ഡ്രൈവർ|നഴ്സ്|അക്കൗണ്ടന്റ്|ജോലിക്ക്|പ്രവൃത്തി|चाहिए|नौकरी|वेकेंसी|सैलरी|ड्राइवर|नर्स|काम|हायरिंग|naghahanap|trabaho|sweldo|kailangan|\bdriver\b|\bnurse\b|درکار|نوکری|تنخواہ|ملازمت|چاہیے/i;
 
-/** Quick keyword gate so we don't burn AI on non-job chatter. */
+// Phone + salary-figure heuristic — many non-English posts skip explicit keywords.
+const PHONE_RE = /(\+?\d[\d\s().\-]{7,}\d)/;
+const SALARY_NUM_RE = /\b\d{3,6}\b/;
+
+/** Quick gate so we don't burn AI on non-job chatter. Keyword OR phone+salary. */
 export function isJobMessage(text: string): boolean {
-  return JOB_KEYWORDS.test(text);
+  if (JOB_KEYWORDS.test(text)) return true;
+  return PHONE_RE.test(text) && SALARY_NUM_RE.test(text);
 }
 
 // Lenient — every field optional. We apply safe defaults rather than throw, so a
