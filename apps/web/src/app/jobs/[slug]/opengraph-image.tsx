@@ -14,7 +14,7 @@ export default async function Image({ params }: { params: { slug: string } }) {
     const j = await api.jobs.bySlug({ slug: params.slug });
     job = {
       title: j.title,
-      companyName: j.company?.name ?? 'Confidential',
+      companyName: j.company?.name ?? 'Direct Employer',
       location: j.location ?? emirateBySlug(j.emirateSlug)?.name ?? 'UAE',
       salary: formatSalary(j.salaryMin, j.salaryMax, j.salaryPeriod, j.salaryHidden),
     };

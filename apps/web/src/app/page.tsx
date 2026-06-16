@@ -229,7 +229,7 @@ function LatestJobCard({ job }: { job: RecentJob }) {
           {job.source === 'whapi' && <Badge className="bg-[#25D366]/15 text-[#1a8a4d]">via WhatsApp</Badge>}
         </span>
       </div>
-      <p className="text-sm text-navy-700/70">{job.company?.name ?? 'Confidential Company'}</p>
+      <p className="text-sm text-navy-700/70">{job.company?.name ?? 'Direct Employer'}</p>
       <div className="flex flex-wrap items-center gap-2 text-xs text-navy-700/60">
         <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {emirate}</span>
         <Badge variant="muted">{category}</Badge>

@@ -73,7 +73,7 @@ export function JobCard({ job }: { job: JobCardData }) {
             })()}
           </div>
           <p className="flex items-center gap-1 text-sm text-navy-700/70">
-            {job.isAnonymous ? 'Confidential Company' : (job.company?.name ?? 'Confidential')}
+            {job.isAnonymous ? 'Confidential Company' : (job.company?.name ?? 'Direct Employer')}
             {!job.isAnonymous && job.company?.isVerified && (
               <span title="Verified Employer"><BadgeCheck className="h-4 w-4 text-teal-500" /></span>
             )}

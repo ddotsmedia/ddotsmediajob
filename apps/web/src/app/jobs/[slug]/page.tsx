@@ -60,7 +60,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const job = await loadJob(slug);
   if (!job) return { title: 'Job not found' };
   const emirate = emirateBySlug(job.emirateSlug)?.name ?? 'UAE';
-  const title = `${job.title} — ${job.company?.name ?? 'Confidential'} in ${emirate}`;
+  const title = `${job.title} — ${job.company?.name ?? 'Direct Employer'} in ${emirate}`;
   const description = job.description.replace(/[#*]/g, '').slice(0, 155);
   return {
     title,
@@ -107,7 +107,7 @@ export default async function JobDetailPage({ params }: Props) {
     employmentType: GTAG_EMPLOYMENT[job.jobType] ?? 'FULL_TIME',
     hiringOrganization: {
       '@type': 'Organization',
-      name: job.company?.name ?? 'Confidential',
+      name: job.company?.name ?? 'Direct Employer',
       logo: job.company?.logoUrl ?? undefined,
     },
     jobLocation: {
@@ -174,7 +174,7 @@ export default async function JobDetailPage({ params }: Props) {
                       {job.viewCount > 50 && <Badge variant="urgent">🔥 Popular</Badge>}
                     </div>
                     <p className="mt-1 flex items-center gap-1 text-navy-700">
-                      {job.isAnonymous ? `Confidential Company · ${categoryBySlug(job.categorySlug)?.name ?? ''}` : (job.company?.name ?? 'Confidential')}
+                      {job.isAnonymous ? `Confidential Company · ${categoryBySlug(job.categorySlug)?.name ?? ''}` : (job.company?.name ?? 'Direct Employer')}
                       {!job.isAnonymous && job.company?.isVerified && <BadgeCheck className="h-4 w-4 text-teal-500" />}
                     </p>
                     <div className="mt-1.5 space-y-1 text-xs text-navy-700/60">

@@ -42,7 +42,7 @@ export default async function WalkInPage({ searchParams }: { searchParams: Promi
         startDate: j.walkInDate ?? undefined,
         eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
         location: { '@type': 'Place', name: j.walkInVenue ?? emirateBySlug(j.emirateSlug)?.name, address: j.walkInVenue ?? undefined },
-        organizer: { '@type': 'Organization', name: j.company?.name ?? 'Confidential' },
+        organizer: { '@type': 'Organization', name: j.company?.name ?? 'Direct Employer' },
         url: `${SITE.url}/jobs/${j.slug}`,
       },
     })),
@@ -83,7 +83,7 @@ export default async function WalkInPage({ searchParams }: { searchParams: Promi
                       {j.isFeatured && <Badge className="bg-orange-100 text-orange-700">⭐ Featured</Badge>}
                       {cat && <Badge variant="muted">{cat.name}</Badge>}
                     </div>
-                    <p className="text-sm text-navy-700/70">{j.company?.name ?? 'Confidential'} · {emirateBySlug(j.emirateSlug)?.name}{j.location ? `, ${j.location}` : ''}</p>
+                    <p className="text-sm text-navy-700/70">{j.company?.name ?? 'Direct Employer'} · {emirateBySlug(j.emirateSlug)?.name}{j.location ? `, ${j.location}` : ''}</p>
                     <div className="mt-2 space-y-0.5 text-sm text-navy-700">
                       {j.walkInTime && <p className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5 text-orange-500" /> {j.walkInTime}</p>}
                       {j.walkInVenue && <p className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-orange-500" /> {j.walkInVenue}</p>}

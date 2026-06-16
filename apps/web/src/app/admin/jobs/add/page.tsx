@@ -312,7 +312,7 @@ function WhatsAppTab() {
         <div className="space-y-2">
           {drafts.data?.map((d) => (
             <div key={d.id} className="flex items-center justify-between rounded-xl border bg-white p-4">
-              <div><p className="font-semibold text-navy-900">{d.title}</p><p className="text-xs text-navy-700/50">{d.company?.name ?? 'Confidential'}</p></div>
+              <div><p className="font-semibold text-navy-900">{d.title}</p><p className="text-xs text-navy-700/50">{d.company?.name ?? 'Direct Employer'}</p></div>
               <Button size="sm" onClick={() => publish.mutate({ id: d.id })}>Publish</Button>
             </div>
           ))}

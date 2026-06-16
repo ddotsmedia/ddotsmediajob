@@ -79,7 +79,7 @@ export function SalaryComparisonClient() {
                   <Link key={j.slug} href={`/jobs/${j.slug}`} className="flex items-center justify-between gap-3 py-3 hover:text-teal-700">
                     <span className="min-w-0">
                       <span className="block truncate font-medium text-navy-900">{j.title}</span>
-                      <span className="block text-xs text-navy-700/50">{j.company?.name ?? 'Confidential'}</span>
+                      <span className="block text-xs text-navy-700/50">{j.company?.name ?? 'Direct Employer'}</span>
                     </span>
                     <span className="shrink-0 text-sm font-semibold text-teal-700">{formatSalary(j.salaryMin, j.salaryMax, j.salaryPeriod, j.salaryHidden, j.salaryNegotiable)}</span>
                   </Link>

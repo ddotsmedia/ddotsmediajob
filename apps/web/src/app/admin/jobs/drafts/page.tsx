@@ -81,7 +81,7 @@ export default function DraftsPage() {
             <tbody>
               {drafts.data?.map((d) => (
                 <tr key={d.id} className="border-b last:border-0">
-                  <td className="px-4 py-3 font-medium text-navy-900">{d.title}<span className="block text-xs font-normal text-navy-700/50">{d.company?.name ?? 'Confidential'}</span></td>
+                  <td className="px-4 py-3 font-medium text-navy-900">{d.title}<span className="block text-xs font-normal text-navy-700/50">{d.company?.name ?? 'Direct Employer'}</span></td>
                   <td className="px-4 py-3"><SourceBadge source={d.source} /></td>
                   <td className="px-4 py-3"><SenderCell meta={d.sourceMetadata as SenderMeta | null} /></td>
                   <td className="px-4 py-3 text-navy-700/50">Created {formatRelative(d.createdAt)}</td>
@@ -172,7 +172,7 @@ function EditModal({ draft, onClose, onDone }: { draft: Draft; onClose: () => vo
             );
           })()}
           <Field label="Job Title"><Input value={f.title} onChange={(e) => set('title', e.target.value)} /></Field>
-          <Field label="Company"><Input value={f.companyName} onChange={(e) => set('companyName', e.target.value)} placeholder="Confidential" /></Field>
+          <Field label="Company"><Input value={f.companyName} onChange={(e) => set('companyName', e.target.value)} placeholder="Direct Employer" /></Field>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Category"><Select value={f.categorySlug} onChange={(e) => set('categorySlug', e.target.value)}>{CATEGORIES.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}</Select></Field>
             <Field label="Emirate"><Select value={f.emirateSlug} onChange={(e) => set('emirateSlug', e.target.value)}><option value="">Select emirate</option>{EMIRATES.map((em) => <option key={em.slug} value={em.slug}>{em.name}</option>)}</Select></Field>
