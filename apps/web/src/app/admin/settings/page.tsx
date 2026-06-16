@@ -111,7 +111,12 @@ export default function AdminSettingsPage() {
       </div>
 
       <div className="mt-6 rounded-xl border bg-white p-6">
-        <h2 className="font-display text-lg font-bold text-navy-900">Integrations</h2>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="font-display text-lg font-bold text-navy-900">Integrations</h2>
+          <a href="/admin/settings/whapi" className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium text-navy-700 hover:border-[#25D366] hover:text-[#1a8a4d]">
+            WhatsApp Import →
+          </a>
+        </div>
         <p className="text-sm text-navy-700/60">Optional services. The site works without them — each has a built-in fallback.</p>
         <div className="mt-4 divide-y">
           {INTEGRATIONS.map((row) => {

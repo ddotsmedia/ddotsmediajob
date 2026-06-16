@@ -16,6 +16,7 @@ import {
   whatsappAdmins,
   whatsappBotLogs,
   securityLogs,
+  whapiSettings,
   eq,
   and,
   desc,
@@ -45,6 +46,8 @@ import { isSearchConfigured, ensureJobsIndex, bulkUpsert, ping as searchPing, in
 import { isIndexingConfigured, submitUrl } from '../lib/google-indexing';
 import { ensureVectorSetup, upsertJobEmbedding } from '../lib/embeddings';
 import { blockIp, unblockIp, ipBlockingEnabled } from '../lib/security-log';
+import { getWhapiSettings, invalidateWhapiSettings, evaluateCriteria, SKIP_LABEL } from '../lib/whapi-criteria';
+import { isJobMessage } from '../lib/import';
 
 /** Shared shape for admin-created jobs (from any of the 6 ingestion methods). */
 const adminJobInput = z.object({
@@ -860,6 +863,54 @@ export const adminRouter = router({
     await audit(ctx.session.user.id, 'admin.search.reindex', 'job', undefined, { indexed: rows.length });
     return { indexed: rows.length, configured: true };
   }),
+
+  // ─── Whapi import settings ─────────────────────────────────────────
+  whapiSettings: adminProcedure.query(() => getWhapiSettings()),
+
+  saveWhapiSettings: adminProcedure
+    .input(
+      z.object({
+        minTextLength: z.number().int().min(1).max(1000),
+        requireSalary: z.boolean(),
+        requireContact: z.boolean(),
+        requireLocation: z.boolean(),
+        allowedGroups: z.array(z.string().max(200)).max(500),
+        blockedNumbers: z.array(z.string().max(40)).max(500),
+        blockedKeywords: z.array(z.string().max(80)).max(500),
+        customKeywords: z.array(z.string().max(80)).max(500),
+        blockOwnMessages: z.boolean(),
+        autoPublish: z.boolean(),
+        replyOnSuccess: z.boolean(),
+        replyOnSkip: z.boolean(),
+        successMessage: z.string().max(1000).nullable(),
+        skipMessage: z.string().max(1000).nullable(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const existing = await ctx.db.query.whapiSettings.findFirst({ columns: { id: true } });
+      if (existing) {
+        await ctx.db.update(whapiSettings).set(input).where(eq(whapiSettings.id, existing.id));
+      } else {
+        await ctx.db.insert(whapiSettings).values(input);
+      }
+      await invalidateWhapiSettings();
+      await audit(ctx.session.user.id, 'admin.whapi.settings', 'site_settings', undefined, input);
+      return { ok: true };
+    }),
+
+  testWhapiCriteria: adminProcedure
+    .input(z.object({ text: z.string().max(8000), chatId: z.string().max(200).optional(), from: z.string().max(40).optional() }))
+    .mutation(async ({ input }) => {
+      const settings = await getWhapiSettings();
+      const r = evaluateCriteria(input.text, { from: input.from, chatId: input.chatId, isJobKeyword: isJobMessage }, settings);
+      return {
+        ok: r.ok,
+        reason: r.reason ?? null,
+        label: r.reason ? SKIP_LABEL[r.reason] : null,
+        detail: r.detail ?? null,
+        action: r.ok ? (settings.autoPublish ? 'publish' : 'draft') : 'skip',
+      };
+    }),
 
   /** Uptime monitor stats (written by the worker's 5-min health ping). */
   uptimeStatus: adminProcedure.query(async ({ ctx }) => {

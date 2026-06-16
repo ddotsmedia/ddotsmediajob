@@ -583,6 +583,26 @@ export const shortLinks = pgTable(
   (t) => [uniqueIndex('short_links_code_idx').on(t.code), index('short_links_job_idx').on(t.jobId)],
 );
 
+// ─── Whapi import settings (single-row config) ───────────
+export const whapiSettings = pgTable('whapi_settings', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  minTextLength: integer('min_text_length').default(30).notNull(),
+  requireSalary: boolean('require_salary').default(false).notNull(),
+  requireContact: boolean('require_contact').default(false).notNull(),
+  requireLocation: boolean('require_location').default(false).notNull(),
+  allowedGroups: jsonb('allowed_groups').$type<string[]>().default([]).notNull(),
+  blockedNumbers: jsonb('blocked_numbers').$type<string[]>().default([]).notNull(),
+  blockedKeywords: jsonb('blocked_keywords').$type<string[]>().default([]).notNull(),
+  customKeywords: jsonb('custom_keywords').$type<string[]>().default([]).notNull(),
+  blockOwnMessages: boolean('block_own_messages').default(true).notNull(),
+  autoPublish: boolean('auto_publish').default(false).notNull(),
+  replyOnSuccess: boolean('reply_on_success').default(true).notNull(),
+  replyOnSkip: boolean('reply_on_skip').default(false).notNull(),
+  successMessage: text('success_message'),
+  skipMessage: text('skip_message'),
+  ...timestamps,
+});
+
 // ─── Site settings (key/value) ───────────────────────────
 export const siteSettings = pgTable('site_settings', {
   key: varchar('key', { length: 80 }).primaryKey(),

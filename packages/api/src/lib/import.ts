@@ -41,7 +41,7 @@ const DEFAULT_JOB_TYPE = 'full-time';
 export type SavedDraft = { title: string; slug: string };
 
 /** Extract a job from free text via Haiku and save a DRAFT (never auto-published). */
-export async function extractAndSaveDraft(text: string, source: string, sourceMetadata?: Record<string, unknown>): Promise<SavedDraft | null> {
+export async function extractAndSaveDraft(text: string, source: string, sourceMetadata?: Record<string, unknown>, opts?: { autoPublish?: boolean }): Promise<SavedDraft | null> {
  try {
   // Arabic messages → Arabic-optimised prompt + Sonnet (better Arabic); else Haiku.
   const isArabic = detectLanguage(text) === 'ar';
@@ -103,7 +103,8 @@ export async function extractAndSaveDraft(text: string, source: string, sourceMe
     benefits: draft.benefits ?? [],
     contactWhatsapp: draft.contactWhatsapp || null,
     applyEmail: draft.contactEmail || null,
-    status: 'draft',
+    status: opts?.autoPublish ? 'active' : 'draft',
+    publishedAt: opts?.autoPublish ? new Date() : null,
     source,
     sourceMetadata,
     aiGenerated: true,

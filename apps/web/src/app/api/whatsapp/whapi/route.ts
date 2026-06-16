@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { extractAndSaveDraft, isJobMessage, sendWhapiText, quickScamVerdict } from '@ddots/api/lib/import';
 import { rateLimit } from '@ddots/api/lib/security';
+import { getWhapiSettings, evaluateCriteria, SKIP_LABEL } from '@ddots/api/lib/whapi-criteria';
 
 const SCAM_INTENT = /scam check|check this job|is this (a )?scam|تحقق/i;
 
@@ -71,35 +72,56 @@ export async function POST(req: Request) {
     [];
   console.log(`[whapi] parsed ${messages.length} message(s)`);
 
+  const settings = await getWhapiSettings();
+
   try {
     for (const m of messages) {
-      if (m.from_me) { console.log('[whapi] skip: from_me'); continue; }
+      if (m.from_me && settings.blockOwnMessages) { console.log('[whapi] skip: from_me'); continue; }
       // Skip non-textual events fast (reactions, statuses, calls, etc.).
       if (m.type && !TEXTUAL_TYPES.includes(m.type)) { console.log('[whapi] skip: type', m.type); continue; }
       const text = getText(m);
       const from = m.from ?? m.chat_id ?? '';
-      if (text.length < 15) { console.log('[whapi] skip: too short', text.length); continue; }
+      const chatId = m.chat_id ?? '';
 
+      // Scam-check intent is always answered regardless of import criteria.
       if (SCAM_INTENT.test(text)) {
         if (from) await sendWhapiText(from, await quickScamVerdict(text));
         continue;
       }
-      if (!isJobMessage(text)) { console.log('[whapi] skip: not a job message:', text.slice(0, 80)); continue; }
+
+      // Apply admin-configured import criteria.
+      const verdict = evaluateCriteria(text, { from, chatId, isJobKeyword: isJobMessage }, settings);
+      if (!verdict.ok) {
+        console.log(`[whapi] skip: ${verdict.reason}${verdict.detail ? ` (${verdict.detail})` : ''}`);
+        if (settings.replyOnSkip && settings.skipMessage && from) {
+          await sendWhapiText(from, settings.skipMessage.replace('[reason]', SKIP_LABEL[verdict.reason!] ?? verdict.reason ?? ''));
+        }
+        continue;
+      }
 
       const rl = await rateLimit('import:whapi', 20, 3600); // max 20 AI extractions/hour
       if (!rl.ok) { if (from) await sendWhapiText(from, 'Too many imports this hour — try again later.'); break; }
       try {
-        const saved = await extractAndSaveDraft(text, 'whapi', {
-          from,
-          fromName: m.from_name ?? m.chat_name ?? null,
-          chatId: m.chat_id ?? null,
-          chatName: m.chat_name ?? null,
-          receivedAt: m.timestamp ? new Date(m.timestamp * 1000).toISOString() : new Date().toISOString(),
-          raw: text.slice(0, 1000),
-        });
+        const saved = await extractAndSaveDraft(
+          text,
+          'whapi',
+          {
+            from,
+            fromName: m.from_name ?? m.chat_name ?? null,
+            chatId: m.chat_id ?? null,
+            chatName: m.chat_name ?? null,
+            receivedAt: m.timestamp ? new Date(m.timestamp * 1000).toISOString() : new Date().toISOString(),
+            raw: text.slice(0, 1000),
+          },
+          { autoPublish: settings.autoPublish },
+        );
         if (!saved) { console.error('[whapi] extraction returned null (no admin user, or AI rejected the message)'); continue; }
-        console.log('[whapi] draft created:', saved.slug);
-        if (from) await sendWhapiText(from, `✅ Job draft created: ${saved.title}\nReview at https://ddotsmediajobs.com/admin/jobs/drafts`);
+        console.log(`[whapi] ${settings.autoPublish ? 'published' : 'draft created'}:`, saved.slug);
+        if (settings.replyOnSuccess && from) {
+          const link = `https://ddotsmediajobs.com/admin/jobs/drafts`;
+          const msg = (settings.successMessage ?? '✅ Job created: [title]').replace('[title]', saved.title).replace('[link]', link);
+          await sendWhapiText(from, msg);
+        }
       } catch (err) {
         console.error('[whapi] extraction error:', err instanceof Error ? err.message : err);
       }
