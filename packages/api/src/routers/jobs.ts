@@ -123,10 +123,21 @@ export const jobsRouter = router({
   /** Semantically similar jobs (pgvector). Empty when embeddings unavailable. */
   similar: publicProcedure.input(z.object({ jobId: z.string().uuid(), limit: z.number().min(1).max(12).default(6) })).query(async ({ ctx, input }) => {
     const ids = await similarJobIds(input.jobId, input.limit);
-    if (!ids.length) return [];
-    const rows = await ctx.db.query.jobs.findMany({ where: and(inArray(jobs.id, ids), eq(jobs.status, 'active')), with: { company: { columns: { name: true, logoUrl: true, isVerified: true } } } });
-    const byId = new Map(rows.map((r) => [r.id, r]));
-    return ids.map((id) => byId.get(id)).filter((r): r is (typeof rows)[number] => !!r);
+    if (ids.length) {
+      const rows = await ctx.db.query.jobs.findMany({ where: and(inArray(jobs.id, ids), eq(jobs.status, 'active')), with: { company: { columns: { name: true, logoUrl: true, isVerified: true } } } });
+      const byId = new Map(rows.map((r) => [r.id, r]));
+      const ordered = ids.map((id) => byId.get(id)).filter((r): r is (typeof rows)[number] => !!r);
+      if (ordered.length) return ordered;
+    }
+    // Fallback (no pgvector / no matches): same category + emirate, newest first.
+    const src = await ctx.db.query.jobs.findFirst({ where: eq(jobs.id, input.jobId), columns: { categorySlug: true, emirateSlug: true } });
+    if (!src) return [];
+    return ctx.db.query.jobs.findMany({
+      where: and(eq(jobs.status, 'active'), eq(jobs.categorySlug, src.categorySlug), eq(jobs.emirateSlug, src.emirateSlug), sql`${jobs.id} <> ${input.jobId}`),
+      orderBy: [desc(jobs.publishedAt)],
+      limit: input.limit,
+      with: { company: { columns: { name: true, logoUrl: true, isVerified: true } } },
+    });
   }),
 
   /** Public single job by slug; increments view count. */
