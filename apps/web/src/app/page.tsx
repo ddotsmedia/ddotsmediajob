@@ -9,6 +9,7 @@ import { JobSearchBar } from '@/components/job-search-bar';
 import { JobCard } from '@/components/job-card';
 import { CategoryIcon } from '@/components/category-icon';
 import { NumberTicker } from '@/components/magic/number-ticker';
+import { JobTicker } from '@/components/job-ticker';
 import { GridPattern } from '@/components/magic/grid-pattern';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/primitives';
@@ -29,8 +30,9 @@ export default async function HomePage() {
   const [stats, featured, recent] = await Promise.all([
     api.jobs.stats().catch(() => EMPTY_STATS),
     api.jobs.featured({ limit: 6 }).catch(() => [] as Awaited<ReturnType<typeof api.jobs.featured>>),
-    api.jobs.recent({ limit: 6 }).catch(() => [] as Awaited<ReturnType<typeof api.jobs.recent>>),
+    api.jobs.recent({ limit: 10 }).catch(() => [] as Awaited<ReturnType<typeof api.jobs.recent>>),
   ]);
+  const tickerItems = recent.map((j) => ({ slug: j.slug, title: j.title, emirateSlug: j.emirateSlug, publishedAt: j.publishedAt }));
 
   const jsonLd = [
     {
@@ -106,6 +108,9 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* ── Live jobs ticker ───────────────────────────── */}
+      <JobTicker items={tickerItems} />
+
       {/* ── Latest Jobs (primary) ──────────────────────── */}
       <section className="mx-auto max-w-7xl px-4 py-16">
         <SectionHead title="Latest Jobs" subtitle="Freshly posted roles across the UAE" href="/jobs" />
@@ -118,7 +123,7 @@ export default async function HomePage() {
         ) : (
           <>
             <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {recent.map((job) => (
+              {recent.slice(0, 6).map((job) => (
                 <LatestJobCard key={job.id} job={job} />
               ))}
             </div>

@@ -164,6 +164,12 @@ label {
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 
+/* Marquee ticker (.animate-ticker). Track is duplicated; -50% loops seamlessly. Pause on hover. */
+@keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.animate-ticker { animation: ticker 40s linear infinite; }
+.ticker-pause:hover .animate-ticker { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) { .animate-ticker { animation: none; } }
+
 /* iOS safe-area helpers. */
 .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
 .pt-safe { padding-top: env(safe-area-inset-top); }
