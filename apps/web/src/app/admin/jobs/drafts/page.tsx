@@ -42,9 +42,9 @@ function SenderCell({ meta }: { meta?: SenderMeta | null }) {
   const phone = formatPhone(meta?.from);
   if (!phone) return <span className="text-navy-700/40">—</span>;
   return (
-    <div className="leading-tight">
-      {meta?.fromName && <span className="block text-xs text-navy-700/50">{meta.fromName}</span>}
-      <a href={`https://wa.me/${waDigits(meta?.from)}`} target="_blank" rel="noopener noreferrer" className="font-medium text-teal-700 hover:underline">
+    <div className="max-w-[120px] leading-tight">
+      {meta?.fromName && <span className="block truncate text-xs text-navy-700/50">{meta.fromName}</span>}
+      <a href={`https://wa.me/${waDigits(meta?.from)}`} target="_blank" rel="noopener noreferrer" className="block truncate text-xs font-medium text-teal-700 hover:underline">
         {phone}
       </a>
     </div>
@@ -78,31 +78,57 @@ export default function DraftsPage() {
         </Select>
       </div>
 
-      <div className="mt-6 overflow-hidden rounded-xl border bg-white">
-        {drafts.isLoading ? <Loader2 className="m-6 animate-spin text-teal-500" /> : (
-          <table className="w-full text-sm">
-            <thead className="border-b bg-navy-50 text-left text-navy-700"><tr><th className="px-4 py-3">Title</th><th className="px-4 py-3">Source</th><th className="px-4 py-3">Sender</th><th className="px-4 py-3">Created</th><th className="px-4 py-3"></th></tr></thead>
-            <tbody>
-              {drafts.data?.map((d) => (
-                <tr key={d.id} className="border-b last:border-0">
-                  <td className="px-4 py-3 font-medium text-navy-900">{d.title}<span className="block text-xs font-normal text-navy-700/50">{d.company?.name ?? 'Direct Employer'}</span></td>
-                  <td className="px-4 py-3"><SourceBadge source={d.source} /></td>
-                  <td className="px-4 py-3"><SenderCell meta={d.sourceMetadata as SenderMeta | null} /></td>
-                  <td className="px-4 py-3 text-navy-700/50">Created {formatRelative(d.createdAt)}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex justify-end gap-1">
-                      <Button size="sm" onClick={() => setEditing(d as Draft)}><Pencil /> Review &amp; Edit</Button>
-                      <Button size="sm" variant="outline" onClick={() => publish.mutate({ id: d.id })}><Send /> Publish</Button>
-                      <Button variant="ghost" size="icon" onClick={() => del.mutate({ id: d.id })}><Trash2 className="text-red-500" /></Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {drafts.data?.length === 0 && <tr><td colSpan={5} className="px-4 py-12 text-center text-navy-700/60">No drafts.</td></tr>}
-            </tbody>
-          </table>
-        )}
-      </div>
+      {drafts.isLoading ? (
+        <Loader2 className="mt-6 animate-spin text-teal-500" />
+      ) : (
+        <>
+          {/* Desktop table */}
+          <div className="mt-6 hidden overflow-hidden rounded-xl border bg-white md:block">
+            <table className="w-full text-sm">
+              <thead className="border-b bg-navy-50 text-left text-navy-700"><tr><th className="px-4 py-3">Title</th><th className="px-4 py-3">Source</th><th className="px-4 py-3">Sender</th><th className="px-4 py-3">Created</th><th className="px-4 py-3"></th></tr></thead>
+              <tbody>
+                {drafts.data?.map((d) => (
+                  <tr key={d.id} className="border-b last:border-0">
+                    <td className="px-4 py-3 font-medium text-navy-900">{d.title}<span className="block text-xs font-normal text-navy-700/50">{d.company?.name ?? 'Direct Employer'}</span></td>
+                    <td className="px-4 py-3"><SourceBadge source={d.source} /></td>
+                    <td className="px-4 py-3"><SenderCell meta={d.sourceMetadata as SenderMeta | null} /></td>
+                    <td className="whitespace-nowrap px-4 py-3 text-navy-700/50">Created {formatRelative(d.createdAt)}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex justify-end gap-1">
+                        <Button size="sm" onClick={() => setEditing(d as Draft)}><Pencil /> Review &amp; Edit</Button>
+                        <Button size="sm" variant="outline" onClick={() => publish.mutate({ id: d.id })}><Send /> Publish</Button>
+                        <Button variant="ghost" size="icon" onClick={() => del.mutate({ id: d.id })}><Trash2 className="text-red-500" /></Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {drafts.data?.length === 0 && <tr><td colSpan={5} className="px-4 py-12 text-center text-navy-700/60">No drafts.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile cards */}
+          <div className="mt-6 space-y-3 md:hidden">
+            {drafts.data?.map((d) => (
+              <div key={d.id} className="rounded-xl border bg-white p-4">
+                <p className="font-semibold text-navy-900">{d.title}</p>
+                <p className="text-xs text-navy-700/50">{d.company?.name ?? 'Direct Employer'}</p>
+                <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+                  <SourceBadge source={d.source} />
+                  <SenderCell meta={d.sourceMetadata as SenderMeta | null} />
+                </div>
+                <p className="mt-1 text-xs text-navy-700/50">Created {formatRelative(d.createdAt)}</p>
+                <div className="mt-3 flex gap-2">
+                  <Button size="sm" className="flex-1" onClick={() => setEditing(d as Draft)}><Pencil className="h-4 w-4" /> Review</Button>
+                  <Button size="sm" variant="outline" className="flex-1" onClick={() => publish.mutate({ id: d.id })}><Send className="h-4 w-4" /> Publish</Button>
+                  <Button size="icon" variant="outline" aria-label="Delete" onClick={() => { if (confirm('Delete draft?')) del.mutate({ id: d.id }); }}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                </div>
+              </div>
+            ))}
+            {drafts.data?.length === 0 && <p className="rounded-xl border bg-white px-4 py-12 text-center text-navy-700/60">No drafts.</p>}
+          </div>
+        </>
+      )}
 
       {editing && <EditModal draft={editing} onClose={() => setEditing(null)} onDone={() => { setEditing(null); inval(); }} />}
     </div>

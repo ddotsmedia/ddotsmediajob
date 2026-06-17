@@ -54,7 +54,7 @@ export function MobileTabs({ items, variant = 'light' }: { items: NavItem[]; var
   const pathname = usePathname();
   const dark = variant === 'dark';
   return (
-    <div className={cn('flex gap-1 overflow-x-auto border-b px-2 lg:hidden', dark ? 'border-navy-800 bg-navy-900' : 'bg-white')}>
+    <div className={cn('flex gap-1 overflow-x-auto border-b px-2 scrollbar-hide lg:hidden', dark ? 'border-navy-800 bg-navy-900' : 'bg-white')}>
       {items.map((item) => {
         const active = pathname === item.href;
         return (
