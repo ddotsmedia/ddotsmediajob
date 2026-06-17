@@ -9,8 +9,8 @@ import { trpc } from '@/trpc/react';
 import { Button } from '@/components/ui/button';
 import { Input, Label, Select } from '@/components/ui/primitives';
 
-export function SalaryComparisonClient() {
-  const [f, setF] = useState({ title: '', salary: '', emirateSlug: '', categorySlug: '' });
+export function SalaryComparisonClient({ defaultTitle = '', defaultEmirate = '' }: { defaultTitle?: string; defaultEmirate?: string }) {
+  const [f, setF] = useState({ title: defaultTitle, salary: '', emirateSlug: defaultEmirate, categorySlug: '' });
   const [args, setArgs] = useState<{ title: string; salary: number; emirateSlug?: string; categorySlug?: string } | null>(null);
   const q = trpc.content.salaryCompare.useQuery(args!, { enabled: !!args });
 

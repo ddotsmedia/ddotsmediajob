@@ -6,7 +6,8 @@ export const metadata: Metadata = {
   description: 'Compare your salary against the UAE market by role, emirate and experience. See if you are paid below, at, or above market — and find jobs paying more.',
 };
 
-export default function SalaryComparisonPage() {
+export default async function SalaryComparisonPage({ searchParams }: { searchParams: Promise<{ title?: string; emirate?: string }> }) {
+  const sp = await searchParams;
   return (
     <div className="bg-navy-50/30">
       <div className="border-b bg-navy-900 py-8">
@@ -16,7 +17,7 @@ export default function SalaryComparisonPage() {
         </div>
       </div>
       <div className="mx-auto max-w-3xl px-4 py-8">
-        <SalaryComparisonClient />
+        <SalaryComparisonClient defaultTitle={sp.title ?? ''} defaultEmirate={sp.emirate ?? ''} />
       </div>
     </div>
   );
