@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input, Label, Textarea, Select } from '@/components/ui/primitives';
 
 /** No-login Quick Apply: opens a modal, sends name + WhatsApp to the employer. */
-export function QuickApplyButton({ jobId, className }: { jobId: string; className?: string }) {
+export function QuickApplyButton({ jobId, className, preferWhatsapp, preferEmail }: { jobId: string; className?: string; preferWhatsapp?: string | null; preferEmail?: string | null }) {
   const [open, setOpen] = useState(false);
   const [done, setDone] = useState(false);
   const [f, setF] = useState({ name: '', whatsapp: '', experienceYears: '', message: '' });
@@ -49,6 +49,11 @@ export function QuickApplyButton({ jobId, className }: { jobId: string; classNam
               </div>
             ) : (
               <div className="space-y-3 p-5">
+                {(preferWhatsapp || preferEmail) && (
+                  <p className="rounded-lg bg-teal-50 px-3 py-2 text-xs text-teal-800">
+                    {preferWhatsapp ? 'This employer prefers applications via WhatsApp.' : `Send your CV to: ${preferEmail}`}
+                  </p>
+                )}
                 <div className="space-y-1.5"><Label>Your name *</Label><Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="Full name" /></div>
                 <div className="space-y-1.5"><Label>WhatsApp number *</Label><Input type="tel" value={f.whatsapp} onChange={(e) => setF({ ...f, whatsapp: e.target.value })} placeholder="+971 50 123 4567" /></div>
                 <div className="space-y-1.5">

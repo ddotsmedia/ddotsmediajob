@@ -344,6 +344,43 @@ export default async function JobDetailPage({ params }: Props) {
               </CardContent>
             </Card>
 
+            {/* How to apply — direct contact methods */}
+            {(() => {
+              const wa = (job.applyWhatsapp || job.contactWhatsapp || '').replace(/\D/g, '');
+              const email = job.applyEmail;
+              if (!wa && !email && !job.applyUrl) return null;
+              const fmtWa = wa.startsWith('971') && wa.length === 12 ? `+971 ${wa.slice(3, 5)} ${wa.slice(5, 8)} ${wa.slice(8)}` : `+${wa}`;
+              return (
+                <Card>
+                  <CardContent className="p-6">
+                    <h2 className="font-display text-lg font-bold text-navy-900">How to apply</h2>
+                    <div className="mt-3 space-y-2">
+                      {wa && (
+                        <a href={`https://wa.me/${wa}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 rounded-lg border border-[#25D366]/30 bg-[#25D366]/5 px-4 py-3 text-sm font-semibold text-[#1a8a4d] hover:bg-[#25D366]/10">
+                          📲 Apply on WhatsApp: <span className="font-bold">{fmtWa}</span>
+                        </a>
+                      )}
+                      {email && (
+                        <a href={`mailto:${email}?subject=${encodeURIComponent(`Application for ${job.title}`)}`} className="flex items-center gap-3 rounded-lg border px-4 py-3 text-sm font-semibold text-navy-800 hover:bg-navy-50">
+                          📧 Email CV: <span className="font-bold text-teal-700">{email}</span>
+                        </a>
+                      )}
+                      {wa && (
+                        <a href={`tel:+${wa}`} className="flex items-center gap-3 rounded-lg border px-4 py-3 text-sm font-semibold text-navy-800 hover:bg-navy-50">
+                          📞 Call: <span className="font-bold">{fmtWa}</span>
+                        </a>
+                      )}
+                      {job.applyUrl && (
+                        <a href={job.applyUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 rounded-lg border px-4 py-3 text-sm font-semibold text-teal-700 hover:bg-navy-50">
+                          🔗 Apply online
+                        </a>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })()}
+
             <SimilarJobs jobId={job.id} />
           </div>
 
@@ -360,7 +397,7 @@ export default async function JobDetailPage({ params }: Props) {
                   contactWhatsapp={job.contactWhatsapp}
                 />
                 <div className="mt-3">
-                  <QuickApplyButton jobId={job.id} className="w-full" />
+                  <QuickApplyButton jobId={job.id} className="w-full" preferWhatsapp={job.applyWhatsapp || job.contactWhatsapp} preferEmail={job.applyEmail} />
                 </div>
 
                 {/* Stats row */}
