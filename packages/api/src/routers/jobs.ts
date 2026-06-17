@@ -152,7 +152,10 @@ export const jobsRouter = router({
     }
     await ctx.db.update(jobs).set({ viewCount: sql`${jobs.viewCount} + 1` }).where(eq(jobs.id, job.id));
     const ep = job.employerId ? await ctx.db.query.employerProfiles.findFirst({ where: eq(employerProfiles.userId, job.employerId), columns: { responseHours: true } }) : null;
-    return { ...job, employerResponseHours: ep?.responseHours ?? null };
+    const [activeAgg] = job.employerId
+      ? await ctx.db.select({ n: count() }).from(jobs).where(and(eq(jobs.employerId, job.employerId), eq(jobs.status, 'active')))
+      : [{ n: 0 }];
+    return { ...job, employerResponseHours: ep?.responseHours ?? null, employerActiveJobs: activeAgg?.n ?? 0 };
   }),
 
   /** Featured jobs for the homepage. */

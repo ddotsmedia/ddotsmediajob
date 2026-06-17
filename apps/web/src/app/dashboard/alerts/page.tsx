@@ -1,5 +1,6 @@
 'use client';
 
+import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { Bell, Trash2, Plus, Loader2 } from 'lucide-react';
 import { CATEGORIES, EMIRATES, ALERT_FREQUENCY } from '@ddots/shared';
@@ -8,6 +9,11 @@ import { Button } from '@/components/ui/button';
 import { Input, Label, Select, Badge } from '@/components/ui/primitives';
 
 export default function AlertsPage() {
+  const params = useSearchParams();
+  // Prefill from a job page link (?category=&emirate=&channel=).
+  const pCategory = params.get('category') ?? '';
+  const pEmirate = params.get('emirate') ?? '';
+  const pChannel = params.get('channel') === 'whatsapp' ? 'whatsapp' : 'email';
   const utils = trpc.useUtils();
   const alerts = trpc.alerts.list.useQuery();
   const create = trpc.alerts.create.useMutation({
@@ -48,7 +54,7 @@ export default function AlertsPage() {
       <form onSubmit={onSubmit} className="mt-6 grid gap-4 rounded-xl border bg-white p-5 sm:grid-cols-2 lg:grid-cols-4">
         <div className="space-y-1.5">
           <Label>Deliver via</Label>
-          <Select name="channel" defaultValue="email">
+          <Select name="channel" defaultValue={pChannel}>
             <option value="email">Email</option>
             <option value="whatsapp">WhatsApp</option>
           </Select>
@@ -63,14 +69,14 @@ export default function AlertsPage() {
         </div>
         <div className="space-y-1.5">
           <Label>Category</Label>
-          <Select name="category">
+          <Select name="category" defaultValue={pCategory}>
             <option value="">Any</option>
             {CATEGORIES.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}
           </Select>
         </div>
         <div className="space-y-1.5">
           <Label>Emirate</Label>
-          <Select name="emirate">
+          <Select name="emirate" defaultValue={pEmirate}>
             <option value="">Any</option>
             {EMIRATES.map((e) => <option key={e.slug} value={e.slug}>{e.name}</option>)}
           </Select>

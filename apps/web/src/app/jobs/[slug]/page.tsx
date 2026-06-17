@@ -25,11 +25,12 @@ import { QuickApplyButton } from '@/components/quick-apply-button';
 import { JobAiTools } from '@/components/job-ai-tools';
 import { MatchScoreCard } from '@/components/ai/match-score';
 import { SkillGap } from '@/components/ai/skill-gap';
-import { ShareMenu } from '@/components/share-menu';
+import { ShareRow } from '@/components/share-row';
 import { ReferJobButton } from '@/components/refer-job-button';
 import { SimilarJobs } from '@/components/similar-jobs';
 import { MobileApplyBar } from '@/components/mobile-apply-bar';
 import { Badge, Card, CardContent } from '@/components/ui/primitives';
+import { Button } from '@/components/ui/button';
 import { parseRoleEmirate, roleEmirateMetadata, roleEmirateStaticParams, RoleEmirateView } from './role-emirate';
 import { parseRolePage, rolePageMetadata, rolePageStaticParams, RolePageView } from './role-jobs';
 
@@ -181,14 +182,14 @@ export default async function JobDetailPage({ params }: Props) {
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-start gap-4">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-navy-50 sm:h-16 sm:w-16">
-                    {job.company?.logoUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={job.company.logoUrl} alt="" className="h-full w-full rounded-xl object-cover" />
-                    ) : (
-                      <Briefcase className="h-7 w-7 text-teal-600" />
-                    )}
-                  </div>
+                  {job.company?.logoUrl && !job.isAnonymous ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={job.company.logoUrl} alt="" className="h-[52px] w-[52px] shrink-0 rounded-xl object-cover" />
+                  ) : (
+                    <div className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-xl bg-teal-600 font-display text-lg font-bold text-white">
+                      {(job.isAnonymous ? 'C' : (job.company?.name ?? 'DE')).replace(/[^a-zA-Z]/g, '').slice(0, 2).toUpperCase() || 'DE'}
+                    </div>
+                  )}
                   <div className="flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <h1 className="font-display text-xl font-bold text-navy-900 sm:text-2xl">{job.title}</h1>
@@ -196,9 +197,13 @@ export default async function JobDetailPage({ params }: Props) {
                       {job.isFeatured && <Badge>Featured</Badge>}
                       {job.viewCount > 50 && <Badge variant="urgent">🔥 Popular</Badge>}
                     </div>
-                    <p className="mt-1 flex items-center gap-1 text-navy-700">
+                    <p className="mt-1 flex flex-wrap items-center gap-1.5 text-navy-700">
                       {job.isAnonymous ? `Confidential Company · ${categoryBySlug(job.categorySlug)?.name ?? ''}` : (job.company?.name ?? 'Direct Employer')}
                       {!job.isAnonymous && job.company?.isVerified && <BadgeCheck className="h-4 w-4 text-teal-500" />}
+                      {(() => {
+                        const b = responseBadge(job.employerResponseHours);
+                        return b ? <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${b.cls}`}>{b.label}</span> : null;
+                      })()}
                     </p>
                     <div className="mt-1.5 space-y-1 text-xs text-navy-700/60">
                       <p className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> Posted: {formatDateTime(job.publishedAt ?? job.createdAt)}</p>
@@ -229,6 +234,26 @@ export default async function JobDetailPage({ params }: Props) {
                   <Fact icon={GraduationCap} label="Experience" value={expLabel(job.experienceLevel)} />
                   <Fact icon={Banknote} label="Salary" value={formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod, job.salaryHidden, job.salaryNegotiable)} valueClassName={formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod, job.salaryHidden, job.salaryNegotiable) === 'Salary not disclosed' ? 'text-navy-700/50' : 'text-teal-700'} />
                 </div>
+
+                {/* Benefits tags (from flags + description) */}
+                {(() => {
+                  const desc = job.description.toLowerCase();
+                  const tags: string[] = ['🇦🇪 UAE based'];
+                  if (job.visaProvided || /visa/.test(desc)) tags.push('Visa provided');
+                  if (job.accommodationProvided || /accommodation|housing/.test(desc)) tags.push('Accommodation');
+                  if (/transport|pick.?up|bus/.test(desc)) tags.push('Transport');
+                  if (/insurance|medical/.test(desc)) tags.push('Medical insurance');
+                  if (job.isRemote) tags.push('Remote');
+                  if (job.freeZone) tags.push('Free zone');
+                  if (job.isFresher) tags.push('Freshers welcome');
+                  return (
+                    <div className="mt-4 flex flex-wrap gap-2 border-t pt-4">
+                      {tags.map((t) => (
+                        <span key={t} className="rounded-full bg-teal-50 px-3 py-1 text-xs font-medium text-teal-700">{t}</span>
+                      ))}
+                    </div>
+                  );
+                })()}
                 {(() => {
                   const days = expiryDaysLeft(job.expiresAt);
                   if (days == null || days < 0) return null;
@@ -253,12 +278,15 @@ export default async function JobDetailPage({ params }: Props) {
 
                 {job.skills.length > 0 && (
                   <>
-                    <h3 className="mt-6 text-base font-bold text-navy-900">Required Skills</h3>
-                    <div className="not-prose flex flex-wrap gap-2">
-                      {job.skills.map((s) => (
-                        <Badge key={s} variant="muted">{s}</Badge>
+                    <h3 className="mt-6 text-base font-bold text-navy-900">Key Skills</h3>
+                    <div className="not-prose grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      {job.skills.slice(0, 6).map((s) => (
+                        <span key={s} className="inline-flex items-center gap-2 rounded-lg border bg-navy-50/50 px-3 py-2 text-sm text-navy-800">
+                          <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-500" /> {s}
+                        </span>
                       ))}
                     </div>
+                    {job.skills.length > 6 && <p className="not-prose mt-2 text-xs text-navy-700/50">+{job.skills.length - 6} more skills listed in the description</p>}
                   </>
                 )}
 
@@ -276,6 +304,34 @@ export default async function JobDetailPage({ params }: Props) {
                 )}
               </CardContent>
             </Card>
+
+            {!job.isAnonymous && (
+              <Card>
+                <CardContent className="p-6">
+                  <h2 className="font-display text-base font-bold text-navy-900">About the employer</h2>
+                  <div className="mt-3 flex items-start gap-3">
+                    {job.company?.logoUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={job.company.logoUrl} alt="" className="h-11 w-11 shrink-0 rounded-lg object-cover" />
+                    ) : (
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-teal-600 text-sm font-bold text-white">{(job.company?.name ?? 'DE').replace(/[^a-zA-Z]/g, '').slice(0, 2).toUpperCase() || 'DE'}</div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="flex items-center gap-1.5 font-semibold text-navy-900">
+                        {job.company?.name ?? 'Direct Employer'}
+                        {job.company?.isVerified && <BadgeCheck className="h-4 w-4 text-teal-500" />}
+                      </p>
+                      <p className="text-sm text-navy-700/60">📍 {emirate?.name ?? 'UAE'} · {job.employerActiveJobs} active job{job.employerActiveJobs === 1 ? '' : 's'}</p>
+                      {(() => { const b = responseBadge(job.employerResponseHours); return b ? <span className={`mt-2 inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${b.cls}`}>{b.label}</span> : null; })()}
+                      {job.company?.about && <p className="mt-2 line-clamp-3 text-sm text-navy-700/80">{job.company.about}</p>}
+                      {job.company?.slug && (
+                        <Link href={`/companies/${job.company.slug}`} className="mt-2 inline-block text-sm font-semibold text-teal-600 hover:underline">View company profile →</Link>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             <Card>
               <CardContent className="p-6">
@@ -306,37 +362,58 @@ export default async function JobDetailPage({ params }: Props) {
                 <div className="mt-3">
                   <QuickApplyButton jobId={job.id} className="w-full" />
                 </div>
+
+                {/* Stats row */}
+                <p className="mt-3 border-t pt-3 text-center text-xs text-navy-700/60">
+                  {job.viewCount.toLocaleString('en-AE')} views · {job.applicationCount} applied
+                  {(() => { const d = expiryDaysLeft(job.expiresAt); return d != null && d >= 0 ? ` · ${d === 0 ? 'closes today' : `${d} day${d === 1 ? '' : 's'} left`}` : ''; })()}
+                </p>
+
+                {/* Share row */}
                 <div className="mt-3">
-                  <ShareMenu jobId={job.id} title={job.title} url={`${SITE.url}/jobs/${job.slug}`} variant="button" />
+                  <ShareRow url={`${SITE.url}/jobs/${job.slug}`} title={job.title} />
                 </div>
-                <div className="mt-3">
-                  <ReferJobButton title={job.title} slug={job.slug} salary={formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod, job.salaryHidden, job.salaryNegotiable)} emirate={emirate?.name ?? 'UAE'} company={job.isAnonymous ? null : job.company?.name} />
-                </div>
-                {(() => {
-                  const b = responseBadge(job.employerResponseHours);
-                  return b ? <div className="mt-3 text-center"><span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${b.cls}`}>{b.label}</span></div> : null;
-                })()}
-                <div className="mt-3"><JobAiTools jobId={job.id} /></div>
-                <p className="mt-3 text-center text-xs text-navy-700/50">{job.applicationCount} applicants · {job.viewCount} views</p>
-                {job.viewCount > 5 && <p className="mt-1 text-center text-xs font-medium text-teal-700">👁 {job.viewCount.toLocaleString('en-AE')} people viewed this job</p>}
               </CardContent>
             </Card>
 
-            <MatchScoreCard jobId={job.id} />
+            {/* AI tools grouped */}
+            <Card>
+              <CardContent className="p-5">
+                <h3 className="font-display font-bold text-navy-900">AI tools for this job</h3>
+                <div className="mt-3 space-y-3">
+                  <JobAiTools jobId={job.id} />
+                  <MatchScoreCard jobId={job.id} />
+                  <Button asChild variant="outline" className="w-full">
+                    <Link href={`/tools/salary-comparison?title=${encodeURIComponent(job.title)}&emirate=${job.emirateSlug}`}>Compare salary</Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
 
             <SkillGap jobId={job.id} />
 
-            {job.company && !job.isAnonymous && (
-              <Card>
-                <CardContent className="p-5">
-                  <h3 className="font-display font-bold text-navy-900">About {job.company.name}</h3>
-                  {job.company.about && <p className="mt-2 text-sm text-navy-700/80">{job.company.about}</p>}
-                  <Link href={`/companies/${job.company.slug}`} className="mt-3 inline-block text-sm font-semibold text-teal-600 hover:underline">
-                    View company profile →
-                  </Link>
-                </CardContent>
-              </Card>
-            )}
+            {/* Similar job alerts */}
+            <Card>
+              <CardContent className="p-5">
+                <h3 className="font-display font-bold text-navy-900">Get similar job alerts</h3>
+                <p className="mt-1 text-sm text-navy-700/60">{category?.name} jobs in {emirate?.name ?? 'the UAE'}, straight to you.</p>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <Button asChild variant="accent" size="sm"><Link href={`/dashboard/alerts?category=${job.categorySlug}&emirate=${job.emirateSlug}&channel=whatsapp`}>WhatsApp</Link></Button>
+                  <Button asChild variant="outline" size="sm"><Link href={`/dashboard/alerts?category=${job.categorySlug}&emirate=${job.emirateSlug}`}>Email</Link></Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Refer & earn */}
+            <Card>
+              <CardContent className="p-5">
+                <h3 className="font-display font-bold text-navy-900">Know someone perfect?</h3>
+                <div className="mt-3">
+                  <ReferJobButton title={job.title} slug={job.slug} salary={formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod, job.salaryHidden, job.salaryNegotiable)} emirate={emirate?.name ?? 'UAE'} company={job.isAnonymous ? null : job.company?.name} />
+                </div>
+                <p className="mt-2 text-xs text-navy-700/50">Earn rewards when they get hired.</p>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
