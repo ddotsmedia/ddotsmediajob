@@ -62,7 +62,9 @@ export function JobCard({ job }: { job: JobCardData }) {
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <h3 className="font-display font-bold text-navy-900 group-hover:text-teal-600">
-              <Link href={`/jobs/${job.slug}`} className="after:absolute after:inset-0">{job.title}</Link>
+              <Link href={`/jobs/${job.slug}`} className="after:absolute after:inset-0" title={job.title}>
+                {job.title.length > 50 ? `${job.title.slice(0, 50)}…` : job.title}
+              </Link>
             </h3>
             {isNew(job.publishedAt ?? job.createdAt) && <Badge variant="success"><Sparkles className="mr-1 h-3 w-3" /> New</Badge>}
             {job.isFeatured && <Badge>Featured</Badge>}
@@ -81,7 +83,7 @@ export function JobCard({ job }: { job: JobCardData }) {
 
           <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-navy-700/80">
             <span className="inline-flex items-center gap-1">
-              <MapPin className="h-3.5 w-3.5" /> {job.location ?? emirate?.name}
+              <MapPin className="h-3.5 w-3.5" /> 🇦🇪 {job.location ?? emirate?.name}
             </span>
             <span className="inline-flex items-center gap-1 capitalize">
               <Clock className="h-3.5 w-3.5" /> {job.jobType.replace('-', ' ')}

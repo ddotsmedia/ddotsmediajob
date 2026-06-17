@@ -29,6 +29,25 @@ export async function uniqueJobSlug(title: string): Promise<string> {
   return `${base}-${Date.now().toString(36)}`.slice(0, 120);
 }
 
+/**
+ * Readable slug: title-emirate-company (e.g. graphic-designer-sharjah-manarat).
+ * No random suffix — appends -2, -3… only on collision. New jobs only.
+ */
+export async function generateJobSlug(title: string, emirate?: string | null, company?: string | null): Promise<string> {
+  const parts = [
+    slugify(title),
+    emirate ? emirate.split('-')[0] : null,
+    company ? slugify(company).slice(0, 15) : null,
+  ].filter(Boolean);
+  const base = (parts.join('-').replace(/-+$/g, '').slice(0, 60) || 'job').replace(/-+$/g, '');
+  for (let i = 1; i < 50; i++) {
+    const candidate = i === 1 ? base : `${base}-${i}`;
+    const existing = await db.query.jobs.findFirst({ where: eq(jobs.slug, candidate), columns: { id: true } });
+    if (!existing) return candidate.slice(0, 120);
+  }
+  return `${base}-${Date.now().toString(36)}`.slice(0, 120);
+}
+
 /** Flip active jobs whose expiry has passed to `expired` and notify their owners. Idempotent. */
 export async function expireStaleJobs(): Promise<number> {
   const stale = await db

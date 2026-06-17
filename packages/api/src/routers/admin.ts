@@ -39,7 +39,7 @@ import {
 import { toDataURL } from 'qrcode';
 import { createJobFromWhatsApp, type ParsedJob } from '../lib/whatsapp';
 import { router, adminProcedure } from '../trpc';
-import { audit, notify, uniqueJobSlug } from '../lib/helpers';
+import { audit, notify, uniqueJobSlug, generateJobSlug } from '../lib/helpers';
 import { enqueueEmail, enqueueSearchSync, enqueueJobEvent } from '../lib/queue';
 import { extractAndSaveDraft } from '../lib/import';
 import { enforceRateLimit } from '../lib/security';
@@ -98,7 +98,7 @@ async function findOrCreateCompanyId(db: typeof import('@ddots/db').db, name?: s
 
 async function insertAdminJob(db: typeof import('@ddots/db').db, actorId: string, input: AdminJobInput) {
   const companyId = await findOrCreateCompanyId(db, input.companyName);
-  const slug = await uniqueJobSlug(input.title);
+  const slug = await generateJobSlug(input.title, input.emirateSlug, input.companyName);
   const active = input.status === 'active';
   const [job] = await db
     .insert(jobs)

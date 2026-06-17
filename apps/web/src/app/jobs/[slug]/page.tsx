@@ -14,6 +14,7 @@ import {
   expLabel,
   expiryDaysLeft,
   responseBadge,
+  formatJobDate,
   UAE_TZ,
   SITE,
 } from '@ddots/shared';
@@ -60,8 +61,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const job = await loadJob(slug);
   if (!job) return { title: 'Job not found' };
   const emirate = emirateBySlug(job.emirateSlug)?.name ?? 'UAE';
-  const title = `${job.title} — ${job.company?.name ?? 'Direct Employer'} in ${emirate}`;
-  const description = job.description.replace(/[#*]/g, '').slice(0, 155);
+  const company = job.company?.name ?? 'Direct Employer';
+  const title = `${job.title} at ${company} in ${emirate} | DdotsMediaJobs`;
+  const pay = formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod, job.salaryHidden, job.salaryNegotiable);
+  const posted = formatJobDate(job.publishedAt ?? job.createdAt);
+  const reqLine = job.description.replace(/[#*\n]+/g, ' ').trim().slice(0, 70);
+  const description = `Apply for ${job.title} at ${company}. ${pay}. ${reqLine}. Posted ${posted}.`.slice(0, 160);
   return {
     title,
     description,
@@ -141,17 +146,35 @@ export default async function JobDetailPage({ params }: Props) {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       <div className="mx-auto max-w-7xl px-4 py-8 pb-32 lg:pb-8">
-        <nav className="mb-4 text-sm text-navy-700/60">
+        <nav className="mb-4 flex flex-wrap items-center gap-1 text-sm text-navy-700/60">
+          <Link href="/" className="hover:text-teal-600">Home</Link>
+          <span>/</span>
           <Link href="/jobs" className="hover:text-teal-600">Jobs</Link>
           {category && (
             <>
-              {' / '}
+              <span>/</span>
               <Link href={`/category/${category.slug}`} className="hover:text-teal-600">{category.name}</Link>
             </>
           )}
-          {' / '}
-          <span className="text-navy-900">{job.title}</span>
+          {emirate && (
+            <>
+              <span>/</span>
+              <Link href={`/jobs-in/${emirate.slug}`} className="hover:text-teal-600">{emirate.name}</Link>
+            </>
+          )}
+          <span>/</span>
+          <span className="truncate text-navy-900">{job.title}</span>
         </nav>
+
+        {(() => {
+          const days = expiryDaysLeft(job.expiresAt);
+          if (days == null || days < 0 || days >= 7) return null;
+          return (
+            <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-medium text-amber-800">
+              ⏳ Closing soon — {days === 0 ? 'applications close today' : `only ${days} day${days === 1 ? '' : 's'} left to apply`}.
+            </div>
+          );
+        })()}
 
         <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
           <div className="space-y-6">
@@ -187,6 +210,15 @@ export default async function JobDetailPage({ params }: Props) {
                       {job.expiresAt && (isExpired(job.expiresAt)
                         ? <p className="font-medium text-amber-600">⚠ Applications closed</p>
                         : <p>Applications close: {new Intl.DateTimeFormat('en-GB', { timeZone: UAE_TZ, day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(job.expiresAt))}</p>)}
+                    </div>
+
+                    {/* Quick facts bar */}
+                    <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-medium text-navy-700/80">
+                      <span>📍 {emirate?.name ?? 'UAE'}</span>
+                      <span className="capitalize">💼 {job.jobType.replace('-', ' ')}</span>
+                      <span>💰 {formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod, job.salaryHidden, job.salaryNegotiable)}</span>
+                      <span>⏰ {formatJobDate(job.publishedAt ?? job.createdAt)}</span>
+                      <span>👁 {job.viewCount.toLocaleString('en-AE')} views</span>
                     </div>
                   </div>
                 </div>

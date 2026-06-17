@@ -21,7 +21,7 @@ import {
 } from '@ddots/db';
 import { jobFilterSchema, jobInputSchema, jobFieldsSchema, aiQuickPostSchema, communityPostSchema } from '@ddots/shared';
 import { router, publicProcedure, employerProcedure, protectedProcedure } from '../trpc';
-import { uniqueJobSlug, audit } from '../lib/helpers';
+import { uniqueJobSlug, generateJobSlug, audit } from '../lib/helpers';
 import { enqueueSearchSync, enqueueJobEvent } from '../lib/queue';
 import { generateJobFromPrompt } from '../lib/anthropic';
 import { isSearchConfigured, searchJobs, suggest as meiliSuggest } from '../lib/meili';
@@ -233,12 +233,12 @@ export const jobsRouter = router({
 
   /** Employer: create a job (goes to pending unless admin). */
   create: employerProcedure.input(jobInputSchema).mutation(async ({ ctx, input }) => {
-    const slug = await uniqueJobSlug(input.title);
     const isAdmin = ctx.session.user.role === 'admin';
 
     const employerProfile = await ctx.db.query.employerProfiles.findFirst({
       where: (p, { eq: e }) => e(p.userId, ctx.session.user.id),
     });
+    const slug = await generateJobSlug(input.title, input.emirateSlug, employerProfile?.companyName);
 
     const [job] = await ctx.db
       .insert(jobs)

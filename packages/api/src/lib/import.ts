@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { db, jobs, users, companies, notifications, eq, sql } from '@ddots/db';
 import { slugify, inferExperienceLevel, JOB_TYPES } from '@ddots/shared';
+import { generateJobSlug } from './helpers';
 import { structured, JOB_DRAFT_TOOL, MODEL_FAST, MODEL_SMART, type JobDraft } from './anthropic';
 import { detectLanguage } from './ai-router';
 import { wrapUserContent } from './security';
@@ -177,7 +178,7 @@ export async function extractAndSaveDraft(text: string, source: string, sourceMe
     // Negotiable salary if the source text says so (EN/AR) — clear any figure.
     const negotiable = /\bnegotiable\b|\bcompetitive\b|salary\s*tbd|to\s+be\s+(discussed|decided)|راتب\s*مفاوض|قابل\s*للتفاوض/i.test(text);
 
-    const jobSlug = `${slugify(draft.title) || 'job'}-${Math.random().toString(36).slice(2, 7)}`;
+    const jobSlug = await generateJobSlug(draft.title, draft.emirate, draft.company);
     await db.insert(jobs).values({
       slug: jobSlug,
       employerId: admin.id,
