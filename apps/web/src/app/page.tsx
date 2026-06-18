@@ -10,6 +10,7 @@ import { JobCard } from '@/components/job-card';
 import { CategoryIcon } from '@/components/category-icon';
 import { NumberTicker } from '@/components/magic/number-ticker';
 import { JobTicker } from '@/components/job-ticker';
+import { HomeSidebar } from '@/components/home-sidebar';
 import { GridPattern } from '@/components/magic/grid-pattern';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/primitives';
@@ -58,7 +59,11 @@ export default async function HomePage() {
   ];
 
   return (
-    <>
+    <div className="mx-auto max-w-[1400px] lg:grid lg:grid-cols-[224px_1fr] lg:gap-6 lg:px-4">
+      <aside className="hidden py-6 lg:block">
+        <HomeSidebar />
+      </aside>
+      <main className="min-w-0 overflow-hidden">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       {/* ── Hero ───────────────────────────────────────── */}
       <section className="relative overflow-hidden bg-navy-900 text-white">
@@ -114,6 +119,23 @@ export default async function HomePage() {
       {/* ── Latest Jobs (primary) ──────────────────────── */}
       <section className="mx-auto max-w-7xl px-4 py-16">
         <SectionHead title="Latest Jobs" subtitle="Freshly posted roles across the UAE" href="/jobs" />
+
+        {/* Quick job-type filters (navigate to the filtered listing) */}
+        <div className="mt-4 flex flex-nowrap gap-2 overflow-x-auto pb-1 scrollbar-hide">
+          {[
+            { l: 'All Jobs', h: '/jobs' },
+            { l: 'Walk-in', h: '/jobs/walk-in-interview-dubai' },
+            { l: 'Urgent', h: '/jobs/urgent-hiring-uae' },
+            { l: 'Visa Provided', h: '/jobs/visa-provided' },
+            { l: 'Freshers', h: '/jobs/fresher-jobs-uae' },
+            { l: 'Part Time', h: '/jobs/part-time-jobs-uae' },
+            { l: 'Remote', h: '/jobs/remote' },
+          ].map((p) => (
+            <Link key={p.h} href={p.h} className="shrink-0 rounded-full border px-3 py-1.5 text-sm font-medium text-navy-700 transition-colors hover:border-teal-400 hover:bg-teal-50 hover:text-teal-700">
+              {p.l}
+            </Link>
+          ))}
+        </div>
         {recent.length === 0 ? (
           <div className="mt-8 rounded-2xl border border-dashed bg-white p-10 text-center">
             <p className="font-display text-lg font-bold text-navy-900">No jobs yet</p>
@@ -207,7 +229,8 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
-    </>
+      </main>
+    </div>
   );
 }
 
