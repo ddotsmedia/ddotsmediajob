@@ -160,7 +160,7 @@ export default function AdminJobsPage() {
                       </Button>
                       <Button asChild variant="ghost" size="icon" title="Edit"><Link href={`/admin/jobs/${j.id}/edit`}><Pencil /></Link></Button>
                       <Button asChild variant="ghost" size="icon" title="Preview"><Link href={`/jobs/${j.slug}`} target="_blank"><ExternalLink /></Link></Button>
-                      <Button variant="ghost" size="icon" title="Delete" onClick={() => { if (confirm(`Delete "${j.title}"?`)) del.mutate({ id: j.id }, { onSuccess: () => { inval(); toast.success('Deleted'); } }); }}><Trash2 className="text-red-500" /></Button>
+                      <Button variant="ghost" size="icon" title="Delete" onClick={() => { if (confirm('Delete this job? This cannot be undone.')) del.mutate({ id: j.id }, { onSuccess: () => { utils.admin.allJobs.setData({ q: q || undefined, status: status || undefined, page: 1 }, (prev) => prev?.filter((r) => r.id !== j.id)); inval(); toast.success('Job deleted'); } }); }}><Trash2 className="text-red-500" /></Button>
                     </div>
                   </td>
                 </tr>

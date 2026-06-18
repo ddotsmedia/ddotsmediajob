@@ -221,9 +221,9 @@ export default async function JobDetailPage({ params }: Props) {
                       {(job.isAnonymous ? 'C' : (job.company?.name ?? 'DE')).replace(/[^a-zA-Z]/g, '').slice(0, 2).toUpperCase() || 'DE'}
                     </div>
                   )}
-                  <div className="flex-1">
+                  <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h1 className="font-display text-xl font-bold text-navy-900 sm:text-2xl">{job.title}</h1>
+                      <h1 className="max-w-full break-words font-display text-xl font-bold text-navy-900 sm:text-2xl">{job.title}</h1>
                       {job.isUrgent && <Badge variant="urgent">Urgent</Badge>}
                       {job.isFeatured && <Badge>Featured</Badge>}
                       {job.viewCount > 50 && <Badge variant="urgent">🔥 Popular</Badge>}
@@ -248,13 +248,13 @@ export default async function JobDetailPage({ params }: Props) {
                         : <p>Applications close: {new Intl.DateTimeFormat('en-GB', { timeZone: UAE_TZ, day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(job.expiresAt))}</p>)}
                     </div>
 
-                    {/* Quick facts bar */}
-                    <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-medium text-navy-700/80">
-                      <span>📍 {emirate?.name ?? 'UAE'}</span>
-                      <span className="capitalize">💼 {job.jobType.replace('-', ' ')}</span>
-                      <span>💰 {formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod, job.salaryHidden, job.salaryNegotiable)}</span>
-                      <span>⏰ {formatJobDate(job.publishedAt ?? job.createdAt)}</span>
-                      <span>👁 {job.viewCount.toLocaleString('en-AE')} views</span>
+                    {/* Quick facts — 2x2 grid on mobile, inline row on larger screens */}
+                    <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs font-medium text-navy-700/80 sm:flex sm:flex-wrap sm:items-center">
+                      <span className="min-w-0 truncate">📍 {emirate?.name ?? 'UAE'}</span>
+                      <span className="min-w-0 truncate capitalize">💼 {job.jobType.replace('-', ' ')}</span>
+                      <span className="min-w-0 truncate">💰 {formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod, job.salaryHidden, job.salaryNegotiable)}</span>
+                      <span className="min-w-0 truncate">⏰ {formatJobDate(job.publishedAt ?? job.createdAt)}</span>
+                      <span className="min-w-0 truncate">👁 {job.viewCount.toLocaleString('en-AE')} views</span>
                     </div>
                   </div>
                 </div>

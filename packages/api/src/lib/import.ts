@@ -75,6 +75,32 @@ function detectCategory(text: string): string {
   return 'general';
 }
 
+// Best-effort job title from raw text when AI extraction fails entirely.
+function deriveTitle(text: string): string {
+  const clean = (s: string) =>
+    s
+      .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{2B00}-\u{2BFF}️]/gu, '') // emojis/symbols
+      .replace(/[*_#`>•▪️●-]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 80)
+      .trim();
+  // Labelled patterns first.
+  const labelled = text.match(/(?:position|job title|post|vacancy|role|hiring|required|wanted)\s*[:\-—]\s*(.+)/i);
+  if (labelled?.[1]) {
+    const t = clean(labelled[1]);
+    if (t.length >= 3) return t;
+  }
+  // Otherwise the first meaningful line.
+  const line = text.split(/\r?\n/).map((l) => l.trim()).find((l) => clean(l).length >= 3);
+  if (line) {
+    const t = clean(line);
+    if (t.length >= 3) return t;
+  }
+  // Last resort: leading slice of the whole message.
+  return clean(text).slice(0, 60).trim();
+}
+
 function normalizeEmirate(raw: string | undefined | null): string | null {
   const key = (raw ?? '').toString().trim().toLowerCase().replace(/[-_]/g, ' ').replace(/\s+/g, ' ');
   if (!key) return null;
@@ -149,14 +175,15 @@ export async function extractAndSaveDraft(text: string, source: string, sourceMe
     // ── Last resort: never lose the message — save raw text as a draft ──
     if (!draft) {
       const slug = `whatsapp-import-${Math.random().toString(36).slice(2, 9)}`;
+      const fallbackTitle = deriveTitle(text) || 'WhatsApp Import — Review Needed';
       await db.insert(jobs).values({
         slug,
         employerId: admin.id,
         companyId: null,
-        title: 'WhatsApp Import — Review Needed',
+        title: fallbackTitle,
         description: text.slice(0, 8000),
-        categorySlug: 'general',
-        emirateSlug: 'dubai',
+        categorySlug: detectCategory(text),
+        emirateSlug: normalizeEmirate(text) ?? 'dubai',
         jobType: DEFAULT_JOB_TYPE as never,
         status: 'draft', // never auto-publish an unparsed message
         publishedAt: null,
@@ -164,8 +191,8 @@ export async function extractAndSaveDraft(text: string, source: string, sourceMe
         sourceMetadata: { ...(sourceMetadata ?? {}), rawText: text.slice(0, 4000), extractionStatus: 'failed', extractionError: aiError },
         aiGenerated: false,
       });
-      await notifyAdmins(source, 'WhatsApp Import — Review Needed');
-      return { title: 'WhatsApp Import — Review Needed', slug };
+      await notifyAdmins(source, fallbackTitle);
+      return { title: fallbackTitle, slug };
     }
 
     let companyId: string | null = null;
