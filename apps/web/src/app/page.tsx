@@ -10,7 +10,6 @@ import { JobCard } from '@/components/job-card';
 import { CategoryIcon } from '@/components/category-icon';
 import { NumberTicker } from '@/components/magic/number-ticker';
 import { JobTicker } from '@/components/job-ticker';
-import { HomeSidebar } from '@/components/home-sidebar';
 import { GridPattern } from '@/components/magic/grid-pattern';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/primitives';
@@ -112,15 +111,8 @@ export default async function HomePage() {
       {/* ── Live jobs ticker ───────────────────────────── */}
       <JobTicker items={tickerItems} />
 
-      {/* ── Below-the-fold: sidebar + main content ─────── */}
-      <div className="mx-auto max-w-7xl gap-6 px-4 lg:grid lg:grid-cols-[192px_1fr]">
-        <aside className="hidden py-6 lg:block">
-          <HomeSidebar />
-        </aside>
-        <div className="min-w-0">
-
       {/* ── Latest Jobs (primary) ──────────────────────── */}
-      <section className="py-16">
+      <section className="mx-auto max-w-7xl px-4 py-16">
         <SectionHead title="Latest Jobs" subtitle="Freshly posted roles across the UAE" href="/jobs" />
         {recent.length === 0 ? (
           <div className="mt-8 rounded-2xl border border-dashed bg-white p-10 text-center">
@@ -215,8 +207,6 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
-        </div>
-      </div>
     </>
   );
 }
