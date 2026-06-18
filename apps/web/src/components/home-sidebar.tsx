@@ -72,8 +72,8 @@ export function HomeSidebar() {
   return (
     <div className="sticky top-20 max-h-[calc(100vh-100px)] space-y-3 overflow-y-auto rounded-xl border bg-white p-3 scrollbar-hide">
       {SECTIONS.map((s, i) => (
-        <div key={s.title} className={cn(i > 0 && 'border-t pt-3')}>
-          <p className="mb-1.5 px-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-navy-700/50">{s.title}</p>
+        <div key={s.title} className={cn(i > 0 && 'border-t pt-2')}>
+          <p className={cn('mb-1.5 pl-1.5 text-[10px] font-semibold uppercase tracking-[0.05em] text-navy-700/50', i > 0 && 'mt-3')}>{s.title}</p>
           <nav className="space-y-0.5">
             {s.items.map((it) => {
               const active = pathname === it.href;
@@ -83,11 +83,11 @@ export function HomeSidebar() {
                   key={it.href}
                   href={it.href}
                   className={cn(
-                    'flex items-center gap-1.5 rounded-[5px] px-1.5 py-1 text-[11px] transition-colors',
-                    active ? 'bg-teal-50 font-medium text-[#085041]' : 'text-navy-800 hover:bg-teal-50 hover:text-[#085041]',
+                    'flex items-center gap-2 rounded-[5px] px-1.5 py-1 text-[11px] transition-colors duration-150',
+                    active ? 'bg-[#e0f5f7] font-medium text-[#085041]' : 'text-navy-800 hover:bg-[#e0f5f7] hover:text-[#085041]',
                   )}
                 >
-                  <Icon className="h-[13px] w-[13px] shrink-0 text-teal-600" />
+                  <span className="flex min-w-[18px] justify-center"><Icon className="h-4 w-4 shrink-0 text-[#2a9aa4]" /></span>
                   {it.label}
                 </Link>
               );
@@ -97,8 +97,8 @@ export function HomeSidebar() {
       ))}
 
       <div className="border-t pt-3">
-        <Link href="/feedback" className="flex items-center gap-1.5 rounded-[5px] px-1.5 py-1 text-[11px] text-navy-800 hover:bg-teal-50 hover:text-[#085041]">
-          <MessageSquare className="h-[13px] w-[13px] shrink-0 text-teal-600" /> Send Feedback
+        <Link href="/feedback" className="flex items-center gap-2 rounded-[5px] px-1.5 py-1 text-[11px] text-navy-800 transition-colors duration-150 hover:bg-[#e0f5f7] hover:text-[#085041]">
+          <span className="flex min-w-[18px] justify-center"><MessageSquare className="h-4 w-4 shrink-0 text-[#2a9aa4]" /></span> Send Feedback
         </Link>
       </div>
 

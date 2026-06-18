@@ -59,11 +59,7 @@ export default async function HomePage() {
   ];
 
   return (
-    <div className="mx-auto max-w-[1400px] lg:grid lg:grid-cols-[224px_1fr] lg:gap-6 lg:px-4">
-      <aside className="hidden py-6 lg:block">
-        <HomeSidebar />
-      </aside>
-      <main className="min-w-0 overflow-hidden">
+    <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       {/* ── Hero ───────────────────────────────────────── */}
       <section className="relative overflow-hidden bg-navy-900 text-white">
@@ -116,8 +112,15 @@ export default async function HomePage() {
       {/* ── Live jobs ticker ───────────────────────────── */}
       <JobTicker items={tickerItems} />
 
+      {/* ── Below-the-fold: sidebar + main content ─────── */}
+      <div className="mx-auto max-w-7xl gap-6 px-4 lg:grid lg:grid-cols-[192px_1fr]">
+        <aside className="hidden py-6 lg:block">
+          <HomeSidebar />
+        </aside>
+        <div className="min-w-0">
+
       {/* ── Latest Jobs (primary) ──────────────────────── */}
-      <section className="mx-auto max-w-7xl px-4 py-16">
+      <section className="py-16">
         <SectionHead title="Latest Jobs" subtitle="Freshly posted roles across the UAE" href="/jobs" />
 
         {/* Quick job-type filters (navigate to the filtered listing) */}
@@ -229,8 +232,9 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
-      </main>
-    </div>
+        </div>
+      </div>
+    </>
   );
 }
 
