@@ -6,7 +6,6 @@ import QRCode from 'qrcode';
 import { Share2, Copy, Link2, QrCode, X, Download, Loader2 } from 'lucide-react';
 import { trpc } from '@/trpc/react';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 
 function Icon({ path, fill }: { path: string; fill?: string }) {
   return (
