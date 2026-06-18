@@ -21,9 +21,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     '/success-stories',
     '/market-insights',
     '/blog',
+    '/cv-builder',
     '/login',
     '/register',
-  ].map((path) => ({ url: `${base}${path}`, lastModified: new Date(), changeFrequency: 'daily', priority: path === '' ? 1 : 0.8 }));
+  ].map((path) => ({ url: `${base}${path}`, lastModified: new Date(), changeFrequency: path === '/cv-builder' ? 'weekly' : 'daily', priority: path === '' ? 1 : 0.8 }));
 
   const toolRoutes: MetadataRoute.Sitemap = [
     '/golden-visa-checker',

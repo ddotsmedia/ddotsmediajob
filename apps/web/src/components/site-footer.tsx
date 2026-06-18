@@ -32,6 +32,7 @@ export function SiteFooter() {
           <FooterLink href="/jobs">Browse Jobs</FooterLink>
           <FooterLink href="/register">Create Account</FooterLink>
           <FooterLink href="/dashboard/alerts">Job Alerts</FooterLink>
+          <FooterLink href="/cv-builder">ATS CV Builder</FooterLink>
           <FooterLink href="/career-advisor">AI Career Advisor</FooterLink>
           <FooterLink href="/interview-prep">AI Interview Prep</FooterLink>
           <FooterLink href="/whatsapp-groups">WhatsApp Groups</FooterLink>

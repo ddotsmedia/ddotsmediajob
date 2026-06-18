@@ -39,7 +39,7 @@ export const MENU: Tab[] = [
         { label: 'Browse All Jobs', href: '/jobs' }, { label: 'Job Alerts', href: '/dashboard/alerts' }, { label: 'Saved Jobs', href: '/dashboard/saved' }, { label: 'My Applications', href: '/dashboard/applications' }, { label: 'Swipe to Apply', href: '/swipe' }, { label: 'Compare Jobs', href: '/compare' },
       ] },
       { header: 'Career Tools', links: [
-        { label: 'AI CV Builder', href: '/dashboard/cv' }, { label: 'ATS Score Checker', href: '/tools/ats-checker' }, { label: 'AI Career Advisor', href: '/career-advisor' }, { label: 'AI Interview Prep', href: '/interview-prep' }, { label: 'Skill Assessments', href: '/assessments' }, { label: 'Salary Guide', href: '/salary-guide' }, { label: 'STAR Coach', href: '/dashboard/star-coach' },
+        { label: 'ATS CV Builder', href: '/cv-builder' }, { label: 'AI CV Builder', href: '/dashboard/cv' }, { label: 'ATS Score Checker', href: '/tools/ats-checker' }, { label: 'AI Career Advisor', href: '/career-advisor' }, { label: 'AI Interview Prep', href: '/interview-prep' }, { label: 'Skill Assessments', href: '/assessments' }, { label: 'Salary Guide', href: '/salary-guide' }, { label: 'STAR Coach', href: '/dashboard/star-coach' },
       ] },
       { header: 'Resources', links: [
         { label: 'Success Stories', href: '/success-stories' }, { label: 'Market Insights', href: '/market-insights' }, { label: 'Labour Rights Guide', href: '/resources/labour-rights' }, { label: 'Relocation Advisor', href: '/resources/relocation-advisor' }, { label: 'Cost of Living UAE', href: '/salary-guide' }, { label: 'Visa Guide 2026', href: '/visa-guide' }, { label: 'Nafis & Emiratisation', href: '/nafis-guide' },

@@ -16,7 +16,7 @@ export default function CvPage() {
         <FileSpreadsheet className="h-5 w-5 text-teal-500" />
         <h1 className="font-display text-2xl font-bold text-navy-900">CV Builder & ATS Analyzer</h1>
       </div>
-      <p className="text-navy-700/60">Build a clean CV, then score it against applicant tracking systems.</p>
+      <p className="text-navy-700/60">Build a clean CV, then score it against applicant tracking systems. <a href="/cv-builder" className="font-semibold text-teal-600 hover:underline">View CV builder guide →</a></p>
 
       <div className="mt-6 flex gap-2">
         {(['build', 'analyze'] as const).map((m) => (

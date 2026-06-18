@@ -454,6 +454,9 @@ export default async function JobDetailPage({ params }: Props) {
                   <Button asChild variant="outline" className="w-full">
                     <Link href={`/tools/salary-comparison?title=${encodeURIComponent(job.title)}&emirate=${job.emirateSlug}`}>Compare salary</Link>
                   </Button>
+                  <Button asChild variant="outline" className="w-full">
+                    <Link href="/cv-builder">Prepare your CV</Link>
+                  </Button>
                 </div>
               </CardContent>
             </Card>
