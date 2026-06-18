@@ -239,6 +239,13 @@
       "when": 1781746574335,
       "tag": "0033_many_wallop",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1781761201833,
+      "tag": "0034_last_garia",
+      "breakpoints": true
     }
   ]
 }

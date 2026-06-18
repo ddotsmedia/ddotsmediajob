@@ -40,17 +40,33 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
   const post = await load(slug);
   if (!post) notFound();
 
-  const jsonLd = {
+  const articleLd = {
     '@context': 'https://schema.org',
-    '@type': 'BlogPosting',
+    '@type': 'Article',
     headline: post.title,
-    datePosted: (post.publishedAt ?? post.createdAt).toISOString(),
     description: post.excerpt ?? undefined,
+    image: post.coverUrl ?? undefined,
+    datePublished: (post.publishedAt ?? post.createdAt).toISOString(),
+    dateModified: post.updatedAt.toISOString(),
+    author: { '@type': 'Organization', name: SITE.name },
+    publisher: { '@type': 'Organization', name: SITE.name, url: SITE.url },
+    mainEntityOfPage: `${SITE.url}/blog/${post.slug}`,
   };
+
+  // FAQs: prefer the stored column; fall back to parsing the rendered markdown.
+  const faqs = (post.faqs?.length ? post.faqs : parseFaqs(post.content)).slice(0, 20);
+  const faqLd = faqs.length
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: faqs.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+      }
+    : null;
 
   return (
     <article className="mx-auto max-w-3xl px-4 py-12">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleLd) }} />
+      {faqLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }} />}
       <Link href="/blog" className="text-sm text-teal-600 hover:underline">← Back to blog</Link>
       {post.category && <Badge className="mt-4 block w-fit">{post.category}</Badge>}
       <h1 className="mt-3 font-display text-3xl font-extrabold text-navy-900 md:text-4xl">{post.title}</h1>
@@ -81,4 +97,19 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
       })()}
     </article>
   );
+}
+
+/** Parse "### Question\n\nAnswer" blocks under the FAQ heading from rendered markdown. */
+function parseFaqs(content: string): { q: string; a: string }[] {
+  const idx = content.search(/##\s*(Frequently Asked Questions|FAQ)/i);
+  const section = idx >= 0 ? content.slice(idx) : content;
+  const out: { q: string; a: string }[] = [];
+  const re = /^###\s+(.+?)[ \t]*\r?\n([\s\S]*?)(?=^###\s|^##\s|(?![\s\S]))/gm;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(section)) !== null) {
+    const q = m[1]?.trim();
+    const a = m[2]?.replace(/[#*]/g, '').trim();
+    if (q && a) out.push({ q, a });
+  }
+  return out;
 }

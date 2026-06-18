@@ -394,6 +394,7 @@ export const blogPosts = pgTable(
     authorId: uuid('author_id').references(() => users.id, { onDelete: 'set null' }),
     category: varchar('category', { length: 60 }),
     tags: jsonb('tags').$type<string[]>().default([]).notNull(),
+    faqs: jsonb('faqs').$type<{ q: string; a: string }[]>().default([]).notNull(),
     isPublished: boolean('is_published').default(false).notNull(),
     publishedAt: timestamp('published_at', { withTimezone: true }),
     viewCount: integer('view_count').default(0).notNull(),
