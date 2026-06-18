@@ -202,18 +202,16 @@ export default function AdminSettingsPage() {
             return (
               <div key={row.key} className="flex items-center justify-between gap-4 py-3">
                 <div>
-                  <p className="font-medium text-navy-900">{row.label}</p>
+                  <p className="text-sm font-medium text-navy-900">{row.label}</p>
                   <p className="text-xs text-navy-700/50">{row.desc}</p>
                 </div>
-                <input
-                  type="checkbox"
+                <Switch
                   checked={visible}
-                  onChange={(e) => {
-                    const next = e.target.checked;
+                  disabled={setSetting.isPending}
+                  onCheckedChange={(next) => {
                     if (!next && !window.confirm(`Hide ${row.label}? Visitors will no longer see this page or its navigation link.`)) return;
                     setSetting.mutate({ key: row.key, value: next }, { onSuccess: () => toast.success(`${row.label} is now ${next ? 'visible' : 'hidden'}`) });
                   }}
-                  className="h-5 w-5 rounded text-teal-600"
                 />
               </div>
             );
