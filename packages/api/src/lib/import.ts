@@ -75,6 +75,19 @@ function detectCategory(text: string): string {
   return 'general';
 }
 
+// First email address in free text (labelled or bare). Returns null if none.
+const EMAIL_RE = /[a-z0-9](?:[a-z0-9._%+-]*[a-z0-9])?@[a-z0-9.-]+\.[a-z]{2,}/i;
+function extractEmail(text: string): string | null {
+  const m = text.replace(/mailto:/gi, '').match(EMAIL_RE);
+  return m ? m[0].toLowerCase() : null;
+}
+
+// First phone/WhatsApp number in free text (UAE/international). Returns digits or null.
+function extractPhone(text: string): string | null {
+  const m = text.match(/\+?\d[\d\s().-]{7,}\d/);
+  return m ? m[0].replace(/[^\d+]/g, '') : null;
+}
+
 // Best-effort job title from raw text when AI extraction fails entirely.
 function deriveTitle(text: string): string {
   const clean = (s: string) =>
@@ -185,6 +198,8 @@ export async function extractAndSaveDraft(text: string, source: string, sourceMe
         categorySlug: detectCategory(text),
         emirateSlug: normalizeEmirate(text) ?? 'dubai',
         jobType: DEFAULT_JOB_TYPE as never,
+        contactWhatsapp: extractPhone(text) || (sourceMetadata?.from ? String(sourceMetadata.from).replace(/[^\d+]/g, '') : null),
+        applyEmail: extractEmail(text),
         status: 'draft', // never auto-publish an unparsed message
         publishedAt: null,
         source,
@@ -228,8 +243,8 @@ export async function extractAndSaveDraft(text: string, source: string, sourceMe
       freeZone: draft.freeZone,
       skills: draft.tags ?? [],
       benefits: draft.benefits ?? [],
-      contactWhatsapp: draft.contactWhatsapp || null,
-      applyEmail: draft.contactEmail || null,
+      contactWhatsapp: draft.contactWhatsapp || extractPhone(text) || (sourceMetadata?.from ? String(sourceMetadata.from).replace(/[^\d+]/g, '') : null),
+      applyEmail: draft.contactEmail || extractEmail(text),
       status: opts?.autoPublish ? 'active' : 'draft',
       publishedAt: opts?.autoPublish ? new Date() : null,
       source,

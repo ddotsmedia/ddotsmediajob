@@ -27,6 +27,16 @@ function waDigits(raw?: string | null): string {
   return (raw ?? '').replace(/\D/g, '');
 }
 
+/** First email / phone in free text (modal pre-fill fallback). */
+function extractEmailText(text: string): string {
+  const m = text.replace(/mailto:/gi, '').match(/[a-z0-9](?:[a-z0-9._%+-]*[a-z0-9])?@[a-z0-9.-]+\.[a-z]{2,}/i);
+  return m ? m[0].toLowerCase() : '';
+}
+function extractPhoneText(text: string): string {
+  const m = text.match(/\+?\d[\d\s().-]{7,}\d/);
+  return m ? m[0].replace(/[^\d+]/g, '') : '';
+}
+
 /** Pretty UAE phone: +971 50 123 4567 (falls back to +<digits>). */
 function formatPhone(raw?: string | null): string | null {
   const d = waDigits(raw);
@@ -139,7 +149,9 @@ function EditModal({ draft, onClose, onDone }: { draft: Draft; onClose: () => vo
   const [f, setF] = useState({
     title: draft.title, companyName: draft.company?.name ?? '', categorySlug: draft.categorySlug, emirateSlug: draft.emirateSlug,
     jobType: draft.jobType, experienceLevel: draft.experienceLevel ?? '', salaryMin: draft.salaryMin?.toString() ?? '', salaryMax: draft.salaryMax?.toString() ?? '',
-    description: draft.description, contactWhatsapp: draft.contactWhatsapp ?? '', contactEmail: draft.applyEmail ?? '',
+    description: draft.description,
+    contactWhatsapp: draft.contactWhatsapp || (draft.sourceMetadata?.from ? String(draft.sourceMetadata.from).replace(/[^\d+]/g, '') : '') || extractPhoneText(draft.description),
+    contactEmail: draft.applyEmail || extractEmailText(`${draft.description}\n${(draft.sourceMetadata as { rawText?: string } | null)?.rawText ?? ''}`),
     visaProvided: draft.visaProvided, accommodationProvided: draft.accommodationProvided, isUrgent: draft.isUrgent, isFresher: draft.isFresher,
   });
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((s) => ({ ...s, [k]: v }));
@@ -214,8 +226,11 @@ function EditModal({ draft, onClose, onDone }: { draft: Draft; onClose: () => vo
           <Field label="Description"><Textarea className="min-h-[150px]" value={f.description} onChange={(e) => set('description', e.target.value)} /></Field>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Contact WhatsApp"><Input type="tel" value={f.contactWhatsapp} onChange={(e) => set('contactWhatsapp', e.target.value)} placeholder="+9715xxxxxxxx" /></Field>
-            <Field label="Contact Email"><Input type="email" value={f.contactEmail} onChange={(e) => set('contactEmail', e.target.value)} /></Field>
+            <Field label="Contact Email"><Input type="email" value={f.contactEmail} onChange={(e) => set('contactEmail', e.target.value)} placeholder="hr@company.com" /></Field>
           </div>
+          {['whapi', 'whatsapp', 'whatsapp_bot', 'telegram'].includes(draft.source) && (
+            <p className="-mt-2 text-[11px] text-navy-700/50">Extracted from {draft.source === 'telegram' ? 'Telegram' : 'WhatsApp'} message — verify before publishing.</p>
+          )}
           <div className="flex flex-wrap gap-4">
             <Toggle label="Visa Provided" checked={f.visaProvided} onChange={(v) => set('visaProvided', v)} />
             <Toggle label="Accommodation" checked={f.accommodationProvided} onChange={(v) => set('accommodationProvided', v)} />
