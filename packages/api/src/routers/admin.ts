@@ -18,6 +18,7 @@ import {
   securityLogs,
   whapiSettings,
   jobCategories,
+  feedback,
   eq,
   and,
   desc,
@@ -870,6 +871,35 @@ export const adminRouter = router({
     await audit(ctx.session.user.id, 'admin.search.reindex', 'job', undefined, { indexed: rows.length });
     return { indexed: rows.length, configured: true };
   }),
+
+  // ─── Feedback inbox ────────────────────────────────────────────────
+  getFeedback: adminProcedure
+    .input(z.object({ status: z.enum(['unread', 'read', 'replied', 'archived']).optional(), page: z.number().int().min(1).default(1) }).optional())
+    .query(async ({ ctx, input }) => {
+      const where = input?.status ? eq(feedback.status, input.status) : undefined;
+      return ctx.db.query.feedback.findMany({ where, orderBy: [desc(feedback.createdAt)], limit: 100, offset: ((input?.page ?? 1) - 1) * 100 });
+    }),
+
+  feedbackUnread: adminProcedure.query(async ({ ctx }) => {
+    const [r] = await ctx.db.select({ n: count() }).from(feedback).where(eq(feedback.status, 'unread'));
+    return r?.n ?? 0;
+  }),
+
+  /** Mark read on open, or set status / save an internal note. */
+  updateFeedback: adminProcedure
+    .input(z.object({ id: z.string().uuid(), status: z.enum(['unread', 'read', 'replied', 'archived']).optional(), adminNote: z.string().max(4000).optional() }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db
+        .update(feedback)
+        .set({
+          ...(input.status ? { status: input.status } : {}),
+          ...(input.adminNote !== undefined ? { adminNote: input.adminNote } : {}),
+          ...(input.status === 'replied' ? { repliedAt: new Date() } : {}),
+        })
+        .where(eq(feedback.id, input.id));
+      await audit(ctx.session.user.id, 'admin.feedback.update', 'feedback', input.id, { status: input.status });
+      return { ok: true };
+    }),
 
   // ─── Job categories (admin-managed) ────────────────────────────────
   getCategories: adminProcedure.query(({ ctx }) => ctx.db.query.jobCategories.findMany({ orderBy: [asc(jobCategories.sortOrder), asc(jobCategories.name)] })),

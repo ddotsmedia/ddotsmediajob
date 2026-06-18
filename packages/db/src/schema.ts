@@ -605,6 +605,28 @@ export const jobCategories = pgTable(
   (t) => [uniqueIndex('job_categories_slug_idx').on(t.slug)],
 );
 
+// ─── Feedback / contact inbox ────────────────────────────
+export const feedback = pgTable(
+  'feedback',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    name: varchar('name', { length: 160 }).notNull(),
+    email: varchar('email', { length: 255 }).notNull(),
+    phone: varchar('phone', { length: 30 }),
+    subject: varchar('subject', { length: 200 }).notNull(),
+    message: text('message').notNull(),
+    type: varchar('type', { length: 20 }).default('general').notNull(), // general|bug|suggestion|complaint|partnership
+    status: varchar('status', { length: 20 }).default('unread').notNull(), // unread|read|replied|archived
+    ipAddress: varchar('ip_address', { length: 64 }),
+    userAgent: varchar('user_agent', { length: 400 }),
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+    adminNote: text('admin_note'),
+    repliedAt: timestamp('replied_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index('feedback_status_idx').on(t.status), index('feedback_created_idx').on(t.createdAt)],
+);
+
 // ─── Whapi import settings (single-row config) ───────────
 export const whapiSettings = pgTable('whapi_settings', {
   id: uuid('id').defaultRandom().primaryKey(),

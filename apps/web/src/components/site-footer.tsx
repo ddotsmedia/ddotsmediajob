@@ -41,6 +41,7 @@ export function SiteFooter() {
           <FooterLink href="/swipe">Swipe Jobs</FooterLink>
           <FooterLink href="/success-stories">Success Stories</FooterLink>
           <FooterLink href="/market-insights">Market Insights</FooterLink>
+          <FooterLink href="/feedback">Send Feedback</FooterLink>
         </FooterCol>
 
         <FooterCol title="For Employers">

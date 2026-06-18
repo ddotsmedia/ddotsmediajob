@@ -23,6 +23,7 @@ import {
   Sparkles,
   FilePen,
   Tags,
+  Inbox,
 } from 'lucide-react';
 import Link from 'next/link';
 import { DashboardSidebar, MobileTabs, type NavItem } from '@/components/dashboard/sidebar';
@@ -51,14 +52,21 @@ const NAV: NavItem[] = [
   { href: '/admin/success-stories', label: 'Success Stories', icon: Star },
   { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/blog', label: 'Blog Editor', icon: FileEdit },
+  { href: '/admin/feedback', label: 'Feedback', icon: Inbox },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
   { href: '/admin/audit', label: 'Audit Log', icon: ScrollText },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const stats = trpc.admin.stats.useQuery(undefined, { staleTime: 60_000 });
+  const feedbackUnread = trpc.admin.feedbackUnread.useQuery(undefined, { staleTime: 60_000 });
   const draftCount = stats.data?.draftJobs ?? 0;
-  const nav = NAV.map((n) => (n.href === '/admin/jobs/drafts' && draftCount > 0 ? { ...n, badge: draftCount } : n));
+  const unread = feedbackUnread.data ?? 0;
+  const nav = NAV.map((n) => {
+    if (n.href === '/admin/jobs/drafts' && draftCount > 0) return { ...n, badge: draftCount };
+    if (n.href === '/admin/feedback' && unread > 0) return { ...n, badge: unread };
+    return n;
+  });
   return (
     <div className="mx-auto flex max-w-7xl">
       <DashboardSidebar items={nav} title="Admin Panel" variant="dark" />
