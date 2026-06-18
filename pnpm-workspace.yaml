@@ -3,3 +3,8 @@ packages:
   - "packages/*"
   # apps/mobile is a standalone Expo project — installed & run separately
   # (see apps/mobile/README.md) so its React Native deps don't affect the web build.
+
+# Security overrides for transitive deps (advisories: ws GHSA-96hv-2xvq-fx4p, form-data GHSA-hmw2-7cc7-3qxx).
+overrides:
+  "ws@>=8.0.0 <8.21.0": ">=8.21.0"
+  "form-data@>=4.0.0 <4.0.6": ">=4.0.6"

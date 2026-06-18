@@ -1,4 +1,4 @@
-import { randomBytes } from 'node:crypto';
+import { randomBytes, createHash } from 'node:crypto';
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { users, employerProfiles, jobseekerProfiles, verificationTokens, sessions, referralCodes, referrals, eq, and, sql } from '@ddots/db';
@@ -11,6 +11,8 @@ import { enforceRateLimit, isPwnedPassword } from '../lib/security';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://ddotsmediajobs.com';
 const token = () => randomBytes(32).toString('hex');
+// Store only the SHA-256 of email/reset tokens — a DB leak can't be replayed.
+const hashToken = (t: string) => createHash('sha256').update(t).digest('hex');
 const ipOf = (ctx: { headers?: Headers }) => ctx.headers?.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
 
 export const authRouter = router({
@@ -41,7 +43,7 @@ export const authRouter = router({
     const t = token();
     await ctx.db.insert(verificationTokens).values({
       identifier: `verify:${input.email}`,
-      token: t,
+      token: hashToken(t),
       expires: new Date(Date.now() + 24 * 3600_000),
     });
     await enqueueEmail({
@@ -81,7 +83,7 @@ export const authRouter = router({
           .where(eq(verificationTokens.identifier, `reset:${input.email}`));
         await ctx.db.insert(verificationTokens).values({
           identifier: `reset:${input.email}`,
-          token: t,
+          token: hashToken(t),
           expires: new Date(Date.now() + 3600_000),
         });
         await enqueueEmail({
@@ -99,7 +101,7 @@ export const authRouter = router({
     .input(z.object({ token: z.string().min(10), password: passwordSchema }))
     .mutation(async ({ ctx, input }) => {
       const vt = await ctx.db.query.verificationTokens.findFirst({
-        where: eq(verificationTokens.token, input.token),
+        where: eq(verificationTokens.token, hashToken(input.token)),
       });
       if (!vt || !vt.identifier.startsWith('reset:') || vt.expires < new Date()) {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'This reset link is invalid or has expired.' });
@@ -119,7 +121,7 @@ export const authRouter = router({
   /** Verify an email address from the emailed token. */
   verifyEmail: publicProcedure.input(z.object({ token: z.string().min(10) })).mutation(async ({ ctx, input }) => {
     const vt = await ctx.db.query.verificationTokens.findFirst({
-      where: eq(verificationTokens.token, input.token),
+      where: eq(verificationTokens.token, hashToken(input.token)),
     });
     if (!vt || !vt.identifier.startsWith('verify:') || vt.expires < new Date()) {
       throw new TRPCError({ code: 'BAD_REQUEST', message: 'This verification link is invalid or has expired.' });
@@ -140,7 +142,7 @@ export const authRouter = router({
     await ctx.db.delete(verificationTokens).where(eq(verificationTokens.identifier, `verify:${email}`));
     await ctx.db.insert(verificationTokens).values({
       identifier: `verify:${email}`,
-      token: t,
+      token: hashToken(t),
       expires: new Date(Date.now() + 24 * 3600_000),
     });
     await enqueueEmail({

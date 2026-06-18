@@ -42,11 +42,15 @@ const getText = (m: WhapiMsg): string =>
 export async function POST(req: Request) {
   const raw = await req.text();
 
-  // Debug: log headers (token values redacted) + body so we can see what Whapi sends.
-  const headers = Object.fromEntries(req.headers);
-  const redacted = { ...headers };
-  for (const k of ['x-whapi-token', 'authorization']) if (redacted[k]) redacted[k] = `${redacted[k].slice(0, 4)}…(${redacted[k].length})`;
-  console.log('[whapi] webhook received:', { headers: redacted, body: raw.slice(0, 2000) });
+  // Audit log: IP + timestamp + size only — never the raw body (contains phones/PII).
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+  console.log(`[whapi] webhook from ${ip} at ${new Date().toISOString()} (${raw.length} bytes)`);
+
+  // Payload size limit (100KB) — reject oversized webhooks.
+  if (raw.length > 100_000) {
+    console.warn('[whapi] payload too large, rejecting:', raw.length);
+    return NextResponse.json({ ok: true });
+  }
 
   // Soft token verification: only reject when a token is set AND a wrong one is sent.
   const expected = process.env.WHAPI_TOKEN;
@@ -64,7 +68,6 @@ export async function POST(req: Request) {
     console.error('[whapi] body not JSON');
     return NextResponse.json({ ok: true }); // 200 so Whapi doesn't retry malformed payloads
   }
-  console.log('[whapi] full body:', JSON.stringify(payload).slice(0, 1000));
 
   // Whapi sends { messages: [...] }; some setups use { data: [...] } or a bare array.
   const messages: WhapiMsg[] =

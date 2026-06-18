@@ -68,7 +68,7 @@ async function sendWhatsapp(to: string, text: string): Promise<void> {
   const token = process.env.WHATSAPP_TOKEN;
   const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
   if (!token || !phoneId) {
-    console.log('[whatsapp] (dry run) →', to, text.slice(0, 80));
+    console.log('[whatsapp] (dry run) →', `***${String(to).replace(/\D/g, '').slice(-4)}`);
     return;
   }
   await fetch(`https://graph.facebook.com/v21.0/${phoneId}/messages`, {
