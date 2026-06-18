@@ -84,8 +84,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const jobRoutes: MetadataRoute.Sitemap = activeJobs.map((j) => ({
     url: `${base}/jobs/${j.slug}`,
     lastModified: j.updatedAt,
-    changeFrequency: 'weekly',
-    priority: 0.6,
+    changeFrequency: 'daily',
+    priority: 0.8,
   }));
 
   const blogRoutes: MetadataRoute.Sitemap = posts.map((p) => ({

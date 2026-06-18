@@ -676,6 +676,7 @@ export const adminRouter = router({
     if (!job) throw new TRPCError({ code: 'NOT_FOUND', message: 'Draft not found.' });
     console.log(`[admin] publishDraft ${input.id} -> status=${job.status} (was draft)`);
     await enqueueSearchSync({ type: 'upsert', jobId: input.id });
+    if (isIndexingConfigured()) void submitUrl(`${process.env.NEXT_PUBLIC_APP_URL}/jobs/${job.slug}`, 'URL_UPDATED'); // Google Indexing (best-effort)
     await audit(ctx.session.user.id, 'admin.job.publish', 'job', input.id);
     return { ok: true, slug: job.slug };
   }),

@@ -63,20 +63,23 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!job) return { title: 'Job not found' };
   const emirate = emirateBySlug(job.emirateSlug)?.name ?? 'UAE';
   const company = job.company?.name ?? 'Direct Employer';
-  const title = `${job.title} at ${company} in ${emirate} | DdotsMediaJobs`;
+  const title = `${job.title} at ${company} in ${emirate}, UAE | DdotsMediaJobs`;
   const pay = formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod, job.salaryHidden, job.salaryNegotiable);
   const posted = formatJobDate(job.publishedAt ?? job.createdAt);
-  const reqLine = job.description.replace(/[#*\n]+/g, ' ').trim().slice(0, 70);
-  const description = `Apply for ${job.title} at ${company}. ${pay}. ${reqLine}. Posted ${posted}.`.slice(0, 160);
+  const reqLine = job.description.replace(/[#*\n]+/g, ' ').trim().slice(0, 60);
+  const description = `Apply for ${job.title} at ${company} in ${emirate}. ${pay}. ${reqLine}. Posted ${posted}. Apply on WhatsApp.`.slice(0, 160);
+  const ogImage = `/jobs/${job.slug}/opengraph-image`;
   return {
     title,
     description,
     openGraph: {
+      type: 'article',
       title,
       description,
       url: `${SITE.url}/jobs/${job.slug}`,
-      images: [`/jobs/${job.slug}/opengraph-image`],
+      images: [ogImage],
     },
+    twitter: { card: 'summary_large_image', title, description, images: [ogImage] },
     alternates: { canonical: `${SITE.url}/jobs/${job.slug}` },
   };
 }
@@ -115,15 +118,30 @@ export default async function JobDetailPage({ params }: Props) {
       '@type': 'Organization',
       name: job.company?.name ?? 'Direct Employer',
       logo: job.company?.logoUrl ?? undefined,
+      ...(job.company?.website ? { sameAs: job.company.website } : {}),
     },
     jobLocation: {
       '@type': 'Place',
       address: {
         '@type': 'PostalAddress',
         addressLocality: emirate?.name,
+        addressRegion: emirate?.name,
         addressCountry: 'AE',
       },
     },
+    directApply: true,
+    ...((job.applyWhatsapp || job.contactWhatsapp || job.applyEmail || job.applyUrl)
+      ? {
+          potentialAction: {
+            '@type': 'ApplyAction',
+            target: job.applyUrl
+              ? job.applyUrl
+              : (job.applyWhatsapp || job.contactWhatsapp)
+                ? `https://wa.me/${(job.applyWhatsapp || job.contactWhatsapp || '').replace(/\D/g, '')}`
+                : `mailto:${job.applyEmail}`,
+          },
+        }
+      : {}),
     ...(job.salaryMin && !job.salaryHidden
       ? {
           baseSalary: {
@@ -141,10 +159,23 @@ export default async function JobDetailPage({ params }: Props) {
     ...(job.isRemote ? { jobLocationType: 'TELECOMMUTE', applicantLocationRequirements: { '@type': 'Country', name: 'United Arab Emirates' } } : {}),
   };
 
+  const breadcrumbLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: SITE.url },
+      { '@type': 'ListItem', position: 2, name: 'Jobs', item: `${SITE.url}/jobs` },
+      ...(category ? [{ '@type': 'ListItem', position: 3, name: category.name, item: `${SITE.url}/category/${category.slug}` }] : []),
+      ...(emirate ? [{ '@type': 'ListItem', position: category ? 4 : 3, name: emirate.name, item: `${SITE.url}/jobs-in/${emirate.slug}` }] : []),
+      { '@type': 'ListItem', position: (category ? 4 : 3) + (emirate ? 1 : 0), name: job.title, item: `${SITE.url}/jobs/${job.slug}` },
+    ],
+  };
+
   return (
     <div className="bg-navy-50/30">
       <JobViewTracker slug={job.slug} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
 
       <div className="mx-auto max-w-7xl px-4 py-8 pb-32 lg:pb-8">
         <nav className="mb-4 flex flex-wrap items-center gap-1 text-sm text-navy-700/60">

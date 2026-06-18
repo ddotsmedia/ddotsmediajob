@@ -63,6 +63,22 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
       ) : (
         <div className="prose prose-slate mt-8 max-w-none whitespace-pre-wrap prose-headings:font-display">{post.content}</div>
       )}
+
+      {/* Internal linking — drive readers to live job search */}
+      {(() => {
+        const kw = (post.tags?.[0] ?? post.category ?? '').toString().replace(/-/g, ' ').trim();
+        const q = kw ? `/jobs?q=${encodeURIComponent(kw)}` : '/jobs';
+        return (
+          <div className="mt-10 rounded-xl border border-teal-200 bg-teal-50/60 p-6 text-center">
+            <h2 className="font-display text-lg font-bold text-navy-900">Latest {kw ? `${kw} ` : ''}jobs in the UAE</h2>
+            <p className="mt-1 text-sm text-navy-700/70">Browse live vacancies and apply free on DdotsMediaJobs.</p>
+            <div className="mt-4 flex flex-wrap justify-center gap-2">
+              <Link href={q} className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700">View {kw ? `${kw} ` : ''}jobs →</Link>
+              <Link href="/jobs" className="rounded-lg border border-teal-300 px-4 py-2 text-sm font-semibold text-teal-700 hover:bg-teal-100">All UAE jobs</Link>
+            </div>
+          </div>
+        );
+      })()}
     </article>
   );
 }
