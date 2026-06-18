@@ -22,7 +22,8 @@
     "db:studio": "pnpm --filter @ddots/db db:studio",
     "worker": "pnpm --filter @ddots/api worker",
     "search:sync": "pnpm --filter @ddots/api search:sync",
-    "format": "prettier --write \"**/*.{ts,tsx,md,json}\""
+    "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
+    "deploy": "bash deploy.sh"
   },
   "devDependencies": {
     "prettier": "^3.4.2",

@@ -88,6 +88,22 @@ function extractPhone(text: string): string | null {
   return m ? m[0].replace(/[^\d+]/g, '') : null;
 }
 
+// Generic phrases that are NOT real job titles — skip them when deriving.
+const NOT_TITLES = [
+  'multiple vacancies', 'various positions', 'hiring now', 'urgent hiring', 'job vacancy',
+  'now hiring', 'we are hiring', 'multiple positions', 'several vacancies', 'various openings',
+  'job opportunity', 'career opportunity', 'job opening', 'immediate hiring', 'bulk hiring',
+  'vacancies available', 'positions available', 'openings available', 'we are looking', 'urgent requirement',
+];
+const isNotTitle = (t: string) => NOT_TITLES.includes(t.toLowerCase().trim());
+// ALL-CAPS multi-word → Title Case (leave normal-case as-is).
+function fixCaps(t: string): string {
+  if (t.split(/\s+/).length > 3 && t === t.toUpperCase()) {
+    return t.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+  }
+  return t;
+}
+
 // Best-effort job title from raw text when AI extraction fails entirely.
 function deriveTitle(text: string): string {
   const clean = (s: string) =>
@@ -98,20 +114,18 @@ function deriveTitle(text: string): string {
       .trim()
       .slice(0, 80)
       .trim();
+  const candidates: string[] = [];
   // Labelled patterns first.
   const labelled = text.match(/(?:position|job title|post|vacancy|role|hiring|required|wanted)\s*[:\-—]\s*(.+)/i);
-  if (labelled?.[1]) {
-    const t = clean(labelled[1]);
-    if (t.length >= 3) return t;
+  if (labelled?.[1]) candidates.push(clean(labelled[1]));
+  // Then each meaningful line in order.
+  for (const l of text.split(/\r?\n/)) candidates.push(clean(l.trim()));
+  // First candidate that is ≥3 chars and not a generic phrase.
+  for (const c of candidates) {
+    if (c.length >= 3 && !isNotTitle(c)) return fixCaps(c);
   }
-  // Otherwise the first meaningful line.
-  const line = text.split(/\r?\n/).map((l) => l.trim()).find((l) => clean(l).length >= 3);
-  if (line) {
-    const t = clean(line);
-    if (t.length >= 3) return t;
-  }
-  // Last resort: leading slice of the whole message.
-  return clean(text).slice(0, 60).trim();
+  // Last resort: leading slice (even if generic — better than empty).
+  return fixCaps(clean(text).slice(0, 60).trim());
 }
 
 function normalizeEmirate(raw: string | undefined | null): string | null {
@@ -198,7 +212,7 @@ export async function extractAndSaveDraft(text: string, source: string, sourceMe
         categorySlug: detectCategory(text),
         emirateSlug: normalizeEmirate(text) ?? 'dubai',
         jobType: DEFAULT_JOB_TYPE as never,
-        contactWhatsapp: extractPhone(text) || (sourceMetadata?.from ? String(sourceMetadata.from).replace(/[^\d+]/g, '') : null),
+        contactWhatsapp: extractPhone(text) || null, // body only — never the sender number
         applyEmail: extractEmail(text),
         status: 'draft', // never auto-publish an unparsed message
         publishedAt: null,
@@ -243,7 +257,8 @@ export async function extractAndSaveDraft(text: string, source: string, sourceMe
       freeZone: draft.freeZone,
       skills: draft.tags ?? [],
       benefits: draft.benefits ?? [],
-      contactWhatsapp: draft.contactWhatsapp || extractPhone(text) || (sourceMetadata?.from ? String(sourceMetadata.from).replace(/[^\d+]/g, '') : null),
+      // Contact number from the post body only — NEVER the sender's number (kept in sourceMetadata).
+      contactWhatsapp: draft.contactWhatsapp || extractPhone(text) || null,
       applyEmail: draft.contactEmail || extractEmail(text),
       status: opts?.autoPublish ? 'active' : 'draft',
       publishedAt: opts?.autoPublish ? new Date() : null,

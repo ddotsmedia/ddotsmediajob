@@ -150,7 +150,7 @@ function EditModal({ draft, onClose, onDone }: { draft: Draft; onClose: () => vo
     title: draft.title, companyName: draft.company?.name ?? '', categorySlug: draft.categorySlug, emirateSlug: draft.emirateSlug,
     jobType: draft.jobType, experienceLevel: draft.experienceLevel ?? '', salaryMin: draft.salaryMin?.toString() ?? '', salaryMax: draft.salaryMax?.toString() ?? '',
     description: draft.description,
-    contactWhatsapp: draft.contactWhatsapp || (draft.sourceMetadata?.from ? String(draft.sourceMetadata.from).replace(/[^\d+]/g, '') : '') || extractPhoneText(draft.description),
+    contactWhatsapp: draft.contactWhatsapp || extractPhoneText(draft.description),
     contactEmail: draft.applyEmail || extractEmailText(`${draft.description}\n${(draft.sourceMetadata as { rawText?: string } | null)?.rawText ?? ''}`),
     visaProvided: draft.visaProvided, accommodationProvided: draft.accommodationProvided, isUrgent: draft.isUrgent, isFresher: draft.isFresher,
   });
