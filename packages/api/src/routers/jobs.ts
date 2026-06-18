@@ -7,6 +7,7 @@ import {
   applications,
   jobseekerProfiles,
   employerProfiles,
+  siteSettings,
   users,
   eq,
   and,
@@ -155,7 +156,10 @@ export const jobsRouter = router({
     const [activeAgg] = job.employerId
       ? await ctx.db.select({ n: count() }).from(jobs).where(and(eq(jobs.employerId, job.employerId), eq(jobs.status, 'active')))
       : [{ n: 0 }];
-    return { ...job, employerResponseHours: ep?.responseHours ?? null, employerActiveJobs: activeAgg?.n ?? 0 };
+    // About-employer visibility: global setting AND per-job flag (both default true).
+    const gRow = await ctx.db.query.siteSettings.findFirst({ where: eq(siteSettings.key, 'show_employer_info') });
+    const globalOn = (gRow?.value as { enabled?: boolean } | null)?.enabled !== false;
+    return { ...job, employerResponseHours: ep?.responseHours ?? null, employerActiveJobs: activeAgg?.n ?? 0, showEmployer: globalOn && job.showEmployerInfo };
   }),
 
   /** Featured jobs for the homepage. */

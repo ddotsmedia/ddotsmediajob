@@ -232,6 +232,13 @@
       "when": 1781628951032,
       "tag": "0032_silky_agent_brand",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1781746574335,
+      "tag": "0033_many_wallop",
+      "breakpoints": true
     }
   ]
 }

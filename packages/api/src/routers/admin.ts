@@ -409,6 +409,7 @@ export const adminRouter = router({
       isFeatured: z.boolean(),
       freeZone: z.boolean(),
       isAnonymous: z.boolean(),
+      showEmployerInfo: z.boolean(),
       skills: z.array(z.string().max(50)).max(40),
       benefits: z.array(z.string().max(80)).max(20),
       contactWhatsapp: z.string().max(30).optional(),

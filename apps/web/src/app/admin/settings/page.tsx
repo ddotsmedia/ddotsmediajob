@@ -52,6 +52,19 @@ export default function AdminSettingsPage() {
           />
         </div>
 
+        <div className="flex items-center justify-between border-t pt-4">
+          <div>
+            <Label>Show About Employer on all job posts</Label>
+            <p className="text-xs text-navy-700/50">Global default. Individual jobs can override in the job editor.</p>
+          </div>
+          <input
+            type="checkbox"
+            defaultChecked={((s.show_employer_info as { enabled?: boolean } | undefined)?.enabled ?? true)}
+            onChange={(e) => setSetting.mutate({ key: 'show_employer_info', value: { enabled: e.target.checked } })}
+            className="h-5 w-5 rounded text-teal-600"
+          />
+        </div>
+
         <div className="border-t pt-4">
           <Label>Featured jobs on homepage</Label>
           <div className="mt-2 flex gap-2">

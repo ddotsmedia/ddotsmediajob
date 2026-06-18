@@ -232,6 +232,7 @@ export const jobs = pgTable(
     salaryPeriod: salaryPeriodEnum('salary_period').default('monthly').notNull(),
     salaryHidden: boolean('salary_hidden').default(false).notNull(),
     salaryNegotiable: boolean('salary_negotiable').default(false).notNull(),
+    showEmployerInfo: boolean('show_employer_info').default(true).notNull(),
     isRemote: boolean('is_remote').default(false).notNull(),
     isUrgent: boolean('is_urgent').default(false).notNull(),
     isFresher: boolean('is_fresher').default(false).notNull(),

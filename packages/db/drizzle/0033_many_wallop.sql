@@ -1,0 +1,1 @@
+ALTER TABLE "jobs" ADD COLUMN "show_employer_info" boolean DEFAULT true NOT NULL;

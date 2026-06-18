@@ -15,7 +15,7 @@ const STATUSES = ['active', 'pending', 'rejected', 'closed', 'expired', 'filled'
 const FLAGS = [
   ['visaProvided', 'Visa provided'], ['accommodationProvided', 'Accommodation'], ['isFresher', 'Freshers welcome'],
   ['isRemote', 'Remote'], ['isUrgent', 'Urgent'], ['isFeatured', 'Featured'], ['freeZone', 'Free zone'],
-  ['isAnonymous', 'Anonymous'], ['salaryHidden', 'Hide salary'],
+  ['isAnonymous', 'Anonymous'], ['salaryHidden', 'Hide salary'], ['showEmployerInfo', 'Show About Employer'],
 ] as const;
 
 type Form = {
@@ -23,7 +23,7 @@ type Form = {
   jobType: string; salaryMin: string; salaryMax: string; status: string;
   contactWhatsapp: string; applyEmail: string; skills: string; benefits: string;
   visaProvided: boolean; accommodationProvided: boolean; isFresher: boolean; isRemote: boolean;
-  isUrgent: boolean; isFeatured: boolean; freeZone: boolean; isAnonymous: boolean; salaryHidden: boolean;
+  isUrgent: boolean; isFeatured: boolean; freeZone: boolean; isAnonymous: boolean; salaryHidden: boolean; showEmployerInfo: boolean;
 };
 
 export default function AdminJobEditPage({ params }: { params: Promise<{ id: string }> }) {
@@ -52,7 +52,7 @@ export default function AdminJobEditPage({ params }: { params: Promise<{ id: str
       skills: (j.skills ?? []).join(', '), benefits: (j.benefits ?? []).join(', '),
       visaProvided: j.visaProvided, accommodationProvided: j.accommodationProvided, isFresher: j.isFresher,
       isRemote: j.isRemote, isUrgent: j.isUrgent, isFeatured: j.isFeatured, freeZone: j.freeZone,
-      isAnonymous: j.isAnonymous, salaryHidden: j.salaryHidden,
+      isAnonymous: j.isAnonymous, salaryHidden: j.salaryHidden, showEmployerInfo: j.showEmployerInfo ?? true,
     });
   }, [job.data, f]);
 
@@ -67,7 +67,7 @@ export default function AdminJobEditPage({ params }: { params: Promise<{ id: str
       salaryMin: f.salaryMin ? Number(f.salaryMin) : null, salaryMax: f.salaryMax ? Number(f.salaryMax) : null,
       salaryHidden: f.salaryHidden, visaProvided: f.visaProvided, accommodationProvided: f.accommodationProvided,
       isFresher: f.isFresher, isRemote: f.isRemote, isUrgent: f.isUrgent, isFeatured: f.isFeatured,
-      freeZone: f.freeZone, isAnonymous: f.isAnonymous,
+      freeZone: f.freeZone, isAnonymous: f.isAnonymous, showEmployerInfo: f.showEmployerInfo,
       skills: f.skills.split(',').map((s) => s.trim()).filter(Boolean),
       benefits: f.benefits.split(',').map((s) => s.trim()).filter(Boolean),
       contactWhatsapp: f.contactWhatsapp || undefined, applyEmail: f.applyEmail || undefined,

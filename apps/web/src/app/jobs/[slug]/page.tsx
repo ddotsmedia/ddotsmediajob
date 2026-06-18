@@ -305,45 +305,6 @@ export default async function JobDetailPage({ params }: Props) {
               </CardContent>
             </Card>
 
-            {!job.isAnonymous && (
-              <Card>
-                <CardContent className="p-6">
-                  <h2 className="font-display text-base font-bold text-navy-900">About the employer</h2>
-                  <div className="mt-3 flex items-start gap-3">
-                    {job.company?.logoUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={job.company.logoUrl} alt="" className="h-11 w-11 shrink-0 rounded-lg object-cover" />
-                    ) : (
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-teal-600 text-sm font-bold text-white">{(job.company?.name ?? 'DE').replace(/[^a-zA-Z]/g, '').slice(0, 2).toUpperCase() || 'DE'}</div>
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <p className="flex items-center gap-1.5 font-semibold text-navy-900">
-                        {job.company?.name ?? 'Direct Employer'}
-                        {job.company?.isVerified && <BadgeCheck className="h-4 w-4 text-teal-500" />}
-                      </p>
-                      <p className="text-sm text-navy-700/60">📍 {emirate?.name ?? 'UAE'} · {job.employerActiveJobs} active job{job.employerActiveJobs === 1 ? '' : 's'}</p>
-                      {(() => { const b = responseBadge(job.employerResponseHours); return b ? <span className={`mt-2 inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${b.cls}`}>{b.label}</span> : null; })()}
-                      {job.company?.about && <p className="mt-2 line-clamp-3 text-sm text-navy-700/80">{job.company.about}</p>}
-                      {job.company?.slug && (
-                        <Link href={`/companies/${job.company.slug}`} className="mt-2 inline-block text-sm font-semibold text-teal-600 hover:underline">View company profile →</Link>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            <Card>
-              <CardContent className="p-6">
-                <h2 className="font-display text-base font-bold text-navy-900">Explore more</h2>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <Link href={`/jobs/${job.categorySlug}-jobs-in-${job.emirateSlug}`} className="rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-sm text-teal-700 hover:bg-teal-100">More {category?.name} jobs in {emirate?.name}</Link>
-                  <Link href={`/salary/${job.categorySlug}-salary-in-${job.emirateSlug}`} className="rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-sm text-teal-700 hover:bg-teal-100">{category?.name} salary in {emirate?.name}</Link>
-                  <Link href={`/interview-questions/${job.categorySlug}-in-uae`} className="rounded-full border border-navy-200 bg-white px-3 py-1 text-sm text-navy-700 hover:bg-navy-50">{category?.name} interview questions</Link>
-                </div>
-              </CardContent>
-            </Card>
-
             {/* How to apply — direct contact methods */}
             {(() => {
               const wa = (job.applyWhatsapp || job.contactWhatsapp || '').replace(/\D/g, '');
@@ -380,6 +341,45 @@ export default async function JobDetailPage({ params }: Props) {
                 </Card>
               );
             })()}
+
+            <Card>
+              <CardContent className="p-6">
+                <h2 className="font-display text-base font-bold text-navy-900">Explore more</h2>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Link href={`/jobs/${job.categorySlug}-jobs-in-${job.emirateSlug}`} className="rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-sm text-teal-700 hover:bg-teal-100">More {category?.name} jobs in {emirate?.name}</Link>
+                  <Link href={`/salary/${job.categorySlug}-salary-in-${job.emirateSlug}`} className="rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-sm text-teal-700 hover:bg-teal-100">{category?.name} salary in {emirate?.name}</Link>
+                  <Link href={`/interview-questions/${job.categorySlug}-in-uae`} className="rounded-full border border-navy-200 bg-white px-3 py-1 text-sm text-navy-700 hover:bg-navy-50">{category?.name} interview questions</Link>
+                </div>
+              </CardContent>
+            </Card>
+
+            {job.showEmployer && !job.isAnonymous && (
+              <Card>
+                <CardContent className="p-6">
+                  <h2 className="font-display text-base font-bold text-navy-900">About the employer</h2>
+                  <div className="mt-3 flex items-start gap-3">
+                    {job.company?.logoUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={job.company.logoUrl} alt="" className="h-11 w-11 shrink-0 rounded-lg object-cover" />
+                    ) : (
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-teal-600 text-sm font-bold text-white">{(job.company?.name ?? 'DE').replace(/[^a-zA-Z]/g, '').slice(0, 2).toUpperCase() || 'DE'}</div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="flex items-center gap-1.5 font-semibold text-navy-900">
+                        {job.company?.name ?? 'Direct Employer'}
+                        {job.company?.isVerified && <BadgeCheck className="h-4 w-4 text-teal-500" />}
+                      </p>
+                      <p className="text-sm text-navy-700/60">📍 {emirate?.name ?? 'UAE'} · {job.employerActiveJobs} active job{job.employerActiveJobs === 1 ? '' : 's'}</p>
+                      {(() => { const b = responseBadge(job.employerResponseHours); return b ? <span className={`mt-2 inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${b.cls}`}>{b.label}</span> : null; })()}
+                      {job.company?.about && <p className="mt-2 line-clamp-3 text-sm text-navy-700/80">{job.company.about}</p>}
+                      {job.company?.slug && (
+                        <Link href={`/companies/${job.company.slug}`} className="mt-2 inline-block text-sm font-semibold text-teal-600 hover:underline">View company profile →</Link>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             <SimilarJobs jobId={job.id} />
           </div>
