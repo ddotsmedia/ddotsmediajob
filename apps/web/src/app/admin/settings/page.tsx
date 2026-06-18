@@ -5,6 +5,7 @@ import { Loader2, Save } from 'lucide-react';
 import { trpc } from '@/trpc/react';
 import { Button } from '@/components/ui/button';
 import { Input, Label } from '@/components/ui/primitives';
+import { Switch } from '@/components/ui/switch';
 
 const INTEGRATIONS: { key: 'email' | 'storage' | 'search' | 'realtime' | 'analytics' | 'monitoring'; label: string; offHint: string }[] = [
   { key: 'email', label: 'Email (Resend)', offHint: 'Set RESEND_API_KEY (re_…) — emails are skipped until configured.' },
@@ -39,29 +40,27 @@ export default function AdminSettingsPage() {
       <p className="text-navy-700/60">Control platform behaviour.</p>
 
       <div className="mt-6 space-y-4 rounded-xl border bg-white p-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4 py-1">
           <div>
-            <Label>Auto-approve new jobs</Label>
+            <p className="text-sm font-medium text-navy-900">Auto-approve new jobs</p>
             <p className="text-xs text-navy-700/50">Skip the manual approval queue.</p>
           </div>
-          <input
-            type="checkbox"
-            defaultChecked={Boolean(s.auto_approve_jobs)}
-            onChange={(e) => setSetting.mutate({ key: 'auto_approve_jobs', value: e.target.checked })}
-            className="h-5 w-5 rounded text-teal-600"
+          <Switch
+            checked={Boolean(s.auto_approve_jobs)}
+            disabled={setSetting.isPending}
+            onCheckedChange={(v) => setSetting.mutate({ key: 'auto_approve_jobs', value: v })}
           />
         </div>
 
-        <div className="flex items-center justify-between border-t pt-4">
+        <div className="flex items-center justify-between gap-4 border-t py-1 pt-4">
           <div>
-            <Label>Show About Employer on all job posts</Label>
+            <p className="text-sm font-medium text-navy-900">Show About Employer on all job posts</p>
             <p className="text-xs text-navy-700/50">Global default. Individual jobs can override in the job editor.</p>
           </div>
-          <input
-            type="checkbox"
-            defaultChecked={((s.show_employer_info as { enabled?: boolean } | undefined)?.enabled ?? true)}
-            onChange={(e) => setSetting.mutate({ key: 'show_employer_info', value: { enabled: e.target.checked } })}
-            className="h-5 w-5 rounded text-teal-600"
+          <Switch
+            checked={(s.show_employer_info as { enabled?: boolean } | undefined)?.enabled ?? true}
+            disabled={setSetting.isPending}
+            onCheckedChange={(v) => setSetting.mutate({ key: 'show_employer_info', value: { enabled: v } })}
           />
         </div>
 
