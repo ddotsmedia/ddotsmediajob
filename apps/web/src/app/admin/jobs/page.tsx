@@ -138,7 +138,7 @@ export default function AdminJobsPage() {
             </thead>
             <tbody>
               {rows.map((j) => (
-                <tr key={j.id} className="border-b last:border-0">
+                <tr key={j.id} className="border-b last:border-0 odd:bg-white even:bg-navy-50/40 hover:bg-teal-50/40">
                   <td className="px-4 py-3"><input type="checkbox" checked={sel.has(j.id)} onChange={() => toggle(j.id)} aria-label={`Select ${j.title}`} /></td>
                   <td className="px-4 py-3 font-medium text-navy-900">
                     {j.title} {j.isFeatured && <Badge className="ml-1">★</Badge>}

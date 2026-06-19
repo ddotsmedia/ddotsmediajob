@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Briefcase, Users, FileText, Building2, CheckSquare, Clock, TrendingUp, FilePen, ArrowRight } from 'lucide-react';
+import { Briefcase, Users, CheckSquare, Clock, TrendingUp, FilePen, Plus } from 'lucide-react';
 import { categoryBySlug, timeAgo } from '@ddots/shared';
 import { getApi } from '@/trpc/server';
 import { StatCard } from '@/components/dashboard/stat-card';
@@ -8,6 +8,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/primitives';
 
 export const dynamic = 'force-dynamic';
+
+const STATUS_COLOR: Record<string, string> = {
+  active: 'bg-green-100 text-green-700',
+  draft: 'bg-amber-100 text-amber-700',
+  pending: 'bg-blue-100 text-blue-700',
+  expired: 'bg-navy-100 text-navy-600',
+  rejected: 'bg-red-100 text-red-700',
+};
 
 export default async function AdminDashboard() {
   const api = await getApi();
@@ -24,32 +32,30 @@ export default async function AdminDashboard() {
         )}
       </div>
 
-      {/* Quick actions */}
+      {/* Quick actions bar */}
+      <div className="flex flex-wrap gap-2">
+        <Button asChild size="sm"><Link href="/admin/jobs/add"><Plus /> Add Job</Link></Button>
+        <Button asChild size="sm" variant={stats.draftJobs > 0 ? 'accent' : 'outline'}><Link href="/admin/jobs/drafts"><FilePen /> View Drafts ({stats.draftJobs})</Link></Button>
+        <Button asChild size="sm" variant="outline"><Link href="/admin/jobs"><Briefcase /> View All Jobs</Link></Button>
+      </div>
+
+      {/* Stat cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard icon={Briefcase} label="Total Jobs" value={stats.jobs} />
+        <StatCard icon={CheckSquare} label="Active" value={stats.activeJobs} />
         <Link
           href="/admin/jobs/drafts"
-          className={`flex items-center gap-3 rounded-xl border p-4 transition-colors ${
-            stats.draftJobs > 0
-              ? 'border-amber-300 bg-amber-50 hover:bg-amber-100'
-              : 'bg-white hover:border-teal-300'
-          }`}
+          className={`flex items-center gap-3 rounded-xl border p-4 transition-colors ${stats.draftJobs > 0 ? 'border-amber-300 bg-amber-50 hover:bg-amber-100' : 'bg-white hover:border-teal-300'}`}
         >
           <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${stats.draftJobs > 0 ? 'bg-amber-500 text-white' : 'bg-navy-50 text-navy-500'}`}>
             <FilePen className="h-5 w-5" />
           </span>
           <div className="min-w-0 flex-1">
             <div className="font-display text-xl font-extrabold text-navy-900">{stats.draftJobs}</div>
-            <div className="text-sm text-navy-700/60">Job Drafts</div>
+            <div className="text-sm text-navy-700/60">Drafts</div>
           </div>
-          <ArrowRight className="h-4 w-4 shrink-0 text-navy-700/40" />
         </Link>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard icon={Briefcase} label="Total Jobs" value={stats.jobs} />
         <StatCard icon={Users} label="Users" value={stats.users} />
-        <StatCard icon={FileText} label="Applications" value={stats.applications} />
-        <StatCard icon={Building2} label="Companies" value={stats.companies} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -81,7 +87,7 @@ export default async function AdminDashboard() {
               <div key={j.id} className="flex items-center justify-between p-4">
                 <span className="truncate text-sm font-medium text-navy-900">{j.title}</span>
                 <span className="flex items-center gap-2 text-xs text-navy-700/50">
-                  <Badge variant="muted" className="capitalize">{j.status}</Badge>
+                  <Badge className={`capitalize ${STATUS_COLOR[j.status] ?? 'bg-navy-100 text-navy-700'}`}>{j.status}</Badge>
                   <Clock className="h-3 w-3" /> {timeAgo(j.createdAt)}
                 </span>
               </div>

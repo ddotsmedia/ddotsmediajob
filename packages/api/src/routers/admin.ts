@@ -146,7 +146,7 @@ async function insertAdminJob(db: typeof import('@ddots/db').db, actorId: string
 export const adminRouter = router({
   /** Dashboard stats. */
   stats: adminProcedure.query(async ({ ctx }) => {
-    const [j, u, a, c, pending, draft, expired] = await Promise.all([
+    const [j, u, a, c, pending, draft, expired, active] = await Promise.all([
       ctx.db.select({ v: count() }).from(jobs),
       ctx.db.select({ v: count() }).from(users),
       ctx.db.select({ v: count() }).from(applications),
@@ -154,6 +154,7 @@ export const adminRouter = router({
       ctx.db.select({ v: count() }).from(jobs).where(eq(jobs.status, 'pending')),
       ctx.db.select({ v: count() }).from(jobs).where(eq(jobs.status, 'draft')),
       ctx.db.select({ v: count() }).from(jobs).where(eq(jobs.status, 'expired')),
+      ctx.db.select({ v: count() }).from(jobs).where(eq(jobs.status, 'active')),
     ]);
     return {
       jobs: j[0]?.v ?? 0,
@@ -163,6 +164,7 @@ export const adminRouter = router({
       pendingJobs: pending[0]?.v ?? 0,
       draftJobs: draft[0]?.v ?? 0,
       expiredJobs: expired[0]?.v ?? 0,
+      activeJobs: active[0]?.v ?? 0,
     };
   }),
 
