@@ -419,17 +419,20 @@ export default async function JobDetailPage({ params }: Props) {
           <div id="apply" className="scroll-mt-24 space-y-4 lg:sticky lg:top-20 lg:self-start">
             <Card>
               <CardContent className="p-5">
-                <JobActions
-                  jobId={job.id}
-                  title={job.title}
-                  slug={job.slug}
-                  company={job.isAnonymous ? null : job.company?.name}
-                  applyEmail={job.applyEmail}
-                  applyWhatsapp={job.applyWhatsapp}
-                  contactWhatsapp={job.contactWhatsapp}
-                />
-                <div className="mt-3">
-                  <QuickApplyButton jobId={job.id} className="w-full" preferWhatsapp={job.applyWhatsapp || job.contactWhatsapp} preferEmail={job.applyEmail} />
+                {/* Apply buttons — desktop only; mobile uses the sticky bottom bar */}
+                <div className="hidden lg:block">
+                  <JobActions
+                    jobId={job.id}
+                    title={job.title}
+                    slug={job.slug}
+                    company={job.isAnonymous ? null : job.company?.name}
+                    applyEmail={job.applyEmail}
+                    applyWhatsapp={job.applyWhatsapp}
+                    contactWhatsapp={job.contactWhatsapp}
+                  />
+                  <div className="mt-3">
+                    <QuickApplyButton jobId={job.id} className="w-full" preferWhatsapp={job.applyWhatsapp || job.contactWhatsapp} preferEmail={job.applyEmail} />
+                  </div>
                 </div>
 
                 {/* Stats row */}
@@ -489,7 +492,13 @@ export default async function JobDetailPage({ params }: Props) {
           </div>
         </div>
       </div>
-      <MobileApplyBar salary={formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod, job.salaryHidden, job.salaryNegotiable)} />
+      <MobileApplyBar
+        title={job.title}
+        url={`${SITE.url}/jobs/${job.slug}`}
+        waHref={(() => { const wa = (job.applyWhatsapp || job.contactWhatsapp || '').replace(/\D/g, ''); return wa ? `https://wa.me/${wa}?text=${encodeURIComponent(`Hi, I'm interested in the ${job.title} position`)}` : null; })()}
+        applyHref={job.applyUrl || (job.applyEmail ? `mailto:${job.applyEmail}?subject=${encodeURIComponent(`Application for ${job.title}`)}` : '#apply')}
+        expired={!!(job.expiresAt && isExpired(job.expiresAt)) || job.status !== 'active'}
+      />
     </div>
   );
 }
