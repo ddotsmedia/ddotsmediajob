@@ -3,14 +3,14 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { LucideIcon } from 'lucide-react';
-import { LayoutGrid, Footprints, Zap, ShieldCheck, Sparkles, Clock, FileText, BarChart3, ShieldAlert, Calculator } from 'lucide-react';
+import { LayoutGrid, Footprints, Zap, ShieldCheck, Sparkles, Clock, FileText, BarChart3, ShieldAlert, Calculator, MessageCircle } from 'lucide-react';
 import { CATEGORIES, categoryBySlug } from '@ddots/shared';
 import { trpc } from '@/trpc/react';
 import { CategoryIcon } from '@/components/category-icon';
 import { cn } from '@/lib/utils';
 
 const linkBase = 'flex items-center gap-2 rounded-md px-2 py-1.5 text-[12px] transition-colors duration-150 hover:bg-[#e0f5f7] hover:text-[#085041]';
-const titleCls = 'mb-1.5 mt-4 pl-2 text-[10px] font-semibold uppercase tracking-[0.04em] text-[#64748b]';
+const titleCls = 'mb-1.5 mt-4 border-l-2 border-teal-500 pl-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500';
 const ico = 'h-[15px] w-[15px] shrink-0 text-[#2a9aa4]';
 
 const BROWSE: { label: string; href: string; icon: LucideIcon }[] = [
@@ -39,7 +39,7 @@ export function HomeSidebar() {
   const row = (active: boolean) => cn(linkBase, active ? 'border-l-2 border-teal-500 bg-[#e0f5f7] pl-[6px] font-medium text-[#085041]' : 'text-navy-800');
 
   return (
-    <div className="sticky top-20 bg-white">
+    <div className="sticky top-20 rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
       <p className={cn(titleCls, 'mt-0')}>Browse Jobs</p>
       <nav className="space-y-0.5">
         {BROWSE.map((b) => {
@@ -82,8 +82,8 @@ export function HomeSidebar() {
       <div className="mt-4 rounded-lg bg-[#e8f8ee] p-3">
         <p className="text-sm font-bold text-navy-900">80,000+ members</p>
         <p className="text-xs text-navy-700/70">76 groups · Post jobs free</p>
-        <Link href="/whatsapp-groups" className="mt-2 inline-flex w-full items-center justify-center rounded-lg bg-[#25D366] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#1da851]">
-          Join community
+        <Link href="/whatsapp-groups" className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-[#25D366] px-3 py-2 text-xs font-semibold text-white hover:bg-[#1da851]">
+          <MessageCircle className="h-4 w-4" /> Join community
         </Link>
       </div>
     </div>

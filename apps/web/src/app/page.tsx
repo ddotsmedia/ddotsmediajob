@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowRight, MapPin, Clock } from 'lucide-react';
+import { ArrowRight, MapPin, Clock, Briefcase, MessageCircle, Users } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import type { inferRouterOutputs } from '@trpc/server';
 import type { AppRouter } from '@ddots/api';
 import { CATEGORIES, EMIRATES, SITE, formatJobDate, isNew, formatSalary, categoryBySlug, emirateBySlug } from '@ddots/shared';
@@ -100,12 +101,12 @@ export default async function HomePage() {
       </section>
 
       {/* ── Stats bar (dark strip) ─────────────────────── */}
-      <section className="border-t border-navy-800 bg-[#0c1425]">
+      <section className="border-t-2 border-teal-500 bg-[#0c1425]">
         <div className="mx-auto grid max-w-5xl grid-cols-2 gap-px px-4 py-8 text-center md:grid-cols-4">
-          <DarkStat value={stats.totalActive} suffix="+" label="Active Jobs" />
-          <DarkStat value={76} label="WA Groups" />
-          <DarkStat value={7} label="Emirates" />
-          <DarkStat value={stats.totalSeekers} suffix="+" label="Jobseekers" />
+          <DarkStat value={stats.totalActive} suffix="+" label="Active Jobs" icon={Briefcase} />
+          <DarkStat value={76} label="WA Groups" icon={MessageCircle} />
+          <DarkStat value={7} label="Emirates" icon={MapPin} />
+          <DarkStat value={stats.totalSeekers} suffix="+" label="Jobseekers" icon={Users} />
         </div>
       </section>
 
@@ -128,7 +129,7 @@ export default async function HomePage() {
           { l: 'Visa Provided', h: '/jobs/visa-provided' },
           { l: 'Freshers', h: '/jobs/fresher-jobs-uae' },
         ].map((p) => (
-          <Link key={p.h} href={p.h} className="shrink-0 rounded-full border px-3 py-1.5 text-sm font-medium text-navy-700 transition-colors hover:border-teal-400 hover:bg-teal-50 hover:text-teal-700">
+          <Link key={p.h} href={p.h} className="shrink-0 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-navy-700 transition-colors hover:border-teal-300 hover:text-teal-700">
             {p.l}
           </Link>
         ))}
@@ -136,7 +137,7 @@ export default async function HomePage() {
 
       {/* ── Latest Jobs (primary) ──────────────────────── */}
       <section className="py-8">
-        <SectionHead title="Latest Jobs" subtitle="Freshly posted roles across the UAE" href="/jobs" />
+        <SectionHead title="Latest Jobs" subtitle={`Showing ${Math.min(6, recent.length)} of ${stats.totalActive.toLocaleString('en-AE')} jobs`} href="/jobs" />
         {recent.length === 0 ? (
           <div className="mt-8 rounded-2xl border border-dashed bg-white p-10 text-center">
             <p className="font-display text-lg font-bold text-navy-900">No jobs yet</p>
@@ -245,7 +246,7 @@ function LatestJobCard({ job }: { job: RecentJob }) {
   return (
     <Link
       href={`/jobs/${job.slug}`}
-      className="group flex flex-col gap-3 rounded-xl border bg-white p-5 transition-all hover:-translate-y-0.5 hover:border-teal-300 hover:shadow-md"
+      className="group flex flex-col gap-3 rounded-xl border border-l-2 border-l-transparent bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-teal-300 hover:border-l-teal-400 hover:shadow-md"
     >
       <div className="flex items-start gap-3">
         {job.company?.logoUrl ? (
@@ -280,9 +281,10 @@ function LatestJobCard({ job }: { job: RecentJob }) {
   );
 }
 
-function DarkStat({ value, label, suffix }: { value: number; label: string; suffix?: string }) {
+function DarkStat({ value, label, suffix, icon: Icon }: { value: number; label: string; suffix?: string; icon: LucideIcon }) {
   return (
     <div className="px-2 py-1">
+      <Icon className="mx-auto mb-1 h-5 w-5 text-teal-400/70" />
       <div className="font-display text-2xl font-extrabold text-teal-400 md:text-3xl">
         <NumberTicker value={value} suffix={suffix} />
       </div>
@@ -296,7 +298,8 @@ function SectionHead({ title, subtitle, href }: { title: string; subtitle?: stri
     <div className="flex items-end justify-between">
       <div>
         <h2 className="font-display text-2xl font-bold text-navy-900 md:text-3xl">{title}</h2>
-        {subtitle && <p className="mt-1 text-navy-700/60">{subtitle}</p>}
+        <div className="mt-1.5 h-1 w-12 rounded-full bg-teal-500" />
+        {subtitle && <p className="mt-2 text-navy-700/60">{subtitle}</p>}
       </div>
       {href && (
         <Link href={href} className="hidden shrink-0 items-center gap-1 text-sm font-semibold text-teal-600 hover:underline sm:flex">

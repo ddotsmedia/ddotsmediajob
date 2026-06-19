@@ -10,7 +10,7 @@ import { CategoryIcon } from '@/components/category-icon';
 import { cn } from '@/lib/utils';
 
 const linkBase = 'flex items-center gap-2 rounded-md px-2 py-1.5 text-[12px] transition-colors duration-150 hover:bg-[rgba(42,154,164,0.08)]';
-const titleCls = 'mb-1.5 mt-4 pl-2 text-[10px] font-semibold uppercase tracking-[0.04em] text-[#64748b]';
+const titleCls = 'mb-1.5 mt-4 border-l-2 border-teal-500 pl-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500';
 
 function CountBadge({ n }: { n: number }) {
   if (!n) return null;
@@ -41,7 +41,7 @@ export function JobsNavSidebar() {
   ];
 
   return (
-    <div className="bg-white">
+    <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
       <p className={cn(titleCls, 'mt-0')}>Browse</p>
       <nav className="space-y-0.5">
         {browse.map((b) => {
