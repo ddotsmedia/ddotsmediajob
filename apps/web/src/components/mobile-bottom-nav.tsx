@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { Home, Search, Bookmark, LayoutDashboard, Briefcase } from 'lucide-react';
+import { trpc } from '@/trpc/react';
 import { cn } from '@/lib/utils';
 
 /** Fixed bottom navigation for mobile (≤ md). Hidden on dashboard sub-routes that have their own tabs. */
@@ -12,14 +13,16 @@ export function MobileBottomNav() {
   const { data: session } = useSession();
   const role = session?.user?.role;
   const dashHref = role === 'admin' ? '/admin' : role === 'employer' ? '/employer' : '/dashboard';
+  const adminStats = trpc.admin.stats.useQuery(undefined, { enabled: role === 'admin', staleTime: 60_000 });
+  const draftBadge = role === 'admin' ? (adminStats.data?.draftJobs ?? 0) : 0;
 
   const items = [
-    { href: '/', label: 'Home', icon: Home },
-    { href: '/jobs', label: 'Jobs', icon: Search },
+    { href: '/', label: 'Home', icon: Home, badge: 0 },
+    { href: '/jobs', label: 'Jobs', icon: Search, badge: 0 },
     session
-      ? { href: '/dashboard/saved', label: 'Saved', icon: Bookmark }
-      : { href: '/employer/post', label: 'Post', icon: Briefcase },
-    { href: dashHref, label: session ? 'Dashboard' : 'Sign in', icon: LayoutDashboard, fallback: '/login' },
+      ? { href: '/dashboard/saved', label: 'Saved', icon: Bookmark, badge: 0 }
+      : { href: '/employer/post', label: 'Post', icon: Briefcase, badge: 0 },
+    { href: dashHref, label: session ? 'Dashboard' : 'Sign in', icon: LayoutDashboard, fallback: '/login', badge: draftBadge },
   ];
 
   return (
@@ -38,7 +41,10 @@ export function MobileBottomNav() {
                 active ? 'text-teal-600' : 'text-navy-700/60',
               )}
             >
-              <Icon className="h-5 w-5" />
+              <span className="relative">
+                <Icon className="h-5 w-5" />
+                {item.badge > 0 && <span className="absolute -right-2 -top-1 rounded-full bg-amber-500 px-1 text-[9px] font-bold text-white">{item.badge}</span>}
+              </span>
               {item.label}
             </Link>
           );

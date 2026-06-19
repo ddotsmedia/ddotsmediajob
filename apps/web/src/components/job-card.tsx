@@ -60,7 +60,7 @@ export function JobCard({ job }: { job: JobCardData }) {
       )}
     >
       <div className="flex items-start gap-4">
-        <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg">
+        <div className="h-9 w-9 shrink-0 overflow-hidden rounded-lg sm:h-10 sm:w-10">
           {job.company?.logoUrl && !job.isAnonymous ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={job.company.logoUrl} alt="" className="h-full w-full object-cover" />
