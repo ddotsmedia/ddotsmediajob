@@ -50,7 +50,6 @@ export function avatarFor(name?: string | null): { initials: string; color: stri
 export function JobCard({ job }: { job: JobCardData }) {
   const emirate = emirateBySlug(job.emirateSlug);
   const category = categoryBySlug(job.categorySlug);
-  const av = avatarFor(job.isAnonymous ? 'Confidential' : job.company?.name);
   return (
     <div
       className={cn(
@@ -60,14 +59,16 @@ export function JobCard({ job }: { job: JobCardData }) {
       )}
     >
       <div className="flex items-start gap-4">
-        <div className="h-9 w-9 shrink-0 overflow-hidden rounded-lg sm:h-10 sm:w-10">
-          {job.company?.logoUrl && !job.isAnonymous ? (
-            // eslint-disable-next-line @next/next/no-img-element
+        {job.company?.logoUrl && !job.isAnonymous ? (
+          <div className="h-9 w-9 shrink-0 overflow-hidden rounded-lg sm:h-10 sm:w-10">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={job.company.logoUrl} alt="" className="h-full w-full object-cover" />
-          ) : (
-            <span className={cn('flex h-full w-full items-center justify-center text-sm font-bold text-white', av.color)}>{av.initials}</span>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-teal-100 bg-teal-50 text-xl sm:h-10 sm:w-10">
+            {getJobEmoji(job.title, job.categorySlug)}
+          </div>
+        )}
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <h3 className="font-display text-sm font-semibold text-navy-900 group-hover:text-teal-600">

@@ -7,7 +7,7 @@ import type { AppRouter } from '@ddots/api';
 import { CATEGORIES, EMIRATES, SITE, formatJobDate, isNew, formatSalary, categoryBySlug, emirateBySlug, getJobEmoji } from '@ddots/shared';
 import { getApi } from '@/trpc/server';
 import { JobSearchBar } from '@/components/job-search-bar';
-import { JobCard, avatarFor } from '@/components/job-card';
+import { JobCard } from '@/components/job-card';
 import { HomeSidebar } from '@/components/home-sidebar';
 import { CategoryIcon } from '@/components/category-icon';
 import { NumberTicker } from '@/components/magic/number-ticker';
@@ -253,7 +253,7 @@ function LatestJobCard({ job }: { job: RecentJob }) {
           // eslint-disable-next-line @next/next/no-img-element
           <img src={job.company.logoUrl} alt="" className="h-10 w-10 shrink-0 rounded-lg object-cover" />
         ) : (
-          (() => { const av = avatarFor(job.company?.name); return <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-sm font-bold text-white ${av.color}`}>{av.initials}</span>; })()
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-teal-100 bg-teal-50 text-xl">{getJobEmoji(job.title, job.categorySlug)}</span>
         )}
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">

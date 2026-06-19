@@ -218,8 +218,8 @@ export default async function JobDetailPage({ params }: Props) {
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={job.company.logoUrl} alt="" className="h-[52px] w-[52px] shrink-0 rounded-xl object-cover" />
                   ) : (
-                    <div className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-xl bg-teal-600 font-display text-lg font-bold text-white">
-                      {(job.isAnonymous ? 'C' : (job.company?.name ?? 'DE')).replace(/[^a-zA-Z]/g, '').slice(0, 2).toUpperCase() || 'DE'}
+                    <div className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-xl border border-teal-100 bg-teal-50 text-2xl">
+                      {getJobEmoji(job.title, job.categorySlug)}
                     </div>
                   )}
                   <div className="min-w-0 flex-1">
