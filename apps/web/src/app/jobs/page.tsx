@@ -5,6 +5,7 @@ import { auth } from '@ddots/auth';
 import { getApi } from '@/trpc/server';
 import { JobCard } from '@/components/job-card';
 import { JobFilters } from '@/components/job-filters';
+import { JobsNavSidebar } from '@/components/jobs-nav-sidebar';
 import { MobileFilterSheet } from '@/components/mobile-filter-sheet';
 import { JobSearchBar } from '@/components/job-search-bar';
 import { Pagination } from '@/components/pagination';
@@ -58,7 +59,8 @@ export default async function JobsPage({ searchParams }: { searchParams: Promise
       </div>
 
       <div className="mx-auto grid max-w-7xl gap-6 px-4 py-8 lg:grid-cols-[280px_1fr]">
-        <div className="hidden lg:sticky lg:top-20 lg:block lg:self-start">
+        <div className="hidden space-y-6 lg:sticky lg:top-20 lg:block lg:self-start">
+          <JobsNavSidebar />
           <JobFilters />
         </div>
 
@@ -89,7 +91,7 @@ export default async function JobsPage({ searchParams }: { searchParams: Promise
               </Link>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="grid gap-4 xl:grid-cols-2">
               {cards.map((job) => (
                 <JobCard key={job.id} job={job} />
               ))}
