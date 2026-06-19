@@ -17,6 +17,7 @@ import {
   formatJobDate,
   UAE_TZ,
   SITE,
+  getJobEmoji,
 } from '@ddots/shared';
 import { getApi } from '@/trpc/server';
 import { JobActions } from '@/components/job-actions';
@@ -223,7 +224,7 @@ export default async function JobDetailPage({ params }: Props) {
                   )}
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h1 className="max-w-full break-words font-display text-xl font-bold text-navy-900 sm:text-2xl">{job.title}</h1>
+                      <h1 className="max-w-full break-words font-display text-xl font-bold text-navy-900 sm:text-2xl">{getJobEmoji(job.title, job.categorySlug)} {job.title}</h1>
                       {job.isUrgent && <Badge variant="urgent">Urgent</Badge>}
                       {job.isFeatured && <Badge>Featured</Badge>}
                       {job.viewCount > 50 && <Badge variant="urgent">🔥 Popular</Badge>}

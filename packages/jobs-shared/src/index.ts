@@ -2,6 +2,7 @@ export * from './constants';
 export * from './validators';
 export * from './date-utils';
 export * from './i18n';
+export * from './job-emoji';
 
 /** Build a URL-friendly slug from arbitrary text. */
 export function slugify(input: string): string {

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { Loader2, Star, Trash2, ExternalLink, Search, Pencil, Check, X, Download } from 'lucide-react';
-import { JOB_STATUS, formatSalary, formatShort } from '@ddots/shared';
+import { JOB_STATUS, formatSalary, formatShort, getJobEmoji } from '@ddots/shared';
 import { trpc } from '@/trpc/react';
 import { Input, Select, Badge } from '@/components/ui/primitives';
 import { Button } from '@/components/ui/button';
@@ -141,7 +141,7 @@ export default function AdminJobsPage() {
                 <tr key={j.id} className="border-b last:border-0 odd:bg-white even:bg-navy-50/40 hover:bg-teal-50/40">
                   <td className="px-4 py-3"><input type="checkbox" checked={sel.has(j.id)} onChange={() => toggle(j.id)} aria-label={`Select ${j.title}`} /></td>
                   <td className="px-4 py-3 font-medium text-navy-900">
-                    {j.title} {j.isFeatured && <Badge className="ml-1">★</Badge>}
+                    {getJobEmoji(j.title, j.categorySlug)} {j.title} {j.isFeatured && <Badge className="ml-1">★</Badge>}
                   </td>
                   <td className="px-4 py-3 text-navy-700/70">{j.company?.name ?? '—'}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-navy-700/60">{formatShort(j.publishedAt ?? j.createdAt)}</td>

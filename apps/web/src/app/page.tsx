@@ -4,7 +4,7 @@ import { ArrowRight, MapPin, Clock, Briefcase, MessageCircle, Users } from 'luci
 import type { LucideIcon } from 'lucide-react';
 import type { inferRouterOutputs } from '@trpc/server';
 import type { AppRouter } from '@ddots/api';
-import { CATEGORIES, EMIRATES, SITE, formatJobDate, isNew, formatSalary, categoryBySlug, emirateBySlug } from '@ddots/shared';
+import { CATEGORIES, EMIRATES, SITE, formatJobDate, isNew, formatSalary, categoryBySlug, emirateBySlug, getJobEmoji } from '@ddots/shared';
 import { getApi } from '@/trpc/server';
 import { JobSearchBar } from '@/components/job-search-bar';
 import { JobCard, avatarFor } from '@/components/job-card';
@@ -257,7 +257,7 @@ function LatestJobCard({ job }: { job: RecentJob }) {
         )}
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
-            <h3 className="font-display text-sm font-semibold leading-snug text-navy-900 group-hover:text-teal-600 line-clamp-2">{job.title}</h3>
+            <h3 className="font-display text-sm font-semibold leading-snug text-navy-900 group-hover:text-teal-600 line-clamp-2">{getJobEmoji(job.title, job.categorySlug)} {job.title}</h3>
             <span className="flex shrink-0 gap-1">
               {fresh && <Badge className="bg-green-100 text-green-700">NEW</Badge>}
               {job.source === 'whapi' && <Badge className="bg-[#25D366]/15 text-[#1a8a4d]">WA</Badge>}

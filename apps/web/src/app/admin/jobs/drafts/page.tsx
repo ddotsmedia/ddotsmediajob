@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { Loader2, Send, Trash2, Pencil, X } from 'lucide-react';
-import { formatRelative, CATEGORIES, EMIRATES, JOB_TYPES, EXPERIENCE_LEVELS, formatExperience } from '@ddots/shared';
+import { formatRelative, CATEGORIES, EMIRATES, JOB_TYPES, EXPERIENCE_LEVELS, formatExperience, getJobEmoji } from '@ddots/shared';
 import { trpc } from '@/trpc/react';
 import { Button } from '@/components/ui/button';
 import { Select, Badge, Input, Label, Textarea } from '@/components/ui/primitives';
@@ -99,7 +99,7 @@ export default function DraftsPage() {
               <tbody>
                 {drafts.data?.map((d) => (
                   <tr key={d.id} className="border-b last:border-0">
-                    <td className="px-4 py-3 font-medium text-navy-900">{d.title}<span className="block text-xs font-normal text-navy-700/50">{d.company?.name ?? 'Direct Employer'}</span></td>
+                    <td className="px-4 py-3 font-medium text-navy-900">{getJobEmoji(d.title, d.categorySlug)} {d.title}<span className="block text-xs font-normal text-navy-700/50">{d.company?.name ?? 'Direct Employer'}</span></td>
                     <td className="px-4 py-3"><SourceBadge source={d.source} /></td>
                     <td className="px-4 py-3"><SenderCell meta={d.sourceMetadata as SenderMeta | null} /></td>
                     <td className="whitespace-nowrap px-4 py-3 text-navy-700/50">Created {formatRelative(d.createdAt)}</td>
@@ -121,7 +121,7 @@ export default function DraftsPage() {
           <div className="mt-6 space-y-3 md:hidden">
             {drafts.data?.map((d) => (
               <div key={d.id} className="rounded-xl border bg-white p-4">
-                <p className="font-semibold text-navy-900">{d.title}</p>
+                <p className="font-semibold text-navy-900">{getJobEmoji(d.title, d.categorySlug)} {d.title}</p>
                 <p className="text-xs text-navy-700/50">{d.company?.name ?? 'Direct Employer'}</p>
                 <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
                   <SourceBadge source={d.source} />

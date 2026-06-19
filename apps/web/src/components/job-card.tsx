@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { MapPin, Briefcase, Clock, Banknote, Zap, BadgeCheck, Sparkles } from 'lucide-react';
-import { formatSalary, formatJobDate, isNew, emirateBySlug, categoryBySlug, expiryDaysLeft, matchBadge } from '@ddots/shared';
+import { formatSalary, formatJobDate, isNew, emirateBySlug, categoryBySlug, expiryDaysLeft, matchBadge, getJobEmoji } from '@ddots/shared';
 import { Badge } from './ui/primitives';
 import { WhatsappApplyButton } from './whatsapp-apply-button';
 import { QuickApplyButton } from './quick-apply-button';
@@ -72,7 +72,7 @@ export function JobCard({ job }: { job: JobCardData }) {
           <div className="flex items-start justify-between gap-2">
             <h3 className="font-display text-sm font-semibold text-navy-900 group-hover:text-teal-600">
               <Link href={`/jobs/${job.slug}`} className="line-clamp-2 after:absolute after:inset-0" title={job.title}>
-                {job.title}
+                {getJobEmoji(job.title, job.categorySlug)} {job.title}
               </Link>
             </h3>
             {isNew(job.publishedAt ?? job.createdAt) && <Badge variant="success"><Sparkles className="mr-1 h-3 w-3" /> New</Badge>}
