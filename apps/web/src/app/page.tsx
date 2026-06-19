@@ -7,6 +7,7 @@ import { CATEGORIES, EMIRATES, SITE, formatJobDate, isNew, formatSalary, categor
 import { getApi } from '@/trpc/server';
 import { JobSearchBar } from '@/components/job-search-bar';
 import { JobCard, avatarFor } from '@/components/job-card';
+import { HomeSidebar } from '@/components/home-sidebar';
 import { CategoryIcon } from '@/components/category-icon';
 import { NumberTicker } from '@/components/magic/number-ticker';
 import { JobTicker } from '@/components/job-ticker';
@@ -111,8 +112,30 @@ export default async function HomePage() {
       {/* ── Live jobs ticker ───────────────────────────── */}
       <JobTicker items={tickerItems} />
 
+      {/* ── Below-hero: sidebar + main content ─────────── */}
+      <div className="mx-auto max-w-7xl gap-6 px-4 lg:grid lg:grid-cols-[220px_1fr]">
+        <aside className="hidden py-6 lg:block">
+          <HomeSidebar />
+        </aside>
+        <div className="min-w-0">
+
+      {/* Filter pills */}
+      <div className="flex flex-nowrap gap-2 overflow-x-auto scrollbar-hide pb-2 pt-6">
+        {[
+          { l: 'All Jobs', h: '/jobs' },
+          { l: 'Walk-in', h: '/jobs/walk-in-interview-dubai' },
+          { l: 'Urgent', h: '/jobs/urgent-hiring-uae' },
+          { l: 'Visa Provided', h: '/jobs/visa-provided' },
+          { l: 'Freshers', h: '/jobs/fresher-jobs-uae' },
+        ].map((p) => (
+          <Link key={p.h} href={p.h} className="shrink-0 rounded-full border px-3 py-1.5 text-sm font-medium text-navy-700 transition-colors hover:border-teal-400 hover:bg-teal-50 hover:text-teal-700">
+            {p.l}
+          </Link>
+        ))}
+      </div>
+
       {/* ── Latest Jobs (primary) ──────────────────────── */}
-      <section className="mx-auto max-w-7xl px-4 py-16">
+      <section className="py-8">
         <SectionHead title="Latest Jobs" subtitle="Freshly posted roles across the UAE" href="/jobs" />
         {recent.length === 0 ? (
           <div className="mt-8 rounded-2xl border border-dashed bg-white p-10 text-center">
@@ -122,7 +145,7 @@ export default async function HomePage() {
           </div>
         ) : (
           <>
-            <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-8 grid gap-4 lg:grid-cols-2">
               {recent.slice(0, 6).map((job) => (
                 <LatestJobCard key={job.id} job={job} />
               ))}
@@ -135,7 +158,7 @@ export default async function HomePage() {
       </section>
 
       {/* ── Category pills (compact, horizontal scroll) ── */}
-      <section className="mx-auto max-w-7xl px-4 pb-4">
+      <section className="pb-4">
         <div className="flex items-center gap-3">
           <span className="shrink-0 text-sm font-semibold text-navy-700">Browse Categories:</span>
           <div className="flex flex-nowrap gap-2 overflow-x-auto scrollbar-hide py-1">
@@ -152,6 +175,8 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+        </div>
+      </div>
 
       {/* ── Featured jobs ──────────────────────────────── */}
       {featured.length > 0 && (
