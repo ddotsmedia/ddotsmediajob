@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import type { LucideIcon } from 'lucide-react';
 import { LayoutGrid, Footprints, Zap, ShieldCheck, Sparkles, Clock, MapPin } from 'lucide-react';
-import { CATEGORIES, EMIRATES } from '@ddots/shared';
+import { CATEGORIES, EMIRATES, categoryBySlug } from '@ddots/shared';
 import { trpc } from '@/trpc/react';
 import { CategoryIcon } from '@/components/category-icon';
 import { cn } from '@/lib/utils';
@@ -27,6 +27,9 @@ export function JobsNavSidebar() {
   const byCat = stats.data?.byCategory ?? {};
   const byEm = stats.data?.byEmirate ?? {};
   const total = stats.data?.totalActive ?? 0;
+  const catsQ = trpc.content.categories.useQuery(undefined, { staleTime: 300_000 });
+  const dbCats = (catsQ.data ?? []).filter((c) => !c.parentId);
+  const categoryList = dbCats.length ? dbCats.map((c) => ({ slug: c.slug, name: c.name })) : CATEGORIES.map((c) => ({ slug: c.slug, name: c.name }));
 
   const row = (active: boolean) => cn(linkBase, active ? 'border-l-2 border-[#2a9aa4] bg-[#e0f5f7] pl-[6px] font-medium text-[#085041]' : 'text-navy-800');
   const ico = 'h-[15px] w-[15px] shrink-0 text-[#2a9aa4]';
@@ -56,9 +59,9 @@ export function JobsNavSidebar() {
 
       <p className={titleCls}>Categories</p>
       <nav className="space-y-0.5">
-        {CATEGORIES.map((c) => (
+        {categoryList.map((c) => (
           <Link key={c.slug} href={`/jobs?category=${c.slug}`} className={row(onPlainJobs && cat === c.slug)}>
-            <CategoryIcon name={c.icon} className={ico} /><span className="flex-1 truncate">{c.name}</span><CountBadge n={byCat[c.slug] ?? 0} />
+            <CategoryIcon name={categoryBySlug(c.slug)?.icon ?? 'briefcase'} className={ico} /><span className="flex-1 truncate">{c.name}</span><CountBadge n={byCat[c.slug] ?? 0} />
           </Link>
         ))}
       </nav>

@@ -16,9 +16,9 @@ export type CategoryRow = {
 
 const CACHE_KEY = 'categories:active';
 
-/** Active categories (Redis-cached 1h, fail-open to DB). */
+/** Active categories (Redis-cached 5min, fail-open to DB). */
 export async function getCategoriesCached(): Promise<CategoryRow[]> {
-  return cached(CACHE_KEY, 3600, async () => {
+  return cached(CACHE_KEY, 300, async () => {
     const rows = await db.query.jobCategories.findMany({ where: eq(jobCategories.isActive, true), orderBy: [asc(jobCategories.sortOrder), asc(jobCategories.name)] });
     return rows as CategoryRow[];
   });

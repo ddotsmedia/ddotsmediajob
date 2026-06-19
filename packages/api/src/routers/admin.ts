@@ -53,6 +53,18 @@ import { getWhapiSettings, invalidateWhapiSettings, evaluateCriteria, SKIP_LABEL
 import { invalidateCategories } from '../lib/categories';
 import { isJobMessage } from '../lib/import';
 
+/** Revalidate ISR pages that render the category list. No-op outside Next request scope. */
+function revalidateCategoryPages(): void {
+  try {
+    // dynamic require so non-Next callers (workers) don't choke on next/cache
+    const { revalidatePath } = require('next/cache') as typeof import('next/cache');
+    revalidatePath('/');
+    revalidatePath('/jobs');
+  } catch {
+    /* not in Next runtime — cache TTL + tRPC invalidate will catch up */
+  }
+}
+
 /** Shared shape for admin-created jobs (from any of the 6 ingestion methods). */
 const adminJobInput = z.object({
   title: z.string().min(3).max(160),
@@ -912,6 +924,7 @@ export const adminRouter = router({
       const slug = slugify(input.slug || input.name);
       await ctx.db.insert(jobCategories).values({ slug, name: input.name, nameAr: input.nameAr || null, icon: input.icon || null, parentId: input.parentId ?? null, sortOrder: input.sortOrder, isActive: input.isActive }).onConflictDoNothing();
       await invalidateCategories();
+      revalidateCategoryPages();
       await audit(ctx.session.user.id, 'admin.category.create', 'job_categories', undefined, { slug });
       return { ok: true, slug };
     }),
@@ -921,6 +934,7 @@ export const adminRouter = router({
     .mutation(async ({ ctx, input }) => {
       await ctx.db.update(jobCategories).set({ name: input.name, nameAr: input.nameAr ?? null, icon: input.icon ?? null, parentId: input.parentId ?? null, sortOrder: input.sortOrder, isActive: input.isActive }).where(eq(jobCategories.id, input.id));
       await invalidateCategories();
+      revalidateCategoryPages();
       await audit(ctx.session.user.id, 'admin.category.update', 'job_categories', input.id);
       return { ok: true };
     }),
@@ -932,6 +946,7 @@ export const adminRouter = router({
     if ((used?.n ?? 0) > 0) throw new TRPCError({ code: 'BAD_REQUEST', message: `Cannot delete — ${used!.n} job(s) use this category.` });
     await ctx.db.delete(jobCategories).where(eq(jobCategories.id, input.id));
     await invalidateCategories();
+    revalidateCategoryPages();
     await audit(ctx.session.user.id, 'admin.category.delete', 'job_categories', input.id, { slug: cat.slug });
     return { ok: true };
   }),

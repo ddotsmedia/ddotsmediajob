@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { LucideIcon } from 'lucide-react';
 import { LayoutGrid, Footprints, Zap, ShieldCheck, Sparkles, Clock, FileText, BarChart3, ShieldAlert, Calculator, MessageCircle } from 'lucide-react';
-import { CATEGORIES, categoryBySlug } from '@ddots/shared';
+import { categoryBySlug } from '@ddots/shared';
 import { trpc } from '@/trpc/react';
 import { CategoryIcon } from '@/components/category-icon';
 import { cn } from '@/lib/utils';
@@ -35,6 +35,12 @@ export function HomeSidebar() {
   const pathname = usePathname();
   const stats = trpc.jobs.stats.useQuery(undefined, { staleTime: 300_000 });
   const byCat = stats.data?.byCategory ?? {};
+  const cats = trpc.content.categories.useQuery(undefined, { staleTime: 300_000 });
+  // top-level active categories from DB (fallback to hardcoded list while loading)
+  const dbCats = (cats.data ?? []).filter((c) => !c.parentId);
+  const categoryList = dbCats.length
+    ? dbCats.slice(0, 10).map((c) => ({ slug: c.slug, name: c.name }))
+    : CAT_SLUGS.map((slug) => ({ slug, name: categoryBySlug(slug)?.name ?? slug }));
 
   const row = (active: boolean) => cn(linkBase, active ? 'border-l-2 border-teal-500 bg-[#e0f5f7] pl-[6px] font-medium text-[#085041]' : 'text-navy-800');
 
@@ -54,13 +60,12 @@ export function HomeSidebar() {
 
       <p className={titleCls}>Categories</p>
       <nav className="space-y-0.5">
-        {CAT_SLUGS.map((slug) => {
-          const c = categoryBySlug(slug) ?? CATEGORIES.find((x) => x.slug === slug);
-          if (!c) return null;
+        {categoryList.map(({ slug, name }) => {
+          const iconName = categoryBySlug(slug)?.icon ?? 'briefcase';
           const n = byCat[slug] ?? 0;
           return (
             <Link key={slug} href={`/category/${slug}`} className={row(pathname === `/category/${slug}`)}>
-              <CategoryIcon name={c.icon} className={ico} /><span className="flex-1 truncate">{c.name}</span>
+              <CategoryIcon name={iconName} className={ico} /><span className="flex-1 truncate">{name}</span>
               {n > 0 && <span className="ml-auto rounded bg-[#f0fdf4] px-1.5 text-xs font-medium text-green-700">{n}</span>}
             </Link>
           );
