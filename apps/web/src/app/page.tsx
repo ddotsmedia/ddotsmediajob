@@ -6,7 +6,7 @@ import type { AppRouter } from '@ddots/api';
 import { CATEGORIES, EMIRATES, SITE, formatJobDate, isNew, formatSalary, categoryBySlug, emirateBySlug } from '@ddots/shared';
 import { getApi } from '@/trpc/server';
 import { JobSearchBar } from '@/components/job-search-bar';
-import { JobCard } from '@/components/job-card';
+import { JobCard, avatarFor } from '@/components/job-card';
 import { CategoryIcon } from '@/components/category-icon';
 import { NumberTicker } from '@/components/magic/number-ticker';
 import { JobTicker } from '@/components/job-ticker';
@@ -222,14 +222,24 @@ function LatestJobCard({ job }: { job: RecentJob }) {
       href={`/jobs/${job.slug}`}
       className="group flex flex-col gap-3 rounded-xl border bg-white p-5 transition-all hover:-translate-y-0.5 hover:border-teal-300 hover:shadow-md"
     >
-      <div className="flex items-start justify-between gap-2">
-        <h3 className="font-display font-bold leading-snug text-navy-900 group-hover:text-teal-600">{job.title}</h3>
-        <span className="flex shrink-0 gap-1">
-          {fresh && <Badge className="bg-green-100 text-green-700">NEW</Badge>}
-          {job.source === 'whapi' && <Badge className="bg-[#25D366]/15 text-[#1a8a4d]">via WhatsApp</Badge>}
-        </span>
+      <div className="flex items-start gap-3">
+        {job.company?.logoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={job.company.logoUrl} alt="" className="h-10 w-10 shrink-0 rounded-lg object-cover" />
+        ) : (
+          (() => { const av = avatarFor(job.company?.name); return <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-sm font-bold text-white ${av.color}`}>{av.initials}</span>; })()
+        )}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="font-display text-sm font-semibold leading-snug text-navy-900 group-hover:text-teal-600 line-clamp-2">{job.title}</h3>
+            <span className="flex shrink-0 gap-1">
+              {fresh && <Badge className="bg-green-100 text-green-700">NEW</Badge>}
+              {job.source === 'whapi' && <Badge className="bg-[#25D366]/15 text-[#1a8a4d]">WA</Badge>}
+            </span>
+          </div>
+          <p className="text-xs text-navy-700/70">{job.company?.name ?? 'Direct Employer'}</p>
+        </div>
       </div>
-      <p className="text-sm text-navy-700/70">{job.company?.name ?? 'Direct Employer'}</p>
       <div className="flex flex-wrap items-center gap-2 text-xs text-navy-700/60">
         <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {emirate}</span>
         <Badge variant="muted">{category}</Badge>

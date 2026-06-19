@@ -39,31 +39,40 @@ export type JobCardData = {
   company?: { name: string | null; logoUrl?: string | null; isVerified?: boolean | null } | null;
 };
 
+const AVATAR_COLORS = ['bg-teal-600', 'bg-navy-700', 'bg-orange-500', 'bg-green-600', 'bg-amber-500', 'bg-rose-500', 'bg-sky-600', 'bg-violet-600'];
+export function avatarFor(name?: string | null): { initials: string; color: string } {
+  const n = (name ?? '').trim();
+  const initials = n.replace(/[^a-zA-Z ]/g, '').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join('') || 'DE';
+  const color = AVATAR_COLORS[(n.charCodeAt(0) || 0) % AVATAR_COLORS.length]!;
+  return { initials, color };
+}
+
 export function JobCard({ job }: { job: JobCardData }) {
   const emirate = emirateBySlug(job.emirateSlug);
   const category = categoryBySlug(job.categorySlug);
+  const av = avatarFor(job.isAnonymous ? 'Confidential' : job.company?.name);
   return (
     <div
       className={cn(
-        'group relative rounded-xl border bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-teal-300 hover:shadow-md',
+        'group relative min-h-[120px] rounded-xl border border-l-2 border-l-transparent bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-teal-300 hover:border-l-teal-500 hover:shadow-md',
         job.isFeatured && 'ring-1 ring-teal-200',
         job.walkIn && 'border-l-4 border-l-orange-400',
       )}
     >
       <div className="flex items-start gap-4">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-navy-50 text-navy-900">
-          {job.company?.logoUrl ? (
+        <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg">
+          {job.company?.logoUrl && !job.isAnonymous ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={job.company.logoUrl} alt="" className="h-full w-full rounded-lg object-cover" />
+            <img src={job.company.logoUrl} alt="" className="h-full w-full object-cover" />
           ) : (
-            <Briefcase className="h-5 w-5 text-teal-600" />
+            <span className={cn('flex h-full w-full items-center justify-center text-sm font-bold text-white', av.color)}>{av.initials}</span>
           )}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
-            <h3 className="font-display font-bold text-navy-900 group-hover:text-teal-600">
-              <Link href={`/jobs/${job.slug}`} className="after:absolute after:inset-0" title={job.title}>
-                {job.title.length > 50 ? `${job.title.slice(0, 50)}…` : job.title}
+            <h3 className="font-display text-sm font-semibold text-navy-900 group-hover:text-teal-600">
+              <Link href={`/jobs/${job.slug}`} className="line-clamp-2 after:absolute after:inset-0" title={job.title}>
+                {job.title}
               </Link>
             </h3>
             {isNew(job.publishedAt ?? job.createdAt) && <Badge variant="success"><Sparkles className="mr-1 h-3 w-3" /> New</Badge>}
