@@ -7,7 +7,7 @@ import type { AppRouter } from '@ddots/api';
 import { CATEGORIES, EMIRATES, SITE, formatJobDate, isNew, formatSalary, categoryBySlug, emirateBySlug, getJobEmoji } from '@ddots/shared';
 import { getApi } from '@/trpc/server';
 import { JobSearchBar } from '@/components/job-search-bar';
-import { JobCard } from '@/components/job-card';
+import { JobCard, formatWalkinDate } from '@/components/job-card';
 import { HomeSidebar } from '@/components/home-sidebar';
 import { CategoryIcon } from '@/components/category-icon';
 import { NumberTicker } from '@/components/magic/number-ticker';
@@ -259,6 +259,7 @@ function LatestJobCard({ job }: { job: RecentJob }) {
           <div className="flex items-start justify-between gap-2">
             <h3 className="font-display text-sm font-semibold leading-snug text-navy-900 group-hover:text-teal-600 line-clamp-2">{getJobEmoji(job.title, job.categorySlug)} {job.title}</h3>
             <span className="flex shrink-0 gap-1">
+              {job.walkIn && <Badge className="border-orange-300 bg-orange-50 text-orange-700">🚶 Walk-in</Badge>}
               {fresh && <Badge className="bg-green-100 text-green-700">NEW</Badge>}
               {job.source === 'whapi' && <Badge className="bg-[#25D366]/15 text-[#1a8a4d]">WA</Badge>}
             </span>
@@ -271,10 +272,14 @@ function LatestJobCard({ job }: { job: RecentJob }) {
         <Badge variant="muted">{category}</Badge>
       </div>
       <div className="mt-auto flex items-center justify-between border-t pt-3 text-sm">
-        {(() => {
-          const s = formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod, job.salaryHidden, job.salaryNegotiable);
-          return <span className={`font-semibold ${s === 'Salary not disclosed' ? 'text-navy-700/50' : 'text-teal-700'}`}>{s}</span>;
-        })()}
+        {job.walkIn && job.walkInDate ? (
+          <span className="font-semibold text-teal-700">📅 {formatWalkinDate(job.walkInDate)}{job.walkInTimeStart ? ` · ${job.walkInTimeStart}${job.walkInTimeEnd ? `–${job.walkInTimeEnd}` : ''}` : ''}</span>
+        ) : (
+          (() => {
+            const s = formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod, job.salaryHidden, job.salaryNegotiable);
+            return <span className={`font-semibold ${s === 'Salary not disclosed' ? 'text-navy-700/50' : 'text-teal-700'}`}>{s}</span>;
+          })()
+        )}
         <span className="inline-flex items-center gap-1 text-xs text-navy-700/50"><Clock className="h-3 w-3" /> {formatJobDate(job.publishedAt)}</span>
       </div>
     </Link>
