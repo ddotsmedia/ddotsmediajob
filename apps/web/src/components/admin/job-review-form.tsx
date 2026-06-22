@@ -25,6 +25,7 @@ const blank = {
   jobType: 'full-time', salaryMin: '', salaryMax: '', salaryHidden: false, salaryNegotiable: false,
   visaProvided: false, accommodationProvided: false, isFresher: false, isRemote: false, isUrgent: false,
   freeZone: false, isAnonymous: false, isFeatured: false, contactWhatsapp: '', applyEmail: '', skills: '', benefits: '',
+  walkIn: false, walkInDate: '', walkInTimeStart: '', walkInTimeEnd: '', walkInVenue: '', walkInMapsUrl: '',
   description: '<p></p>',
   titleAr: '', descriptionAr: '', requirementsAr: '', benefitsAr: [] as string[],
 };
@@ -89,6 +90,7 @@ export function AdminJobReviewForm({ draft, source = 'manual', onReset }: { draf
       salaryHidden: !f.salaryNegotiable && (f.salaryHidden || (!f.salaryMin && !f.salaryMax)), salaryNegotiable: f.salaryNegotiable, visaProvided: f.visaProvided, accommodationProvided: f.accommodationProvided,
       isFresher: f.isFresher, isRemote: f.isRemote, isUrgent: f.isUrgent, isFeatured: f.isFeatured,
       freeZone: f.freeZone, isAnonymous: f.isAnonymous, contactWhatsapp: f.contactWhatsapp || undefined, applyEmail: f.applyEmail || undefined,
+      walkIn: f.walkIn, walkInDate: f.walkInDate || undefined, walkInTimeStart: f.walkInTimeStart || undefined, walkInTimeEnd: f.walkInTimeEnd || undefined, walkInVenue: f.walkInVenue || undefined, walkInMapsUrl: f.walkInMapsUrl || undefined,
       skills: f.skills.split(',').map((s) => s.trim()).filter(Boolean),
       benefits: f.benefits.split(',').map((s) => s.trim()).filter(Boolean),
       titleAr: f.titleAr || undefined, descriptionAr: f.descriptionAr || undefined,
@@ -104,6 +106,8 @@ export function AdminJobReviewForm({ draft, source = 'manual', onReset }: { draf
   function submit(status: 'active' | 'draft', blast = false) {
     if (f.title.trim().length < 3) return toast.error('Title required');
     if (plain().length < 10) return toast.error('Description required');
+    if (f.walkIn && (!f.walkInDate || !f.walkInTimeStart || !f.walkInTimeEnd || !f.walkInVenue.trim()))
+      return toast.error('Walk-in: date, time from/to and venue are required');
     create.mutate(payload(status) as never, {
       onSuccess: (r: { slug: string }) => {
         if (blast) {
@@ -140,12 +144,25 @@ export function AdminJobReviewForm({ draft, source = 'manual', onReset }: { draf
       <div className="space-y-1.5"><Label>Description</Label><TiptapEditor value={f.description} onChange={(v) => set('description', v)} /></div>
 
       <div className="flex flex-wrap gap-x-6 gap-y-2">
-        {([['visaProvided', 'Visa provided'], ['accommodationProvided', 'Accommodation'], ['isFresher', 'Freshers welcome'], ['isRemote', 'Remote'], ['isUrgent', 'Urgent'], ['freeZone', 'Free zone'], ['isAnonymous', 'Anonymous'], ['isFeatured', 'Featured'], ['salaryHidden', 'Hide salary'], ['salaryNegotiable', 'Negotiable']] as const).map(([k, lbl]) => (
+        {([['visaProvided', 'Visa provided'], ['accommodationProvided', 'Accommodation'], ['isFresher', 'Freshers welcome'], ['isRemote', 'Remote'], ['isUrgent', 'Urgent'], ['freeZone', 'Free zone'], ['isAnonymous', 'Anonymous'], ['isFeatured', 'Featured'], ['salaryHidden', 'Hide salary'], ['salaryNegotiable', 'Negotiable'], ['walkIn', '🚶 Walk-in interview']] as const).map(([k, lbl]) => (
           <label key={k} className="flex items-center gap-2 text-sm text-navy-700">
             <input type="checkbox" checked={f[k]} onChange={(e) => set(k, e.target.checked)} className="h-4 w-4 rounded text-teal-600" /> {lbl}
           </label>
         ))}
       </div>
+
+      {f.walkIn && (
+        <div className="grid gap-5 rounded-lg border border-teal-200 bg-teal-50/40 p-4 sm:grid-cols-2">
+          <div className="sm:col-span-2 text-sm font-semibold text-teal-800">🚶 Walk-in Interview details</div>
+          <Field label="Date"><Input type="date" value={f.walkInDate} onChange={(e) => set('walkInDate', e.target.value)} /></Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Time from"><Input type="time" value={f.walkInTimeStart} onChange={(e) => set('walkInTimeStart', e.target.value)} /></Field>
+            <Field label="Time to"><Input type="time" value={f.walkInTimeEnd} onChange={(e) => set('walkInTimeEnd', e.target.value)} /></Field>
+          </div>
+          <Field label="Venue / Address" className="sm:col-span-2"><Textarea className="min-h-[70px] resize-y" value={f.walkInVenue} onChange={(e) => set('walkInVenue', e.target.value)} placeholder="Building, street, area, emirate" /></Field>
+          <Field label="Google Maps URL (optional)" className="sm:col-span-2"><Input value={f.walkInMapsUrl} onChange={(e) => set('walkInMapsUrl', e.target.value)} placeholder="https://maps.google.com/..." /></Field>
+        </div>
+      )}
 
       <div className="space-y-3 rounded-lg border border-teal-100 bg-teal-50/40 p-4">
         <div className="flex items-center gap-2 text-sm font-semibold text-teal-800"><Sparkles className="h-4 w-4" /> AI assist</div>
@@ -191,6 +208,6 @@ export function AdminJobReviewForm({ draft, source = 'manual', onReset }: { draf
   );
 }
 
-function Field({ label, children }: { label: React.ReactNode; children: React.ReactNode }) {
-  return <div className="space-y-1.5"><Label>{label}</Label>{children}</div>;
+function Field({ label, children, className }: { label: React.ReactNode; children: React.ReactNode; className?: string }) {
+  return <div className={cn('space-y-1.5', className)}><Label>{label}</Label>{children}</div>;
 }

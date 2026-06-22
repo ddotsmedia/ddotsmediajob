@@ -31,6 +31,7 @@ import { ReferJobButton } from '@/components/refer-job-button';
 import { SimilarJobs } from '@/components/similar-jobs';
 import { MobileApplyBar } from '@/components/mobile-apply-bar';
 import { SocialShareBar } from '@/components/jobs/SocialShareBar';
+import { formatWalkinDate } from '@/components/job-card';
 import { Badge, Card, CardContent } from '@/components/ui/primitives';
 import { Button } from '@/components/ui/button';
 import { parseRoleEmirate, roleEmirateMetadata, roleEmirateStaticParams, RoleEmirateView } from './role-emirate';
@@ -301,7 +302,16 @@ export default async function JobDetailPage({ params }: Props) {
               </CardContent>
             </Card>
 
-            <SocialShareBar title={job.title} url={`${SITE.url}/jobs/${job.slug}`} company={job.isAnonymous ? 'Confidential Company' : (job.company?.name ?? 'Direct Employer')} />
+            <SocialShareBar
+              title={job.title}
+              url={`${SITE.url}/jobs/${job.slug}`}
+              company={job.isAnonymous ? 'Confidential Company' : (job.company?.name ?? 'Direct Employer')}
+              walkIn={job.walkIn}
+              walkInDate={job.walkInDate}
+              walkInTimeStart={job.walkInTimeStart}
+              walkInTimeEnd={job.walkInTimeEnd}
+              walkInVenue={job.walkInVenue}
+            />
 
             <Card>
               <CardContent className="prose prose-slate max-w-none p-6 prose-headings:font-display">
@@ -423,21 +433,53 @@ export default async function JobDetailPage({ params }: Props) {
           <div id="apply" className="scroll-mt-24 space-y-4 lg:sticky lg:top-20 lg:self-start">
             <Card>
               <CardContent className="p-5">
-                {/* Apply buttons — desktop only; mobile uses the sticky bottom bar */}
-                <div className="hidden lg:block">
-                  <JobActions
-                    jobId={job.id}
-                    title={job.title}
-                    slug={job.slug}
-                    company={job.isAnonymous ? null : job.company?.name}
-                    applyEmail={job.applyEmail}
-                    applyWhatsapp={job.applyWhatsapp}
-                    contactWhatsapp={job.contactWhatsapp}
-                  />
-                  <div className="mt-3">
-                    <QuickApplyButton jobId={job.id} className="w-full" preferWhatsapp={job.applyWhatsapp || job.contactWhatsapp} preferEmail={job.applyEmail} />
-                  </div>
-                </div>
+                {job.walkIn ? (
+                  /* Walk-in interview — replaces the apply buttons */
+                  (() => {
+                    const wa = (job.applyWhatsapp || job.contactWhatsapp || '').replace(/\D/g, '');
+                    const dir = job.walkInMapsUrl || (job.walkInVenue ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(job.walkInVenue)}` : null);
+                    return (
+                      <div className="space-y-3">
+                        <div className="rounded-lg border border-teal-200 bg-teal-50/60 p-4">
+                          <p className="flex items-center gap-1.5 font-display text-sm font-bold text-teal-800">🚶 Walk-in Interview</p>
+                          <dl className="mt-2 space-y-1.5 text-sm text-navy-800">
+                            {job.walkInDate && <div className="flex gap-2"><span className="text-navy-700/60">📅 Date:</span> <span className="font-semibold">{formatWalkinDate(job.walkInDate)}</span></div>}
+                            {(job.walkInTimeStart || job.walkInTime) && <div className="flex gap-2"><span className="text-navy-700/60">⏰ Time:</span> <span className="font-semibold">{job.walkInTimeStart ? `${job.walkInTimeStart}${job.walkInTimeEnd ? ` – ${job.walkInTimeEnd}` : ''}` : job.walkInTime}</span></div>}
+                            {job.walkInVenue && <div className="flex gap-2"><span className="shrink-0 text-navy-700/60">📍 Venue:</span> <span className="font-semibold">{job.walkInVenue}</span></div>}
+                          </dl>
+                        </div>
+                        {dir && (
+                          <a href={dir} target="_blank" rel="noopener noreferrer" className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#E8622A] py-3 text-sm font-semibold text-white active:scale-95">
+                            📍 Get Directions
+                          </a>
+                        )}
+                        {wa && (
+                          <a href={`https://wa.me/${wa}?text=${encodeURIComponent(`Hi, I'm interested in the ${job.title} walk-in interview`)}`} target="_blank" rel="noopener noreferrer" className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#25D366] py-3 text-sm font-semibold text-white active:scale-95">
+                            💬 Contact on WhatsApp
+                          </a>
+                        )}
+                      </div>
+                    );
+                  })()
+                ) : (
+                  <>
+                    {/* Apply buttons — desktop only; mobile uses the sticky bottom bar */}
+                    <div className="hidden lg:block">
+                      <JobActions
+                        jobId={job.id}
+                        title={job.title}
+                        slug={job.slug}
+                        company={job.isAnonymous ? null : job.company?.name}
+                        applyEmail={job.applyEmail}
+                        applyWhatsapp={job.applyWhatsapp}
+                        contactWhatsapp={job.contactWhatsapp}
+                      />
+                      <div className="mt-3">
+                        <QuickApplyButton jobId={job.id} className="w-full" preferWhatsapp={job.applyWhatsapp || job.contactWhatsapp} preferEmail={job.applyEmail} />
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 {/* Stats row */}
                 <p className="mt-3 border-t pt-3 text-center text-xs text-navy-700/60">
@@ -499,8 +541,11 @@ export default async function JobDetailPage({ params }: Props) {
       <MobileApplyBar
         title={job.title}
         url={`${SITE.url}/jobs/${job.slug}`}
-        waHref={(() => { const wa = (job.applyWhatsapp || job.contactWhatsapp || '').replace(/\D/g, ''); return wa ? `https://wa.me/${wa}?text=${encodeURIComponent(`Hi, I'm interested in the ${job.title} position`)}` : null; })()}
-        applyHref={job.applyUrl || (job.applyEmail ? `mailto:${job.applyEmail}?subject=${encodeURIComponent(`Application for ${job.title}`)}` : '#apply')}
+        waHref={(() => { const wa = (job.applyWhatsapp || job.contactWhatsapp || '').replace(/\D/g, ''); return wa ? `https://wa.me/${wa}?text=${encodeURIComponent(`Hi, I'm interested in the ${job.title}${job.walkIn ? ' walk-in interview' : ' position'}`)}` : null; })()}
+        applyHref={job.walkIn
+          ? (job.walkInMapsUrl || (job.walkInVenue ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(job.walkInVenue)}` : '#apply'))
+          : (job.applyUrl || (job.applyEmail ? `mailto:${job.applyEmail}?subject=${encodeURIComponent(`Application for ${job.title}`)}` : '#apply'))}
+        applyLabel={job.walkIn ? '📍 Directions' : 'Apply Now'}
         expired={!!(job.expiresAt && isExpired(job.expiresAt)) || job.status !== 'active'}
       />
     </div>

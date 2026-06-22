@@ -24,6 +24,7 @@ type Form = {
   contactWhatsapp: string; applyEmail: string; skills: string; benefits: string;
   visaProvided: boolean; accommodationProvided: boolean; isFresher: boolean; isRemote: boolean;
   isUrgent: boolean; isFeatured: boolean; freeZone: boolean; isAnonymous: boolean; salaryHidden: boolean; showEmployerInfo: boolean;
+  walkIn: boolean; walkInDate: string; walkInTimeStart: string; walkInTimeEnd: string; walkInVenue: string; walkInMapsUrl: string;
 };
 
 export default function AdminJobEditPage({ params }: { params: Promise<{ id: string }> }) {
@@ -53,6 +54,7 @@ export default function AdminJobEditPage({ params }: { params: Promise<{ id: str
       visaProvided: j.visaProvided, accommodationProvided: j.accommodationProvided, isFresher: j.isFresher,
       isRemote: j.isRemote, isUrgent: j.isUrgent, isFeatured: j.isFeatured, freeZone: j.freeZone,
       isAnonymous: j.isAnonymous, salaryHidden: j.salaryHidden, showEmployerInfo: j.showEmployerInfo ?? true,
+      walkIn: j.walkIn, walkInDate: j.walkInDate ?? '', walkInTimeStart: j.walkInTimeStart ?? '', walkInTimeEnd: j.walkInTimeEnd ?? '', walkInVenue: j.walkInVenue ?? '', walkInMapsUrl: j.walkInMapsUrl ?? '',
     });
   }, [job.data, f]);
 
@@ -60,6 +62,8 @@ export default function AdminJobEditPage({ params }: { params: Promise<{ id: str
 
   function save() {
     if (!f) return;
+    if (f.walkIn && (!f.walkInDate || !f.walkInTimeStart || !f.walkInTimeEnd || !f.walkInVenue.trim()))
+      return toast.error('Walk-in: date, time from/to and venue are required');
     update.mutate({
       id,
       title: f.title, description: f.description, categorySlug: f.categorySlug, emirateSlug: f.emirateSlug,
@@ -68,6 +72,7 @@ export default function AdminJobEditPage({ params }: { params: Promise<{ id: str
       salaryHidden: f.salaryHidden, visaProvided: f.visaProvided, accommodationProvided: f.accommodationProvided,
       isFresher: f.isFresher, isRemote: f.isRemote, isUrgent: f.isUrgent, isFeatured: f.isFeatured,
       freeZone: f.freeZone, isAnonymous: f.isAnonymous, showEmployerInfo: f.showEmployerInfo,
+      walkIn: f.walkIn, walkInDate: f.walkInDate || undefined, walkInTimeStart: f.walkInTimeStart || undefined, walkInTimeEnd: f.walkInTimeEnd || undefined, walkInVenue: f.walkInVenue || undefined, walkInMapsUrl: f.walkInMapsUrl || undefined,
       skills: f.skills.split(',').map((s) => s.trim()).filter(Boolean),
       benefits: f.benefits.split(',').map((s) => s.trim()).filter(Boolean),
       contactWhatsapp: f.contactWhatsapp || undefined, applyEmail: f.applyEmail || undefined,
@@ -116,7 +121,23 @@ export default function AdminJobEditPage({ params }: { params: Promise<{ id: str
               <input type="checkbox" checked={f[k]} onChange={(e) => set(k, e.target.checked)} className="h-4 w-4 rounded text-teal-600" /> {lbl}
             </label>
           ))}
+          <label className="flex items-center gap-2 text-sm text-navy-700">
+            <input type="checkbox" checked={f.walkIn} onChange={(e) => set('walkIn', e.target.checked)} className="h-4 w-4 rounded text-teal-600" /> 🚶 Walk-in interview
+          </label>
         </div>
+
+        {f.walkIn && (
+          <div className="grid gap-5 rounded-lg border border-teal-200 bg-teal-50/40 p-4 sm:grid-cols-2">
+            <div className="text-sm font-semibold text-teal-800 sm:col-span-2">🚶 Walk-in Interview details</div>
+            <Fld label="Date"><Input type="date" value={f.walkInDate} onChange={(e) => set('walkInDate', e.target.value)} /></Fld>
+            <div className="grid grid-cols-2 gap-3">
+              <Fld label="Time from"><Input type="time" value={f.walkInTimeStart} onChange={(e) => set('walkInTimeStart', e.target.value)} /></Fld>
+              <Fld label="Time to"><Input type="time" value={f.walkInTimeEnd} onChange={(e) => set('walkInTimeEnd', e.target.value)} /></Fld>
+            </div>
+            <div className="sm:col-span-2"><Fld label="Venue / Address"><Textarea className="min-h-[70px] resize-y" value={f.walkInVenue} onChange={(e) => set('walkInVenue', e.target.value)} placeholder="Building, street, area, emirate" /></Fld></div>
+            <div className="sm:col-span-2"><Fld label="Google Maps URL (optional)"><Input value={f.walkInMapsUrl} onChange={(e) => set('walkInMapsUrl', e.target.value)} placeholder="https://maps.google.com/..." /></Fld></div>
+          </div>
+        )}
 
         <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
           <Button variant="accent" onClick={save} disabled={update.isPending}>{update.isPending ? <Loader2 className="animate-spin" /> : <Save />} Save changes</Button>

@@ -87,6 +87,12 @@ const adminJobInput = z.object({
   isFeatured: z.boolean().default(false),
   freeZone: z.boolean().default(false),
   isAnonymous: z.boolean().default(false),
+  walkIn: z.boolean().default(false),
+  walkInDate: z.string().max(20).optional(),
+  walkInTimeStart: z.string().max(10).optional(),
+  walkInTimeEnd: z.string().max(10).optional(),
+  walkInVenue: z.string().max(500).optional(),
+  walkInMapsUrl: z.string().max(500).optional(),
   skills: z.array(z.string().max(50)).max(40).default([]),
   benefits: z.array(z.string().max(80)).max(20).default([]),
   contactWhatsapp: z.string().max(30).optional(),
@@ -138,6 +144,12 @@ async function insertAdminJob(db: typeof import('@ddots/db').db, actorId: string
       isFeatured: input.isFeatured,
       freeZone: input.freeZone,
       isAnonymous: input.isAnonymous,
+      walkIn: input.walkIn,
+      walkInDate: input.walkIn ? input.walkInDate || null : null,
+      walkInTimeStart: input.walkIn ? input.walkInTimeStart || null : null,
+      walkInTimeEnd: input.walkIn ? input.walkInTimeEnd || null : null,
+      walkInVenue: input.walkIn ? input.walkInVenue || null : null,
+      walkInMapsUrl: input.walkIn ? input.walkInMapsUrl || null : null,
       skills: input.skills,
       benefits: input.benefits,
       contactWhatsapp: input.contactWhatsapp ?? null,
@@ -425,6 +437,12 @@ export const adminRouter = router({
       freeZone: z.boolean(),
       isAnonymous: z.boolean(),
       showEmployerInfo: z.boolean(),
+      walkIn: z.boolean().default(false),
+      walkInDate: z.string().max(20).optional(),
+      walkInTimeStart: z.string().max(10).optional(),
+      walkInTimeEnd: z.string().max(10).optional(),
+      walkInVenue: z.string().max(500).optional(),
+      walkInMapsUrl: z.string().max(500).optional(),
       skills: z.array(z.string().max(50)).max(40),
       benefits: z.array(z.string().max(80)).max(20),
       contactWhatsapp: z.string().max(30).optional(),
@@ -432,7 +450,7 @@ export const adminRouter = router({
       status: z.enum(['active', 'pending', 'rejected', 'closed', 'expired', 'filled', 'draft']),
     }))
     .mutation(async ({ ctx, input }) => {
-      const { id, applyEmail, ...rest } = input;
+      const { id, applyEmail, walkInDate, walkInTimeStart, walkInTimeEnd, walkInVenue, walkInMapsUrl, ...rest } = input;
       const [job] = await ctx.db
         .update(jobs)
         .set({
@@ -442,6 +460,11 @@ export const adminRouter = router({
           location: input.location ?? null,
           contactWhatsapp: input.contactWhatsapp ?? null,
           applyEmail: applyEmail || null,
+          walkInDate: input.walkIn ? walkInDate || null : null,
+          walkInTimeStart: input.walkIn ? walkInTimeStart || null : null,
+          walkInTimeEnd: input.walkIn ? walkInTimeEnd || null : null,
+          walkInVenue: input.walkIn ? walkInVenue || null : null,
+          walkInMapsUrl: input.walkIn ? walkInMapsUrl || null : null,
           publishedAt: input.status === 'active' ? new Date() : undefined,
         })
         .where(eq(jobs.id, id))

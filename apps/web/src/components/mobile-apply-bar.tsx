@@ -9,11 +9,12 @@ type Props = {
   url: string;
   waHref: string | null;
   applyHref: string;
+  applyLabel?: string;
   expired?: boolean;
 };
 
-/** Sticky mobile bottom bar (<lg) — WhatsApp + Apply Now + Share, or expired notice. */
-export function MobileApplyBar({ title, url, waHref, applyHref, expired }: Props) {
+/** Sticky mobile bottom bar (<lg) — WhatsApp + Apply/Directions + Share, or expired notice. */
+export function MobileApplyBar({ title, url, waHref, applyHref, applyLabel = 'Apply Now', expired }: Props) {
   const [sheet, setSheet] = useState(false);
 
   const wrap = 'fixed inset-x-0 z-50 border-t bg-white shadow-[0_-2px_10px_rgba(0,0,0,0.1)] lg:hidden';
@@ -56,7 +57,7 @@ export function MobileApplyBar({ title, url, waHref, applyHref, expired }: Props
             </a>
           )}
           <a href={applyHref} {...(applyHref.startsWith('http') ? { target: '_blank', rel: 'noopener noreferrer' } : {})} className="flex flex-1 items-center justify-center rounded-lg bg-[#E8622A] py-3 text-sm font-semibold text-white active:scale-95">
-            Apply Now
+            {applyLabel}
           </a>
           <button onClick={() => setSheet(true)} aria-label="Share" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border text-navy-700 active:scale-95">
             <Share2 className="h-5 w-5" />

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { MapPin, Briefcase, Clock, Banknote, Zap, BadgeCheck, Sparkles } from 'lucide-react';
+import { MapPin, Clock, Banknote, Zap, BadgeCheck, Sparkles, CalendarClock } from 'lucide-react';
 import { formatSalary, formatJobDate, isNew, emirateBySlug, categoryBySlug, expiryDaysLeft, matchBadge, getJobEmoji } from '@ddots/shared';
 import { Badge } from './ui/primitives';
 import { WhatsappApplyButton } from './whatsapp-apply-button';
@@ -29,6 +29,9 @@ export type JobCardData = {
   isAnonymous?: boolean;
   source?: string | null;
   walkIn?: boolean;
+  walkInDate?: string | null;
+  walkInTimeStart?: string | null;
+  walkInTimeEnd?: string | null;
   applyWhatsapp?: string | null;
   contactWhatsapp?: string | null;
   applicationCount?: number;
@@ -45,6 +48,14 @@ export function avatarFor(name?: string | null): { initials: string; color: stri
   const initials = n.replace(/[^a-zA-Z ]/g, '').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join('') || 'DE';
   const color = AVATAR_COLORS[(n.charCodeAt(0) || 0) % AVATAR_COLORS.length]!;
   return { initials, color };
+}
+
+/** "2026-06-25" -> "25 Jun". Returns raw string if unparseable. */
+export function formatWalkinDate(d: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d);
+  if (!m) return d;
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${Number(m[3])} ${months[Number(m[2]) - 1] ?? ''}`.trim();
 }
 
 export function JobCard({ job }: { job: JobCardData }) {
@@ -98,15 +109,22 @@ export function JobCard({ job }: { job: JobCardData }) {
             <span className="inline-flex items-center gap-1 capitalize">
               <Clock className="h-3.5 w-3.5" /> {job.jobType.replace('-', ' ')}
             </span>
-            {(() => {
-              const s = formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod, job.salaryHidden, job.salaryNegotiable);
-              return (
-                <span className={`inline-flex items-center gap-1 font-semibold ${s === 'Salary not disclosed' ? 'text-navy-700/50' : 'text-teal-700'}`}>
-                  <Banknote className="h-3.5 w-3.5" />
-                  {s}
-                </span>
-              );
-            })()}
+            {job.walkIn && job.walkInDate ? (
+              <span className="inline-flex items-center gap-1 font-semibold text-teal-700">
+                <CalendarClock className="h-3.5 w-3.5" />
+                {formatWalkinDate(job.walkInDate)}{job.walkInTimeStart ? ` · ${job.walkInTimeStart}${job.walkInTimeEnd ? `–${job.walkInTimeEnd}` : ''}` : ''}
+              </span>
+            ) : (
+              (() => {
+                const s = formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod, job.salaryHidden, job.salaryNegotiable);
+                return (
+                  <span className={`inline-flex items-center gap-1 font-semibold ${s === 'Salary not disclosed' ? 'text-navy-700/50' : 'text-teal-700'}`}>
+                    <Banknote className="h-3.5 w-3.5" />
+                    {s}
+                  </span>
+                );
+              })()
+            )}
           </div>
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
