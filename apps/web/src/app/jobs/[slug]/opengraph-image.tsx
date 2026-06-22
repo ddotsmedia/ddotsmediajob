@@ -7,6 +7,14 @@ export const alt = 'Job on DdotsMediaJobs';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
+/** "2026-06-25" -> "25 Jun 2026". Returns raw string if unparseable. */
+function ogDate(d: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d);
+  if (!m) return d;
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${Number(m[3])} ${months[Number(m[2]) - 1] ?? ''} ${m[1]}`.trim();
+}
+
 export default async function Image({ params }: { params: { slug: string } }) {
   let job: { title: string; companyName: string; location: string; salary: string } | null = null;
   try {
@@ -16,7 +24,9 @@ export default async function Image({ params }: { params: { slug: string } }) {
       title: j.title,
       companyName: j.company?.name ?? 'Direct Employer',
       location: j.location ?? emirateBySlug(j.emirateSlug)?.name ?? 'UAE',
-      salary: formatSalary(j.salaryMin, j.salaryMax, j.salaryPeriod, j.salaryHidden),
+      salary: j.walkIn && j.walkInDate
+        ? `🚶 Walk-in: ${ogDate(j.walkInDate)}`
+        : formatSalary(j.salaryMin, j.salaryMax, j.salaryPeriod, j.salaryHidden),
     };
   } catch {
     job = null;

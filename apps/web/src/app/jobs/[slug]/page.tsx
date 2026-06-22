@@ -66,12 +66,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!job) return { title: 'Job not found' };
   const emirate = emirateBySlug(job.emirateSlug)?.name ?? 'UAE';
   const company = job.company?.name ?? 'Direct Employer';
-  const title = `${job.title} at ${company} in ${emirate}, UAE | DdotsMediaJobs`;
+  // Don't produce "UAE, UAE" when the emirate is already UAE / ends with UAE.
+  const locationStr = /uae$/i.test(emirate.trim()) ? emirate : `${emirate}, UAE`;
+  const title = `${job.title} at ${company} in ${locationStr} | DdotsMediaJobs`;
   const pay = formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod, job.salaryHidden, job.salaryNegotiable);
   const posted = formatJobDate(job.publishedAt ?? job.createdAt);
   const stripHtml = (html: string) => html.replace(/<[^>]*>/g, '').replace(/[#*]+/g, ' ').replace(/\s+/g, ' ').trim();
-  const cleanDescription = stripHtml(job.description).slice(0, 60);
-  const description = `Apply for ${job.title} at ${company} in ${emirate}. ${pay}. ${cleanDescription}. Posted ${posted}. Apply on WhatsApp.`.slice(0, 160);
+  // Drop the job title if the description repeats it at the start, then cap length.
+  const stripTitle = (s: string) => { const t = job.title.trim(); return s.toLowerCase().startsWith(t.toLowerCase()) ? s.slice(t.length).replace(/^[\s:–-]+/, '') : s; };
+  const cleanDescription = stripTitle(stripHtml(job.description)).slice(0, 100);
+  const description = `Apply for ${job.title} at ${company} in ${locationStr}. ${pay}. ${cleanDescription}. Posted ${posted}. Apply on WhatsApp.`.slice(0, 200);
   const ogImage = `/jobs/${job.slug}/opengraph-image`;
   return {
     title,
