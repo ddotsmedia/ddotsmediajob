@@ -26,6 +26,7 @@ const blank = {
   visaProvided: false, accommodationProvided: false, isFresher: false, isRemote: false, isUrgent: false,
   freeZone: false, isAnonymous: false, isFeatured: false, contactWhatsapp: '', applyEmail: '', skills: '', benefits: '',
   walkIn: false, walkInDate: '', walkInTimeStart: '', walkInTimeEnd: '', walkInVenue: '', walkInMapsUrl: '',
+  walkInLastDate: '', walkInContactPhone: '', walkInRequiredDocs: '',
   description: '<p></p>',
   titleAr: '', descriptionAr: '', requirementsAr: '', benefitsAr: [] as string[],
 };
@@ -42,6 +43,34 @@ export function AdminJobReviewForm({ draft, source = 'manual', onReset }: { draf
   const conf = draft?.confidence ?? {};
   const create = trpc.admin.createJob.useMutation();
   const [perf, setPerf] = useState<{ estApplies7days: string; estViews7days: string; timeToFirstApply: string; salaryWarning: string | null } | null>(null);
+
+  // Walk-in AI extract
+  const [waModal, setWaModal] = useState(false);
+  const [waText, setWaText] = useState('');
+  const [waStatus, setWaStatus] = useState<'idle' | 'ok' | 'fail'>('idle');
+  const extractWalkin = trpc.ai.extractWalkin.useMutation({
+    onSuccess: (d) => {
+      if (!d) { setWaStatus('fail'); return; }
+      setF((s) => ({
+        ...s, walkIn: true,
+        title: d.title || s.title,
+        companyName: d.company || s.companyName,
+        location: d.location || s.location,
+        walkInDate: d.walkin_date || s.walkInDate,
+        walkInTimeStart: d.walkin_time_start || s.walkInTimeStart,
+        walkInTimeEnd: d.walkin_time_end || s.walkInTimeEnd,
+        walkInLastDate: d.walkin_last_date || s.walkInLastDate,
+        walkInVenue: d.venue || s.walkInVenue,
+        walkInContactPhone: d.contact_phone || s.walkInContactPhone,
+        walkInRequiredDocs: d.required_docs || s.walkInRequiredDocs,
+        description: d.description ? `<p>${d.description}</p>` : s.description,
+      }));
+      setWaStatus('ok');
+      setWaModal(false);
+      toast.success('Walk-in details extracted');
+    },
+    onError: () => { setWaStatus('fail'); toast.error('Extraction failed — try again'); },
+  });
 
   const suggestTitle = trpc.ai.autoCompleteJobTitle.useMutation({
     onSuccess: (d) => { if (d.suggestion) set('title', d.suggestion); toast.success('Title suggested'); },
@@ -91,6 +120,7 @@ export function AdminJobReviewForm({ draft, source = 'manual', onReset }: { draf
       isFresher: f.isFresher, isRemote: f.isRemote, isUrgent: f.isUrgent, isFeatured: f.isFeatured,
       freeZone: f.freeZone, isAnonymous: f.isAnonymous, contactWhatsapp: f.contactWhatsapp || undefined, applyEmail: f.applyEmail || undefined,
       walkIn: f.walkIn, walkInDate: f.walkInDate || undefined, walkInTimeStart: f.walkInTimeStart || undefined, walkInTimeEnd: f.walkInTimeEnd || undefined, walkInVenue: f.walkInVenue || undefined, walkInMapsUrl: f.walkInMapsUrl || undefined,
+      walkInLastDate: f.walkInLastDate || undefined, walkInContactPhone: f.walkInContactPhone || undefined, walkInRequiredDocs: f.walkInRequiredDocs || undefined,
       skills: f.skills.split(',').map((s) => s.trim()).filter(Boolean),
       benefits: f.benefits.split(',').map((s) => s.trim()).filter(Boolean),
       titleAr: f.titleAr || undefined, descriptionAr: f.descriptionAr || undefined,
@@ -153,7 +183,14 @@ export function AdminJobReviewForm({ draft, source = 'manual', onReset }: { draf
 
       {f.walkIn && (
         <div className="grid gap-5 rounded-lg border border-teal-200 bg-teal-50/40 p-4 sm:grid-cols-2">
-          <div className="sm:col-span-2 text-sm font-semibold text-teal-800">🚶 Walk-in Interview details</div>
+          <div className="flex items-center justify-between gap-2 sm:col-span-2">
+            <span className="text-sm font-semibold text-teal-800">🚶 Walk-in Interview details</span>
+            <span className="flex items-center gap-2">
+              {waStatus === 'ok' && <span className="text-xs font-semibold text-green-600">✓ Extracted</span>}
+              {waStatus === 'fail' && <span className="text-xs font-semibold text-red-600">✗ Try again</span>}
+              <Button type="button" variant="outline" size="sm" onClick={() => { setWaStatus('idle'); setWaModal(true); }}>🪄 Extract from WhatsApp message</Button>
+            </span>
+          </div>
           <Field label="Date"><Input type="date" value={f.walkInDate} onChange={(e) => set('walkInDate', e.target.value)} /></Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Time from"><Input type="time" value={f.walkInTimeStart} onChange={(e) => set('walkInTimeStart', e.target.value)} /></Field>
@@ -161,6 +198,26 @@ export function AdminJobReviewForm({ draft, source = 'manual', onReset }: { draf
           </div>
           <Field label="Venue / Address" className="sm:col-span-2"><Textarea className="min-h-[70px] resize-y" value={f.walkInVenue} onChange={(e) => set('walkInVenue', e.target.value)} placeholder="Building, street, area, emirate" /></Field>
           <Field label="Google Maps URL (optional)" className="sm:col-span-2"><Input value={f.walkInMapsUrl} onChange={(e) => set('walkInMapsUrl', e.target.value)} placeholder="https://maps.google.com/..." /></Field>
+          <Field label="Walk-in open until (optional)"><Input type="date" value={f.walkInLastDate} onChange={(e) => set('walkInLastDate', e.target.value)} /></Field>
+          <Field label="Contact phone"><Input type="tel" value={f.walkInContactPhone} onChange={(e) => set('walkInContactPhone', e.target.value)} placeholder="+971 XX XXX XXXX" /></Field>
+          <Field label="Required documents" className="sm:col-span-2"><Textarea className="min-h-[60px] resize-y" value={f.walkInRequiredDocs} onChange={(e) => set('walkInRequiredDocs', e.target.value)} placeholder="CV, passport copy, photo, certificates..." /></Field>
+        </div>
+      )}
+
+      {waModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" role="dialog" aria-modal="true">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setWaModal(false)} />
+          <div className="relative w-full max-w-lg rounded-xl bg-white p-5 shadow-xl">
+            <p className="font-display text-base font-bold text-navy-900">🪄 Extract walk-in details</p>
+            <p className="mt-1 text-sm text-navy-700/60">Paste the walk-in announcement text here.</p>
+            <Textarea className="mt-3 min-h-[180px] resize-y" value={waText} onChange={(e) => setWaText(e.target.value)} placeholder="Walk-in interview for Sales Executives…" />
+            <div className="mt-4 flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => setWaModal(false)}>Cancel</Button>
+              <Button size="sm" disabled={extractWalkin.isPending || waText.trim().length < 15} onClick={() => extractWalkin.mutate({ text: waText.trim() })}>
+                {extractWalkin.isPending ? <Loader2 className="animate-spin" /> : <WandSparkles />} Extract
+              </Button>
+            </div>
+          </div>
         </div>
       )}
 

@@ -260,6 +260,13 @@
       "when": 1781900000000,
       "tag": "0036_walkin_times",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1781900100000,
+      "tag": "0037_walkin_extra",
+      "breakpoints": true
     }
   ]
 }

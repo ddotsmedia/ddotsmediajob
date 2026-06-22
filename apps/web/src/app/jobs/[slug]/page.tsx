@@ -436,18 +436,27 @@ export default async function JobDetailPage({ params }: Props) {
                 {job.walkIn ? (
                   /* Walk-in interview — replaces the apply buttons */
                   (() => {
-                    const wa = (job.applyWhatsapp || job.contactWhatsapp || '').replace(/\D/g, '');
+                    const wa = (job.walkInContactPhone || job.applyWhatsapp || job.contactWhatsapp || '').replace(/\D/g, '');
                     const dir = job.walkInMapsUrl || (job.walkInVenue ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(job.walkInVenue)}` : null);
+                    const docs = (job.walkInRequiredDocs ?? '').split(/[,\n]/).map((d) => d.trim()).filter(Boolean);
                     return (
                       <div className="space-y-3">
                         <div className="rounded-lg border border-teal-200 bg-teal-50/60 p-4">
                           <p className="flex items-center gap-1.5 font-display text-sm font-bold text-teal-800">🚶 Walk-in Interview</p>
                           <dl className="mt-2 space-y-1.5 text-sm text-navy-800">
-                            {job.walkInDate && <div className="flex gap-2"><span className="text-navy-700/60">📅 Date:</span> <span className="font-semibold">{formatWalkinDate(job.walkInDate)}</span></div>}
+                            {job.walkInDate && <div className="flex gap-2"><span className="text-navy-700/60">📅 {job.walkInLastDate ? 'Open:' : 'Date:'}</span> <span className="font-semibold">{formatWalkinDate(job.walkInDate)}{job.walkInLastDate ? ` – ${formatWalkinDate(job.walkInLastDate)}` : ''}</span></div>}
                             {(job.walkInTimeStart || job.walkInTime) && <div className="flex gap-2"><span className="text-navy-700/60">⏰ Time:</span> <span className="font-semibold">{job.walkInTimeStart ? `${job.walkInTimeStart}${job.walkInTimeEnd ? ` – ${job.walkInTimeEnd}` : ''}` : job.walkInTime}</span></div>}
                             {job.walkInVenue && <div className="flex gap-2"><span className="shrink-0 text-navy-700/60">📍 Venue:</span> <span className="font-semibold">{job.walkInVenue}</span></div>}
                           </dl>
                         </div>
+                        {docs.length > 0 && (
+                          <div className="rounded-lg border bg-white p-4">
+                            <p className="text-sm font-bold text-navy-900">📋 Bring with you</p>
+                            <ul className="mt-2 space-y-1 text-sm text-navy-700">
+                              {docs.map((d) => <li key={d} className="flex items-center gap-2"><span className="text-teal-600">✓</span> {d}</li>)}
+                            </ul>
+                          </div>
+                        )}
                         {dir && (
                           <a href={dir} target="_blank" rel="noopener noreferrer" className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#E8622A] py-3 text-sm font-semibold text-white active:scale-95">
                             📍 Get Directions
@@ -541,7 +550,7 @@ export default async function JobDetailPage({ params }: Props) {
       <MobileApplyBar
         title={job.title}
         url={`${SITE.url}/jobs/${job.slug}`}
-        waHref={(() => { const wa = (job.applyWhatsapp || job.contactWhatsapp || '').replace(/\D/g, ''); return wa ? `https://wa.me/${wa}?text=${encodeURIComponent(`Hi, I'm interested in the ${job.title}${job.walkIn ? ' walk-in interview' : ' position'}`)}` : null; })()}
+        waHref={(() => { const wa = ((job.walkIn && job.walkInContactPhone) || job.applyWhatsapp || job.contactWhatsapp || '').replace(/\D/g, ''); return wa ? `https://wa.me/${wa}?text=${encodeURIComponent(`Hi, I'm interested in the ${job.title}${job.walkIn ? ' walk-in interview' : ' position'}`)}` : null; })()}
         applyHref={job.walkIn
           ? (job.walkInMapsUrl || (job.walkInVenue ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(job.walkInVenue)}` : '#apply'))
           : (job.applyUrl || (job.applyEmail ? `mailto:${job.applyEmail}?subject=${encodeURIComponent(`Application for ${job.title}`)}` : '#apply'))}

@@ -266,6 +266,8 @@ export const jobs = pgTable(
     walkInVenue: text('walk_in_venue'),
     walkInMapsUrl: text('walk_in_maps_url'),
     walkInLastDate: date('walk_in_last_date'),
+    walkInContactPhone: varchar('walk_in_contact_phone', { length: 20 }),
+    walkInRequiredDocs: text('walk_in_required_docs'),
     applyWhatsapp: varchar('apply_whatsapp', { length: 30 }),
     gccCountry: varchar('gcc_country', { length: 50 }).default('uae'),
     sourceCountry: varchar('source_country', { length: 50 }),

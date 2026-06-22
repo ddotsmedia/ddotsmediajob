@@ -421,3 +421,39 @@ export const JOB_DRAFT_TOOL: Anthropic.Tool = {
     required: ['title'],
   },
 };
+
+export type WalkinDraft = {
+  title?: string;
+  company?: string;
+  location?: string;
+  walkin_date?: string;
+  walkin_time_start?: string;
+  walkin_time_end?: string;
+  walkin_last_date?: string | null;
+  venue?: string;
+  contact_phone?: string;
+  required_docs?: string;
+  description?: string;
+};
+
+export const WALKIN_EXTRACT_TOOL: Anthropic.Tool = {
+  name: 'walkin_details',
+  description: 'Extract walk-in interview details from a pasted announcement (WhatsApp/flyer text).',
+  input_schema: {
+    type: 'object',
+    properties: {
+      title: { type: 'string', description: 'Job title/role, empty if unknown' },
+      company: { type: 'string', description: 'Hiring company, empty if unknown' },
+      location: { type: 'string', description: 'Area / emirate of the role' },
+      walkin_date: { type: 'string', description: 'First walk-in date as YYYY-MM-DD, empty if unknown' },
+      walkin_time_start: { type: 'string', description: 'Start time e.g. "10:00 AM"' },
+      walkin_time_end: { type: 'string', description: 'End time e.g. "04:00 PM"' },
+      walkin_last_date: { type: 'string', description: 'Last walk-in date YYYY-MM-DD if multi-day, else empty' },
+      venue: { type: 'string', description: 'Full venue / address' },
+      contact_phone: { type: 'string', description: 'Contact phone / WhatsApp number, empty if none' },
+      required_docs: { type: 'string', description: 'Documents to bring, e.g. "CV, passport copy, photo"' },
+      description: { type: 'string', description: 'Short clean description of the role/announcement' },
+    },
+    required: [],
+  },
+};

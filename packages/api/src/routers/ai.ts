@@ -10,6 +10,8 @@ import {
   MATCH_TOOL,
   CV_TOOL,
   JOB_DRAFT_TOOL,
+  WALKIN_EXTRACT_TOOL,
+  type WalkinDraft,
   MODEL_FAST,
   MODEL_SMART,
   type ChatMessage,
@@ -323,6 +325,24 @@ export const aiRouter = router({
         return draft ? { ...draft, experienceLevel: draft.experienceLevel ?? exp } : null;
       } catch (err) {
         console.error('[extractJobFromText] JSON fallback failed:', err instanceof Error ? err.message : err);
+        return null;
+      }
+    }),
+
+  /** Extract walk-in interview details from a pasted announcement (Haiku). Returns null on failure. */
+  extractWalkin: adminProcedure
+    .input(z.object({ text: z.string().min(15).max(15000) }).strict())
+    .mutation(async ({ ctx, input }): Promise<WalkinDraft | null> => {
+      await guardAi(ctx, input.text);
+      try {
+        return await structured<WalkinDraft>(
+          'You extract UAE walk-in interview details. Return only the structured fields you can determine; leave others empty. Dates must be YYYY-MM-DD. Times like "10:00 AM".',
+          `Extract walk-in interview details from this announcement:\n\n${wrapUserContent(input.text)}`,
+          WALKIN_EXTRACT_TOOL,
+          { model: MODEL_FAST, maxTokens: 900 },
+        );
+      } catch (err) {
+        console.error('[extractWalkin] failed:', err instanceof Error ? err.message : err);
         return null;
       }
     }),

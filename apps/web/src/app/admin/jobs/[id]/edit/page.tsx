@@ -25,6 +25,7 @@ type Form = {
   visaProvided: boolean; accommodationProvided: boolean; isFresher: boolean; isRemote: boolean;
   isUrgent: boolean; isFeatured: boolean; freeZone: boolean; isAnonymous: boolean; salaryHidden: boolean; showEmployerInfo: boolean;
   walkIn: boolean; walkInDate: string; walkInTimeStart: string; walkInTimeEnd: string; walkInVenue: string; walkInMapsUrl: string;
+  walkInLastDate: string; walkInContactPhone: string; walkInRequiredDocs: string;
 };
 
 export default function AdminJobEditPage({ params }: { params: Promise<{ id: string }> }) {
@@ -55,6 +56,7 @@ export default function AdminJobEditPage({ params }: { params: Promise<{ id: str
       isRemote: j.isRemote, isUrgent: j.isUrgent, isFeatured: j.isFeatured, freeZone: j.freeZone,
       isAnonymous: j.isAnonymous, salaryHidden: j.salaryHidden, showEmployerInfo: j.showEmployerInfo ?? true,
       walkIn: j.walkIn, walkInDate: j.walkInDate ?? '', walkInTimeStart: j.walkInTimeStart ?? '', walkInTimeEnd: j.walkInTimeEnd ?? '', walkInVenue: j.walkInVenue ?? '', walkInMapsUrl: j.walkInMapsUrl ?? '',
+      walkInLastDate: j.walkInLastDate ?? '', walkInContactPhone: j.walkInContactPhone ?? '', walkInRequiredDocs: j.walkInRequiredDocs ?? '',
     });
   }, [job.data, f]);
 
@@ -73,6 +75,7 @@ export default function AdminJobEditPage({ params }: { params: Promise<{ id: str
       isFresher: f.isFresher, isRemote: f.isRemote, isUrgent: f.isUrgent, isFeatured: f.isFeatured,
       freeZone: f.freeZone, isAnonymous: f.isAnonymous, showEmployerInfo: f.showEmployerInfo,
       walkIn: f.walkIn, walkInDate: f.walkInDate || undefined, walkInTimeStart: f.walkInTimeStart || undefined, walkInTimeEnd: f.walkInTimeEnd || undefined, walkInVenue: f.walkInVenue || undefined, walkInMapsUrl: f.walkInMapsUrl || undefined,
+      walkInLastDate: f.walkInLastDate || undefined, walkInContactPhone: f.walkInContactPhone || undefined, walkInRequiredDocs: f.walkInRequiredDocs || undefined,
       skills: f.skills.split(',').map((s) => s.trim()).filter(Boolean),
       benefits: f.benefits.split(',').map((s) => s.trim()).filter(Boolean),
       contactWhatsapp: f.contactWhatsapp || undefined, applyEmail: f.applyEmail || undefined,
@@ -136,6 +139,9 @@ export default function AdminJobEditPage({ params }: { params: Promise<{ id: str
             </div>
             <div className="sm:col-span-2"><Fld label="Venue / Address"><Textarea className="min-h-[70px] resize-y" value={f.walkInVenue} onChange={(e) => set('walkInVenue', e.target.value)} placeholder="Building, street, area, emirate" /></Fld></div>
             <div className="sm:col-span-2"><Fld label="Google Maps URL (optional)"><Input value={f.walkInMapsUrl} onChange={(e) => set('walkInMapsUrl', e.target.value)} placeholder="https://maps.google.com/..." /></Fld></div>
+            <Fld label="Walk-in open until (optional)"><Input type="date" value={f.walkInLastDate} onChange={(e) => set('walkInLastDate', e.target.value)} /></Fld>
+            <Fld label="Contact phone"><Input type="tel" value={f.walkInContactPhone} onChange={(e) => set('walkInContactPhone', e.target.value)} placeholder="+971 XX XXX XXXX" /></Fld>
+            <div className="sm:col-span-2"><Fld label="Required documents"><Textarea className="min-h-[60px] resize-y" value={f.walkInRequiredDocs} onChange={(e) => set('walkInRequiredDocs', e.target.value)} placeholder="CV, passport copy, photo, certificates..." /></Fld></div>
           </div>
         )}
 
