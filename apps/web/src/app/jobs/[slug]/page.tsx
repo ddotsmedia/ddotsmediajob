@@ -30,6 +30,7 @@ import { ShareRow } from '@/components/share-row';
 import { ReferJobButton } from '@/components/refer-job-button';
 import { SimilarJobs } from '@/components/similar-jobs';
 import { MobileApplyBar } from '@/components/mobile-apply-bar';
+import { SocialShareBar } from '@/components/jobs/SocialShareBar';
 import { Badge, Card, CardContent } from '@/components/ui/primitives';
 import { Button } from '@/components/ui/button';
 import { parseRoleEmirate, roleEmirateMetadata, roleEmirateStaticParams, RoleEmirateView } from './role-emirate';
@@ -67,8 +68,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const title = `${job.title} at ${company} in ${emirate}, UAE | DdotsMediaJobs`;
   const pay = formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod, job.salaryHidden, job.salaryNegotiable);
   const posted = formatJobDate(job.publishedAt ?? job.createdAt);
-  const reqLine = job.description.replace(/[#*\n]+/g, ' ').trim().slice(0, 60);
-  const description = `Apply for ${job.title} at ${company} in ${emirate}. ${pay}. ${reqLine}. Posted ${posted}. Apply on WhatsApp.`.slice(0, 160);
+  const stripHtml = (html: string) => html.replace(/<[^>]*>/g, '').replace(/[#*]+/g, ' ').replace(/\s+/g, ' ').trim();
+  const cleanDescription = stripHtml(job.description).slice(0, 60);
+  const description = `Apply for ${job.title} at ${company} in ${emirate}. ${pay}. ${cleanDescription}. Posted ${posted}. Apply on WhatsApp.`.slice(0, 160);
   const ogImage = `/jobs/${job.slug}/opengraph-image`;
   return {
     title,
@@ -298,6 +300,8 @@ export default async function JobDetailPage({ params }: Props) {
                 })()}
               </CardContent>
             </Card>
+
+            <SocialShareBar title={job.title} url={`${SITE.url}/jobs/${job.slug}`} company={job.isAnonymous ? 'Confidential Company' : (job.company?.name ?? 'Direct Employer')} />
 
             <Card>
               <CardContent className="prose prose-slate max-w-none p-6 prose-headings:font-display">
