@@ -22,6 +22,19 @@ import {
 import { applications, sql } from '@ddots/db';
 import { enforceRateLimit, isJailbreakAttempt, wrapUserContent, ssrfSafeFetchText, cached } from '../lib/security';
 
+/** Convert "10:00 AM" / "2:30 PM" -> "10:00" / "14:30". Pass through if already 24hr. */
+function to24hr(t: string | null): string | null {
+  if (!t) return null;
+  const m = t.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+  if (!m) return t;
+  let h = parseInt(m[1]!, 10);
+  const min = m[2]!;
+  const pm = m[3]!.toUpperCase() === 'PM';
+  if (pm && h !== 12) h += 12;
+  if (!pm && h === 12) h = 0;
+  return `${String(h).padStart(2, '0')}:${min}`;
+}
+
 /** Rate-limit AI usage per user + reject prompt-injection attempts. */
 async function guardAi(ctx: { session: { user: { id: string; role: string } } }, text?: string): Promise<void> {
   const isAdmin = ctx.session.user.role === 'admin';
@@ -335,12 +348,19 @@ export const aiRouter = router({
     .mutation(async ({ ctx, input }): Promise<WalkinDraft | null> => {
       await guardAi(ctx, input.text);
       try {
-        return await structured<WalkinDraft>(
-          'You extract UAE walk-in interview details. Return only the structured fields you can determine; leave others empty. Dates must be YYYY-MM-DD. Times like "10:00 AM".',
+        const d = await structured<WalkinDraft>(
+          'You extract UAE walk-in interview details from a pasted WhatsApp/flyer announcement. Return only fields you can determine; leave others empty. Always output dates as YYYY-MM-DD (parse "25-06-2026", "25/06/2026", "June 25, 2026"). For venue, extract ANY location text — city, area or building fragment — never leave it empty if any location is mentioned. If multiple positions are listed, join the titles with " / ". Times like "10:00 AM".',
           `Extract walk-in interview details from this announcement:\n\n${wrapUserContent(input.text)}`,
           WALKIN_EXTRACT_TOOL,
           { model: MODEL_FAST, maxTokens: 900 },
         );
+        // HTML <input type="time"> needs 24hr HH:mm — convert from the AI's 12hr output.
+        return {
+          ...d,
+          walkin_time_start: to24hr(d.walkin_time_start ?? null) ?? undefined,
+          walkin_time_end: to24hr(d.walkin_time_end ?? null) ?? undefined,
+          venue: d.venue || d.location || undefined,
+        };
       } catch (err) {
         console.error('[extractWalkin] failed:', err instanceof Error ? err.message : err);
         return null;
