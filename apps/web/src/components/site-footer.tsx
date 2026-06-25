@@ -1,48 +1,35 @@
 import Link from 'next/link';
+import { MessageCircle, Facebook, Linkedin, Instagram } from 'lucide-react';
 import { CATEGORIES, EMIRATES, SITE } from '@ddots/shared';
 import { Logo } from './logo';
 
 export function SiteFooter() {
   const year = 2026;
   return (
-    <footer className="border-t bg-[#0f172a] text-slate-300">
-      <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 md:grid-cols-3 lg:grid-cols-7">
-        <div className="lg:col-span-1">
+    <footer className="bg-[#0f172a] text-slate-300">
+      {/* Row 1 — brand + 5 columns */}
+      <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:grid-cols-2 lg:grid-cols-6">
+        <div>
           <Logo dark />
-          <p className="mt-4 max-w-xs text-sm text-navy-100/70">{SITE.description}</p>
+          <p className="mt-4 max-w-xs text-sm text-slate-400">{SITE.description}</p>
+          <div className="mt-4 flex items-center gap-3 text-[#3a9ea5]">
+            <a href="https://wa.me/971509379212" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" className="hover:text-white"><MessageCircle className="h-5 w-5" /></a>
+            <a href="https://www.facebook.com/ddotsmediajobs" target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="hover:text-white"><Facebook className="h-5 w-5" /></a>
+            <a href="https://www.linkedin.com/company/ddotsmedia" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" className="hover:text-white"><Linkedin className="h-5 w-5" /></a>
+            <a href="https://www.instagram.com/ddotsmediajobs" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="hover:text-white"><Instagram className="h-5 w-5" /></a>
+          </div>
         </div>
 
         <FooterCol title="Top Categories">
           {CATEGORIES.slice(0, 6).map((c) => (
-            <FooterLink key={c.slug} href={`/category/${c.slug}`}>
-              {c.name}
-            </FooterLink>
+            <FooterLink key={c.slug} href={`/category/${c.slug}`}>{c.name}</FooterLink>
           ))}
         </FooterCol>
 
         <FooterCol title="Emirates">
           {EMIRATES.map((e) => (
-            <FooterLink key={e.slug} href={`/jobs-in/${e.slug}`}>
-              Jobs in {e.name}
-            </FooterLink>
+            <FooterLink key={e.slug} href={`/jobs-in/${e.slug}`}>Jobs in {e.name}</FooterLink>
           ))}
-        </FooterCol>
-
-        <FooterCol title="For Jobseekers">
-          <FooterLink href="/jobs">Browse Jobs</FooterLink>
-          <FooterLink href="/register">Create Account</FooterLink>
-          <FooterLink href="/dashboard/alerts">Job Alerts</FooterLink>
-          <FooterLink href="/cv-builder">ATS CV Builder</FooterLink>
-          <FooterLink href="/career-advisor">AI Career Advisor</FooterLink>
-          <FooterLink href="/interview-prep">AI Interview Prep</FooterLink>
-          <FooterLink href="/whatsapp-groups">WhatsApp Groups</FooterLink>
-          <FooterLink href="/salary-guide">Salary Guide</FooterLink>
-          <FooterLink href="/assessments">Skill Assessments</FooterLink>
-          <FooterLink href="/compare">Compare Jobs</FooterLink>
-          <FooterLink href="/swipe">Swipe Jobs</FooterLink>
-          <FooterLink href="/success-stories">Success Stories</FooterLink>
-          <FooterLink href="/market-insights">Market Insights</FooterLink>
-          <FooterLink href="/feedback">Send Feedback</FooterLink>
         </FooterCol>
 
         <FooterCol title="For Employers">
@@ -51,7 +38,6 @@ export function SiteFooter() {
           <FooterLink href="/employer">Employer Dashboard</FooterLink>
           <FooterLink href="/companies">Company Profiles</FooterLink>
           <FooterLink href="/campus">Campus Jobs</FooterLink>
-          <FooterLink href="/blog">Hiring Blog</FooterLink>
         </FooterCol>
 
         <FooterCol title="Community">
@@ -59,9 +45,7 @@ export function SiteFooter() {
           <FooterLink href="/community/qa">Q&amp;A</FooterLink>
           <FooterLink href="/community/profession/healthcare">Healthcare Community</FooterLink>
           <FooterLink href="/community/profession/it">IT Community</FooterLink>
-          <FooterLink href="/community/profession/driving">Driving Community</FooterLink>
           <FooterLink href="/community/mentors">Find a Mentor</FooterLink>
-          <FooterLink href="/community/events">Events</FooterLink>
           <FooterLink href="/community/leaderboard">Leaderboard</FooterLink>
         </FooterCol>
 
@@ -73,24 +57,47 @@ export function SiteFooter() {
           <FooterLink href="/jobs/fresher-jobs-uae">Fresher Jobs</FooterLink>
           <FooterLink href="/jobs/visa-provided">Visa Provided Jobs</FooterLink>
         </FooterCol>
-
-        <FooterCol title="UAE Tools">
-          <FooterLink href="/golden-visa-checker">Golden Visa Checker</FooterLink>
-          <FooterLink href="/wps-calculator">WPS & Gratuity Calculator</FooterLink>
-          <FooterLink href="/cost-of-living">Cost of Living</FooterLink>
-          <FooterLink href="/nafis-guide">Nafis & Emiratisation</FooterLink>
-          <FooterLink href="/visa-guide">Visa Guide 2026</FooterLink>
-          <FooterLink href="/jobs/freezone">Free Zone Jobs</FooterLink>
-          <FooterLink href="/resources/relocation-advisor">Relocation Advisor</FooterLink>
-          <FooterLink href="/resources/labour-rights">Labour Rights</FooterLink>
-          <FooterLink href="/tools/career-transition">Career Transition</FooterLink>
-          <FooterLink href="/tools/negotiation-simulator">Negotiation Simulator</FooterLink>
-          <FooterLink href="/events">Hiring Events</FooterLink>
-        </FooterCol>
       </div>
 
-      <div className="border-t border-navy-800">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 px-4 py-6 text-xs text-navy-100/60 md:flex-row">
+      {/* Row 2 — horizontal link rows on a darker strip */}
+      <div className="border-t border-slate-700 bg-[#0a1628]">
+        <div className="mx-auto max-w-7xl space-y-4 px-4 py-6">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+            <span className="mr-6 text-xs font-semibold uppercase tracking-widest text-slate-400">For Jobseekers</span>
+            <HLink href="/jobs">Browse Jobs</HLink>
+            <HLink href="/register">Create Account</HLink>
+            <HLink href="/dashboard/alerts">Job Alerts</HLink>
+            <HLink href="/cv-builder">ATS CV Builder</HLink>
+            <HLink href="/career-advisor">AI Career Advisor</HLink>
+            <HLink href="/interview-prep">AI Interview Prep</HLink>
+            <HLink href="/whatsapp-groups">WhatsApp Groups</HLink>
+            <HLink href="/salary-guide">Salary Guide</HLink>
+            <HLink href="/assessments">Skill Assessments</HLink>
+            <HLink href="/compare">Compare Jobs</HLink>
+            <HLink href="/swipe">Swipe Jobs</HLink>
+            <HLink href="/success-stories">Success Stories</HLink>
+            <HLink href="/market-insights">Market Insights</HLink>
+            <HLink href="/feedback">Send Feedback</HLink>
+          </div>
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+            <span className="mr-6 text-xs font-semibold uppercase tracking-widest text-slate-400">UAE Tools</span>
+            <HLink href="/golden-visa-checker">Golden Visa Checker</HLink>
+            <HLink href="/wps-calculator">WPS &amp; Gratuity Calculator</HLink>
+            <HLink href="/cost-of-living">Cost of Living</HLink>
+            <HLink href="/nafis-guide">Nafis &amp; Emiratisation</HLink>
+            <HLink href="/visa-guide">Visa Guide 2026</HLink>
+            <HLink href="/jobs/freezone">Free Zone Jobs</HLink>
+            <HLink href="/resources/relocation-advisor">Relocation Advisor</HLink>
+            <HLink href="/resources/labour-rights">Labour Rights</HLink>
+            <HLink href="/tools/career-transition">Career Transition</HLink>
+            <HLink href="/tools/negotiation-simulator">Negotiation Simulator</HLink>
+            <HLink href="/events">Hiring Events</HLink>
+          </div>
+        </div>
+      </div>
+
+      <div className="border-t border-slate-800">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 px-4 py-6 text-xs text-slate-500 md:flex-row">
           <p>© {year} {SITE.name}. All rights reserved.</p>
           <div className="flex gap-4">
             <Link href="/privacy" className="hover:text-white">Privacy</Link>
@@ -105,18 +112,21 @@ export function SiteFooter() {
 
 function FooterCol({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="border-t border-slate-700 pt-5">
-      <h4 className="font-display text-xs font-bold uppercase tracking-widest text-white">{title}</h4>
-      <ul className="mt-4 flex flex-col gap-y-2.5">{children}</ul>
+    <div>
+      <h4 className="mb-3 border-b border-slate-700 pb-2 font-display text-xs font-semibold uppercase tracking-widest text-white">{title}</h4>
+      <ul className="flex flex-col gap-y-2.5">{children}</ul>
     </div>
   );
 }
 function FooterLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
     <li>
-      <Link href={href} className="text-sm text-slate-400 hover:text-white">
-        {children}
-      </Link>
+      <Link href={href} className="text-sm text-slate-400 hover:text-white">{children}</Link>
     </li>
+  );
+}
+function HLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <Link href={href} className="text-sm text-slate-400 hover:text-white">{children}</Link>
   );
 }
