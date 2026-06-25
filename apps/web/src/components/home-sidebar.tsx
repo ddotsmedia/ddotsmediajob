@@ -42,7 +42,7 @@ export function HomeSidebar() {
     ? dbCats.slice(0, 10).map((c) => ({ slug: c.slug, name: c.name }))
     : CAT_SLUGS.map((slug) => ({ slug, name: categoryBySlug(slug)?.name ?? slug }));
 
-  const row = (active: boolean) => cn(linkBase, active ? 'border-l-4 border-teal-500 bg-[#e0f5f7] pl-[5px] font-medium text-[#085041]' : 'border-l-4 border-transparent text-navy-800');
+  const row = (active: boolean) => cn(linkBase, 'border-l-4 pl-3', active ? 'border-[#3a9ea5] bg-[#f0fafa] font-medium text-[#3a9ea5]' : 'border-transparent text-slate-600');
 
   return (
     <div className="sticky top-20 rounded-xl border border-gray-100 bg-white p-4 shadow-sm">

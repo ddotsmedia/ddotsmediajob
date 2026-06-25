@@ -12,7 +12,7 @@ export function Logo({ className, dark = false }: { className?: string; dark?: b
         <span />
       </span>
       <span className={cn('font-display text-lg font-extrabold tracking-tight', dark ? 'text-white' : 'text-navy-900')}>
-        <span className="text-teal-500">Ddots</span>MediaJobs
+        <span className="text-[#3a9ea5]">Ddots</span>MediaJobs
       </span>
     </Link>
   );

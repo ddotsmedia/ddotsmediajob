@@ -40,7 +40,7 @@ export function SiteHeader() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 border-b bg-white/90 backdrop-blur">
+      <header className="sticky top-0 z-50 border-b border-slate-100 bg-white/95 backdrop-blur">
         <div className="bg-navy-900 text-white">
           <div className="mx-auto flex max-w-7xl items-center justify-center gap-2 px-4 py-2 text-xs font-semibold sm:justify-end sm:text-sm">
             <a href="https://wa.me/971509379212" target="_blank" rel="noopener noreferrer" className="inline-flex min-w-0 items-center gap-1.5 truncate hover:text-[#25D366]">

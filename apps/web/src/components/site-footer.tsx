@@ -5,7 +5,7 @@ import { Logo } from './logo';
 export function SiteFooter() {
   const year = 2026;
   return (
-    <footer className="border-t bg-navy-900 text-navy-100">
+    <footer className="border-t bg-[#0f172a] text-slate-300">
       <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 md:grid-cols-3 lg:grid-cols-7">
         <div className="lg:col-span-1">
           <Logo dark />
@@ -106,7 +106,7 @@ export function SiteFooter() {
 function FooterCol({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="border-t border-slate-700 pt-5">
-      <h4 className="font-display text-sm font-bold uppercase tracking-widest text-white">{title}</h4>
+      <h4 className="font-display text-xs font-bold uppercase tracking-widest text-white">{title}</h4>
       <ul className="mt-4 flex flex-col gap-y-2.5">{children}</ul>
     </div>
   );
@@ -114,7 +114,7 @@ function FooterCol({ title, children }: { title: string; children: React.ReactNo
 function FooterLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
     <li>
-      <Link href={href} className="text-sm text-navy-100/70 hover:text-teal-400">
+      <Link href={href} className="text-sm text-slate-400 hover:text-white">
         {children}
       </Link>
     </li>

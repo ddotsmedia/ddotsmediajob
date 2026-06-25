@@ -23,6 +23,7 @@ export type JobCardData = {
   isRemote: boolean;
   isUrgent: boolean;
   isFresher: boolean;
+  visaProvided?: boolean;
   isFeatured: boolean;
   freeZone?: boolean;
   freeZoneName?: string | null;
@@ -64,9 +65,10 @@ export function JobCard({ job }: { job: JobCardData }) {
   return (
     <div
       className={cn(
-        'group relative min-h-[120px] rounded-xl border border-slate-200 bg-white p-5 transition-all hover:border-teal-400 hover:shadow-lg',
+        'group relative min-h-[120px] rounded-xl border border-t-2 border-slate-100 bg-white p-5 transition-all hover:border-[#3a9ea5] hover:shadow-md',
+        // brand top-border by job type
+        job.walkIn ? 'border-t-[#e8623a]' : job.isUrgent ? 'border-t-[#f5c842]' : job.visaProvided ? 'border-t-[#8dc63f]' : 'border-t-[#3a9ea5]',
         job.isFeatured && 'ring-1 ring-teal-200',
-        job.walkIn && 'border-l-4 border-l-orange-400',
       )}
     >
       <div className="flex items-start gap-4">
@@ -82,15 +84,13 @@ export function JobCard({ job }: { job: JobCardData }) {
         )}
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
-            <h3 className="font-display text-base font-semibold text-slate-900 group-hover:text-teal-600">
+            <h3 className="font-display text-sm font-bold text-slate-900 group-hover:text-teal-600">
               <Link href={`/jobs/${job.slug}`} className="line-clamp-2 after:absolute after:inset-0" title={job.title}>
                 {job.title}
               </Link>
             </h3>
             {isNew(job.publishedAt ?? job.createdAt) && (
-              <span className="inline-flex shrink-0 items-center gap-1.5 text-xs font-semibold text-teal-700">
-                <span className="h-2 w-2 rounded-full bg-teal-500" /> New
-              </span>
+              <span className="shrink-0 rounded-full bg-[#f0fafa] px-2 py-0.5 text-[10px] font-semibold text-[#3a9ea5]">New</span>
             )}
             {job.isFeatured && <Badge>Featured</Badge>}
             <ExpiryBadge expiresAt={job.expiresAt} />
@@ -99,14 +99,14 @@ export function JobCard({ job }: { job: JobCardData }) {
               return b ? <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${b.cls}`}>{b.label}</span> : null;
             })()}
           </div>
-          <p className="flex items-center gap-1 text-xs font-medium uppercase tracking-widest text-slate-400">
+          <p className="flex items-center gap-1 text-[10px] font-medium uppercase tracking-[0.1em] text-slate-400">
             {job.isAnonymous ? 'Confidential Company' : (job.company?.name ?? 'Direct Employer')}
             {!job.isAnonymous && job.company?.isVerified && (
               <span title="Verified Employer"><BadgeCheck className="h-4 w-4 text-teal-500" /></span>
             )}
           </p>
 
-          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-navy-700/80">
+          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400">
             <span className="inline-flex items-center gap-1">
               <MapPin className="h-3.5 w-3.5" /> {job.location ?? emirate?.name}
             </span>
@@ -142,12 +142,13 @@ export function JobCard({ job }: { job: JobCardData }) {
             {job.freeZone && <Badge variant="default">{job.freeZoneName || 'Free Zone'}</Badge>}
             {job.isRemote && <Badge variant="success">Remote</Badge>}
             {job.isFresher && <Badge variant="outline">Fresher</Badge>}
+            {job.visaProvided && <Badge variant="outline" className="border-lime-200 bg-lime-50 text-[#65a30d]">Visa provided</Badge>}
             {job.isUrgent && (
-              <Badge variant="urgent">
+              <Badge variant="outline" className="border-yellow-200 bg-yellow-50 text-amber-700">
                 <Zap className="mr-1 h-3 w-3" /> Urgent
               </Badge>
             )}
-            {job.walkIn && <Badge variant="outline" className="border-orange-300 bg-orange-50 text-orange-700"><Footprints className="mr-1 h-3 w-3" /> Walk-in</Badge>}
+            {job.walkIn && <Badge variant="outline" className="border-orange-200 bg-orange-50 text-[#e8623a]"><Footprints className="mr-1 h-3 w-3" /> Walk-in</Badge>}
             <span className="ml-auto inline-flex items-center gap-1 text-xs text-navy-400">
               {typeof job.applicationCount === 'number' && job.applicationCount > 0 && (
                 <span className="mr-2 font-medium text-navy-700/70">{job.applicationCount} applied</span>

@@ -61,29 +61,12 @@ export default async function HomePage() {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       {/* ── Hero ───────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-[#0a0f1e] text-white">
-        {/* layered mesh gradient */}
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{
-            backgroundImage:
-              'radial-gradient(45% 45% at 12% 12%, rgba(13,148,136,0.15), transparent 70%), radial-gradient(45% 45% at 88% 92%, rgba(234,88,12,0.15), transparent 70%)',
-          }}
-        />
-        {/* noise texture */}
-        <div
-          className="pointer-events-none absolute inset-0 opacity-[0.03]"
-          style={{
-            backgroundImage:
-              "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
-          }}
-        />
+      <section className="relative overflow-hidden bg-[#f0fafa]">
         <div className="relative z-10 mx-auto max-w-3xl px-4 py-14 text-center md:py-20">
-          <h1 className="font-display text-4xl font-extrabold leading-[1.05] tracking-[-0.03em] sm:text-5xl md:text-6xl">
-            Find Your Next Job in the{' '}
-            <span className="bg-gradient-to-r from-teal-400 to-orange-500 bg-clip-text text-transparent">UAE</span>
+          <h1 className="font-display text-4xl font-extrabold leading-[1.05] tracking-tight text-[#0f172a] sm:text-5xl">
+            Find Your Next Job in the <span className="text-[#e8623a]">UAE</span>
           </h1>
-          <p className="mx-auto mt-4 max-w-2xl text-base text-navy-100/80 md:text-lg">
+          <p className="mx-auto mt-4 max-w-2xl text-base text-slate-500 md:text-lg">
             UAE&apos;s WhatsApp-powered job portal · 76 groups · 80,000+ professionals
           </p>
           <div className="mx-auto mt-7 max-w-3xl">
@@ -91,11 +74,11 @@ export default async function HomePage() {
           </div>
           <Link
             href="/whatsapp-groups"
-            className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-teal-300 hover:text-teal-200 hover:underline"
+            className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-[#3a9ea5] hover:underline"
           >
             💬 Join 80,000+ professionals on WhatsApp <ArrowRight className="h-3.5 w-3.5" />
           </Link>
-          <div className="mt-4 flex flex-nowrap items-center gap-2 overflow-x-auto scrollbar-hide px-1 text-sm text-navy-100/70 sm:flex-wrap sm:justify-center sm:gap-x-3">
+          <div className="mt-4 flex flex-nowrap items-center gap-2 overflow-x-auto scrollbar-hide px-1 text-sm text-slate-500 sm:flex-wrap sm:justify-center sm:gap-x-3">
             <span className="shrink-0">Popular:</span>
             {[
               { l: 'Driver', h: '/jobs?q=Driver' },
@@ -105,18 +88,18 @@ export default async function HomePage() {
               { l: 'Visa Provided', h: '/jobs/visa-provided' },
               { l: 'Urgent Hiring', h: '/jobs/urgent-hiring-uae' },
             ].map((p) => (
-              <Link key={p.h} href={p.h} className="shrink-0 rounded-full bg-white/10 px-3 py-1 hover:bg-white/20">
+              <Link key={p.h} href={p.h} className="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-500 hover:border-[#3a9ea5] hover:text-[#3a9ea5]">
                 {p.l}
               </Link>
             ))}
           </div>
 
           {/* inline stats */}
-          <div className="mx-auto mt-12 grid max-w-2xl grid-cols-2 gap-x-6 gap-y-6 sm:grid-cols-4">
+          <div className="mx-auto mt-12 grid max-w-2xl grid-cols-2 sm:grid-cols-4">
             <HeroStat value={stats.totalActive} suffix="+" label="Active Jobs" />
             <HeroStat value={76} label="WA Groups" />
             <HeroStat value={7} label="Emirates" />
-            <HeroStat value={stats.totalSeekers} suffix="+" label="Jobseekers" />
+            <HeroStat value={stats.totalSeekers} suffix="+" label="Jobseekers" last />
           </div>
         </div>
       </section>
@@ -143,7 +126,7 @@ export default async function HomePage() {
           <Link
             key={p.h}
             href={p.h}
-            className={`shrink-0 border-b-2 pb-2.5 text-sm font-medium transition-colors ${p.active ? 'border-teal-500 text-teal-700' : 'border-transparent text-slate-500 hover:text-teal-700'}`}
+            className={`shrink-0 border-b-2 pb-2.5 text-sm transition-colors ${p.active ? 'border-[#3a9ea5] font-semibold text-[#3a9ea5]' : 'border-transparent font-medium text-slate-500 hover:text-[#3a9ea5]'}`}
           >
             {p.l}
           </Link>
@@ -216,10 +199,10 @@ export default async function HomePage() {
             <Link
               key={e.slug}
               href={`/jobs-in/${e.slug}`}
-              className="rounded-xl border border-l-4 border-slate-200 border-l-teal-500 bg-white p-5 transition-all hover:border-teal-400 hover:border-l-teal-500 hover:shadow-lg"
+              className="rounded-xl border border-l-4 border-slate-100 border-l-[#3a9ea5] bg-white p-5 transition-all hover:border-[#3a9ea5] hover:border-l-[#3a9ea5] hover:shadow-md"
             >
-              <span className="block font-display text-lg font-bold text-navy-900">{e.name}</span>
-              <span className="text-sm font-bold text-teal-600">
+              <span className="block font-display text-lg font-bold text-slate-900">{e.name}</span>
+              <span className="text-sm font-semibold text-[#3a9ea5]">
                 {(stats.byEmirate[e.slug] ?? 0).toLocaleString('en-AE')} open jobs →
               </span>
             </Link>
@@ -261,7 +244,7 @@ function LatestJobCard({ job }: { job: RecentJob }) {
   return (
     <Link
       href={`/jobs/${job.slug}`}
-      className="group flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-5 transition-all hover:border-teal-400 hover:shadow-lg"
+      className={`group flex flex-col gap-3 rounded-xl border border-t-2 border-slate-100 bg-white p-5 transition-all hover:border-[#3a9ea5] hover:shadow-md ${job.walkIn ? 'border-t-[#e8623a]' : job.isUrgent ? 'border-t-[#f5c842]' : job.visaProvided ? 'border-t-[#8dc63f]' : 'border-t-[#3a9ea5]'}`}
     >
       <div className="flex items-start gap-3">
         {job.company?.logoUrl ? (
@@ -272,14 +255,14 @@ function LatestJobCard({ job }: { job: RecentJob }) {
         )}
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
-            <h3 className="font-display text-base font-semibold leading-snug text-slate-900 group-hover:text-teal-600 line-clamp-2">{job.title}</h3>
+            <h3 className="font-display text-sm font-bold leading-snug text-slate-900 group-hover:text-teal-600 line-clamp-2">{job.title}</h3>
             <span className="flex shrink-0 items-center gap-2">
-              {job.walkIn && <Badge className="border-orange-300 bg-orange-50 text-orange-700"><Footprints className="mr-1 h-3 w-3" /> Walk-in</Badge>}
-              {fresh && <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-teal-700"><span className="h-2 w-2 rounded-full bg-teal-500" /> New</span>}
+              {job.walkIn && <Badge className="border-orange-200 bg-orange-50 text-[#e8623a]"><Footprints className="mr-1 h-3 w-3" /> Walk-in</Badge>}
+              {fresh && <span className="rounded-full bg-[#f0fafa] px-2 py-0.5 text-[10px] font-semibold text-[#3a9ea5]">New</span>}
               {job.source === 'whapi' && <Badge className="bg-[#25D366]/15 text-[#1a8a4d]">WA</Badge>}
             </span>
           </div>
-          <p className="text-xs font-medium uppercase tracking-widest text-slate-400">{job.company?.name ?? 'Direct Employer'}</p>
+          <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-slate-400">{job.company?.name ?? 'Direct Employer'}</p>
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-2 text-xs text-navy-700/60">
@@ -301,13 +284,13 @@ function LatestJobCard({ job }: { job: RecentJob }) {
   );
 }
 
-function HeroStat({ value, label, suffix }: { value: number; label: string; suffix?: string }) {
+function HeroStat({ value, label, suffix, last }: { value: number; label: string; suffix?: string; last?: boolean }) {
   return (
-    <div className="border-t border-teal-400/60 pt-3 text-center">
-      <div className="font-display text-4xl font-extrabold tracking-tight text-white">
+    <div className={`px-2 py-1 text-center ${last ? '' : 'sm:border-r sm:border-slate-200'}`}>
+      <div className="font-display text-2xl font-extrabold text-[#3a9ea5]">
         <NumberTicker value={value} suffix={suffix} />
       </div>
-      <div className="mt-1 text-xs font-medium uppercase tracking-widest text-navy-100/50">{label}</div>
+      <div className="mt-1 text-xs font-medium uppercase tracking-widest text-slate-400">{label}</div>
     </div>
   );
 }

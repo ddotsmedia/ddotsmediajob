@@ -44,8 +44,8 @@
   --color-brand: #339a9b;
   --color-brand-foreground: #ffffff;
 
-  --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-sora), var(--font-dm-sans), sans-serif;
+  --font-sans: var(--font-dm), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-jakarta), var(--font-dm), sans-serif;
 
   --radius: 0.75rem;
 }
@@ -57,7 +57,17 @@
   --muted-foreground: #5b7a79;
   --border: #d8e7e5;
   --ring: #339a9b;
+
+  /* Friendly Light brand palette */
+  --brand-teal: #3a9ea5;
+  --brand-orange: #e8623a;
+  --brand-yellow: #f5c842;
+  --brand-lime: #8dc63f;
+  --brand-dark: #0f172a;
+  --brand-bg: #f0fafa;
 }
+
+h1, h2, h3, h4 { font-family: var(--font-jakarta); }
 
 * {
   border-color: var(--border);

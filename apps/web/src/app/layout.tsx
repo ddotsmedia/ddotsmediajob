@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import Script from 'next/script';
-import { Syne, DM_Sans } from 'next/font/google';
+import { Plus_Jakarta_Sans, DM_Sans } from 'next/font/google';
 import { SITE } from '@ddots/shared';
 import { Providers } from './providers';
 import { SiteHeader } from '@/components/site-header';
@@ -14,10 +14,9 @@ import { InstallPrompt } from '@/components/install-prompt';
 import { ErrorBoundary } from '@/components/error-boundary';
 import './globals.css';
 
-// Syne for headings/logo, DM Sans for body. Keep the --font-sora var name so all
-// existing `font-display` usages pick up Syne with zero downstream edits.
-const syne = Syne({ subsets: ['latin'], variable: '--font-sora', display: 'swap' });
-const dmSans = DM_Sans({ subsets: ['latin'], variable: '--font-dm-sans', display: 'swap' });
+// Plus Jakarta Sans for headings/logo, DM Sans for body.
+const jakarta = Plus_Jakarta_Sans({ subsets: ['latin'], weight: ['400', '500', '600', '700', '800'], variable: '--font-jakarta', display: 'swap' });
+const dmSans = DM_Sans({ subsets: ['latin'], weight: ['400', '500'], variable: '--font-dm', display: 'swap' });
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE.url),
@@ -54,7 +53,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${syne.variable} ${dmSans.variable} overflow-x-hidden`} suppressHydrationWarning>
+    <html lang="en" className={`${jakarta.variable} ${dmSans.variable} overflow-x-hidden`} suppressHydrationWarning>
       <body className="flex min-h-screen flex-col">
         <Providers>
           <AnnouncementBanner />
