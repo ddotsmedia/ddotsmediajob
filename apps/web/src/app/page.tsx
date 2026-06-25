@@ -63,7 +63,7 @@ export default async function HomePage() {
       {/* ── Hero ───────────────────────────────────────── */}
       <section
         className="relative overflow-hidden"
-        style={{ background: 'linear-gradient(160deg, #d4eef0 0%, #e8f6f7 60%, #f0fafa 100%)' }}
+        style={{ background: 'linear-gradient(160deg, #8ecfb0 0%, #a8dbc5 40%, #c6ecd8 75%, #e8f7f0 100%)' }}
       >
         {/* decorative depth circle */}
         <div
@@ -74,7 +74,7 @@ export default async function HomePage() {
           <h1 className="font-display text-4xl font-extrabold leading-[1.05] tracking-tight text-[#0f172a] sm:text-5xl">
             Find Your Next Job in the <span className="text-[#e8623a]">UAE</span>
           </h1>
-          <p className="mx-auto mt-4 max-w-2xl text-base text-slate-500 md:text-lg">
+          <p className="mx-auto mt-4 max-w-2xl text-base text-[#2d6b50] md:text-lg">
             UAE&apos;s WhatsApp-powered job portal · 76 groups · 80,000+ professionals
           </p>
           <div className="mx-auto mt-7 max-w-3xl">
@@ -82,11 +82,11 @@ export default async function HomePage() {
           </div>
           <Link
             href="/whatsapp-groups"
-            className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-[#3a9ea5] hover:underline"
+            className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-[#1a7a50] hover:underline"
           >
             💬 Join 80,000+ professionals on WhatsApp <ArrowRight className="h-3.5 w-3.5" />
           </Link>
-          <div className="mt-4 flex flex-nowrap items-center gap-2 overflow-x-auto scrollbar-hide px-1 text-sm text-slate-500 sm:flex-wrap sm:justify-center sm:gap-x-3">
+          <div className="mt-4 flex flex-nowrap items-center gap-2 overflow-x-auto scrollbar-hide px-1 text-sm text-[#2d6b50] sm:flex-wrap sm:justify-center sm:gap-x-3">
             <span className="shrink-0">Popular:</span>
             {[
               { l: 'Driver', h: '/jobs?q=Driver' },
@@ -96,7 +96,7 @@ export default async function HomePage() {
               { l: 'Visa Provided', h: '/jobs/visa-provided' },
               { l: 'Urgent Hiring', h: '/jobs/urgent-hiring-uae' },
             ].map((p) => (
-              <Link key={p.h} href={p.h} className="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-500 hover:border-[#3a9ea5] hover:text-[#3a9ea5]">
+              <Link key={p.h} href={p.h} className="shrink-0 rounded-full border px-3 py-1 text-xs hover:border-[#3a9ea5]" style={{ borderColor: 'rgba(58,158,165,0.3)', color: '#1a7a50', background: 'rgba(255,255,255,0.6)' }}>
                 {p.l}
               </Link>
             ))}
@@ -298,7 +298,7 @@ function HeroStat({ value, label, suffix, last }: { value: number; label: string
       <div className="font-display text-2xl font-extrabold text-[#3a9ea5]">
         <NumberTicker value={value} suffix={suffix} />
       </div>
-      <div className="mt-1 text-xs font-medium uppercase tracking-widest text-slate-400">{label}</div>
+      <div className="mt-1 text-xs font-medium uppercase tracking-widest text-[#2d6b50]">{label}</div>
     </div>
   );
 }

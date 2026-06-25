@@ -9,7 +9,7 @@ export function JobTicker({ items }: { items: TickerItem[] }) {
   // Duplicate the list so the -50% translate loops seamlessly.
   const loop = [...items, ...items];
   return (
-    <div className="ticker-pause overflow-hidden bg-teal-600 text-white">
+    <div className="ticker-pause overflow-hidden text-white" style={{ background: '#2d8a70' }}>
       <div className="mx-auto flex max-w-[100vw] items-center">
         <span className="z-10 shrink-0 bg-teal-700 px-3 py-1.5 text-xs font-bold uppercase tracking-wide">Live</span>
         <div className="relative flex-1 overflow-hidden">
