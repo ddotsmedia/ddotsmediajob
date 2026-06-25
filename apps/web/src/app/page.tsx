@@ -61,7 +61,15 @@ export default async function HomePage() {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       {/* ── Hero ───────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-[#f0fafa]">
+      <section
+        className="relative overflow-hidden"
+        style={{ background: 'linear-gradient(160deg, #d4eef0 0%, #e8f6f7 60%, #f0fafa 100%)' }}
+      >
+        {/* decorative depth circle */}
+        <div
+          className="pointer-events-none absolute right-[8%] top-10 z-0 h-[300px] w-[300px] rounded-full"
+          style={{ background: 'radial-gradient(circle, rgba(58,158,165,0.12) 0%, transparent 70%)' }}
+        />
         <div className="relative z-10 mx-auto max-w-3xl px-4 py-14 text-center md:py-20">
           <h1 className="font-display text-4xl font-extrabold leading-[1.05] tracking-tight text-[#0f172a] sm:text-5xl">
             Find Your Next Job in the <span className="text-[#e8623a]">UAE</span>
