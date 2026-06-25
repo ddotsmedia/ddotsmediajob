@@ -22,7 +22,7 @@ export function JobSearchBar({ size = 'lg' }: { size?: 'lg' | 'md' }) {
   return (
     <form
       onSubmit={submit}
-      className="flex w-full flex-col gap-2 rounded-2xl bg-white p-2 shadow-xl sm:flex-row sm:items-center"
+      className="flex w-full flex-col gap-2 rounded-xl border-l-[3px] border-l-teal-500 bg-white p-2 shadow-2xl sm:flex-row sm:items-center"
     >
       <div className="flex flex-1 items-center gap-2 px-3">
         <Search className="h-5 w-5 shrink-0 text-navy-700/50" />

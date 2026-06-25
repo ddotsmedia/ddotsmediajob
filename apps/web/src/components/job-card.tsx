@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { MapPin, Clock, Banknote, Zap, BadgeCheck, Sparkles, CalendarClock } from 'lucide-react';
+import { MapPin, Clock, Banknote, Zap, BadgeCheck, CalendarClock, Footprints } from 'lucide-react';
 import { formatSalary, formatJobDate, isNew, emirateBySlug, categoryBySlug, expiryDaysLeft, matchBadge, getJobEmoji } from '@ddots/shared';
 import { Badge } from './ui/primitives';
 import { WhatsappApplyButton } from './whatsapp-apply-button';
@@ -64,7 +64,7 @@ export function JobCard({ job }: { job: JobCardData }) {
   return (
     <div
       className={cn(
-        'group relative min-h-[120px] rounded-xl border border-l-2 border-l-transparent bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-teal-300 hover:border-l-teal-500 hover:shadow-md',
+        'group relative min-h-[120px] rounded-xl border border-slate-200 bg-white p-5 transition-all hover:border-teal-400 hover:shadow-lg',
         job.isFeatured && 'ring-1 ring-teal-200',
         job.walkIn && 'border-l-4 border-l-orange-400',
       )}
@@ -82,12 +82,16 @@ export function JobCard({ job }: { job: JobCardData }) {
         )}
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
-            <h3 className="font-display text-sm font-semibold text-navy-900 group-hover:text-teal-600">
+            <h3 className="font-display text-base font-semibold text-slate-900 group-hover:text-teal-600">
               <Link href={`/jobs/${job.slug}`} className="line-clamp-2 after:absolute after:inset-0" title={job.title}>
-                {getJobEmoji(job.title, job.categorySlug)} {job.title}
+                {job.title}
               </Link>
             </h3>
-            {isNew(job.publishedAt ?? job.createdAt) && <Badge variant="success"><Sparkles className="mr-1 h-3 w-3" /> New</Badge>}
+            {isNew(job.publishedAt ?? job.createdAt) && (
+              <span className="inline-flex shrink-0 items-center gap-1.5 text-xs font-semibold text-teal-700">
+                <span className="h-2 w-2 rounded-full bg-teal-500" /> New
+              </span>
+            )}
             {job.isFeatured && <Badge>Featured</Badge>}
             <ExpiryBadge expiresAt={job.expiresAt} />
             {(() => {
@@ -95,7 +99,7 @@ export function JobCard({ job }: { job: JobCardData }) {
               return b ? <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${b.cls}`}>{b.label}</span> : null;
             })()}
           </div>
-          <p className="flex items-center gap-1 text-sm text-navy-700/70">
+          <p className="flex items-center gap-1 text-xs font-medium uppercase tracking-widest text-slate-400">
             {job.isAnonymous ? 'Confidential Company' : (job.company?.name ?? 'Direct Employer')}
             {!job.isAnonymous && job.company?.isVerified && (
               <span title="Verified Employer"><BadgeCheck className="h-4 w-4 text-teal-500" /></span>
@@ -104,7 +108,7 @@ export function JobCard({ job }: { job: JobCardData }) {
 
           <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-navy-700/80">
             <span className="inline-flex items-center gap-1">
-              <MapPin className="h-3.5 w-3.5" /> 🇦🇪 {job.location ?? emirate?.name}
+              <MapPin className="h-3.5 w-3.5" /> {job.location ?? emirate?.name}
             </span>
             <span className="inline-flex items-center gap-1 capitalize">
               <Clock className="h-3.5 w-3.5" /> {job.jobType.replace('-', ' ')}
@@ -143,7 +147,7 @@ export function JobCard({ job }: { job: JobCardData }) {
                 <Zap className="mr-1 h-3 w-3" /> Urgent
               </Badge>
             )}
-            {job.walkIn && <Badge variant="outline" className="border-orange-300 bg-orange-50 text-orange-700">🚶 Walk-in</Badge>}
+            {job.walkIn && <Badge variant="outline" className="border-orange-300 bg-orange-50 text-orange-700"><Footprints className="mr-1 h-3 w-3" /> Walk-in</Badge>}
             <span className="ml-auto inline-flex items-center gap-1 text-xs text-navy-400">
               {typeof job.applicationCount === 'number' && job.applicationCount > 0 && (
                 <span className="mr-2 font-medium text-navy-700/70">{job.applicationCount} applied</span>

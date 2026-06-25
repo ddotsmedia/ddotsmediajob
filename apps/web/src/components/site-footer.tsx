@@ -105,9 +105,9 @@ export function SiteFooter() {
 
 function FooterCol({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div>
-      <h4 className="font-display text-sm font-bold text-white">{title}</h4>
-      <ul className="mt-4 space-y-2">{children}</ul>
+    <div className="border-t border-slate-700 pt-5">
+      <h4 className="font-display text-sm font-bold uppercase tracking-widest text-white">{title}</h4>
+      <ul className="mt-4 flex flex-col gap-y-2.5">{children}</ul>
     </div>
   );
 }

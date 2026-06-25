@@ -42,11 +42,10 @@ export function HomeSidebar() {
     ? dbCats.slice(0, 10).map((c) => ({ slug: c.slug, name: c.name }))
     : CAT_SLUGS.map((slug) => ({ slug, name: categoryBySlug(slug)?.name ?? slug }));
 
-  const row = (active: boolean) => cn(linkBase, active ? 'border-l-2 border-teal-500 bg-[#e0f5f7] pl-[6px] font-medium text-[#085041]' : 'text-navy-800');
+  const row = (active: boolean) => cn(linkBase, active ? 'border-l-4 border-teal-500 bg-[#e0f5f7] pl-[5px] font-medium text-[#085041]' : 'border-l-4 border-transparent text-navy-800');
 
   return (
     <div className="sticky top-20 rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
-      <p className={cn(titleCls, 'mt-0')}>Browse Jobs</p>
       <nav className="space-y-0.5">
         {BROWSE.map((b) => {
           const Icon = b.icon;
