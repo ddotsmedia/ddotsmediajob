@@ -3,14 +3,18 @@ import Link from 'next/link';
 import { ArrowRight, MapPin, Clock, Footprints } from 'lucide-react';
 import type { inferRouterOutputs } from '@trpc/server';
 import type { AppRouter } from '@ddots/api';
-import { CATEGORIES, EMIRATES, SITE, formatJobDate, isNew, formatSalary, categoryBySlug, emirateBySlug, getJobEmoji } from '@ddots/shared';
+import { SITE, formatJobDate, isNew, formatSalary, categoryBySlug, emirateBySlug, getJobEmoji } from '@ddots/shared';
 import { getApi } from '@/trpc/server';
 import { JobSearchBar } from '@/components/job-search-bar';
 import { JobCard, formatWalkinDate } from '@/components/job-card';
-import { HomeSidebar } from '@/components/home-sidebar';
-import { CategoryIcon } from '@/components/category-icon';
-import { NumberTicker } from '@/components/magic/number-ticker';
 import { JobTicker } from '@/components/job-ticker';
+import { FeatureCards } from '@/components/home/feature-cards';
+import { StatsBar } from '@/components/home/stats-bar';
+import { CategoryGrid } from '@/components/home/category-grid';
+import { EmployerCTA } from '@/components/home/employer-cta';
+import { WhatsAppSection } from '@/components/home/whatsapp-section';
+import { SuccessStories } from '@/components/home/success-stories';
+import { EmailAlerts } from '@/components/home/email-alerts';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/primitives';
 
@@ -61,32 +65,22 @@ export default async function HomePage() {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       {/* ── Hero ───────────────────────────────────────── */}
-      <section
-        className="relative overflow-hidden"
-        style={{ background: 'linear-gradient(160deg, #8ecfb0 0%, #a8dbc5 40%, #c6ecd8 75%, #e8f7f0 100%)' }}
-      >
-        {/* decorative depth circle */}
-        <div
-          className="pointer-events-none absolute right-[8%] top-10 z-0 h-[300px] w-[300px] rounded-full"
-          style={{ background: 'radial-gradient(circle, rgba(58,158,165,0.12) 0%, transparent 70%)' }}
-        />
+      <section className="relative overflow-hidden" style={{ background: 'linear-gradient(160deg, #F7FAFC 0%, #E8F4F5 100%)' }}>
+        <div className="pointer-events-none absolute right-[8%] top-10 z-0 h-[300px] w-[300px] rounded-full" style={{ background: 'radial-gradient(circle, rgba(46,142,151,0.12) 0%, transparent 70%)' }} />
         <div className="relative z-10 mx-auto max-w-3xl px-4 py-14 text-center md:py-20">
-          <h1 className="font-display text-4xl font-extrabold leading-[1.05] tracking-tight text-[#0f172a] sm:text-5xl">
-            Find Your Next Job in the <span className="text-[#e8623a]">UAE</span>
+          <span className="inline-flex items-center gap-2 rounded-full border border-[#E5EEF0] bg-white px-3 py-1 text-xs font-semibold text-[#2E8E97]">
+            <span className="h-2 w-2 rounded-full bg-[#8dc63f]" /> UAE&apos;s #1 WhatsApp-Powered Job Portal
+          </span>
+          <h1 className="mt-4 font-display text-4xl font-extrabold leading-[1.05] tracking-tight text-[#0F172A] sm:text-5xl">
+            Find Your Dream Job in <span className="text-[#2E8E97]">UAE</span>
           </h1>
-          <p className="mx-auto mt-4 max-w-2xl text-base text-[#2d6b50] md:text-lg">
-            UAE&apos;s WhatsApp-powered job portal · 76 groups · 80,000+ professionals
+          <p className="mx-auto mt-4 max-w-2xl text-base text-[#64748B] md:text-lg">
+            AI Powered. Trusted by 80,000+ Professionals
           </p>
-          <div className="mx-auto mt-7 max-w-3xl">
+          <div className="mx-auto mt-7 max-w-3xl rounded-2xl border border-[#E5EEF0] bg-white/80 p-2 shadow-lg backdrop-blur">
             <JobSearchBar />
           </div>
-          <Link
-            href="/whatsapp-groups"
-            className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-[#1a7a50] hover:underline"
-          >
-            💬 Join 80,000+ professionals on WhatsApp <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
-          <div className="mt-4 flex flex-nowrap items-center gap-2 overflow-x-auto scrollbar-hide px-1 text-sm text-[#2d6b50] sm:flex-wrap sm:justify-center sm:gap-x-3">
+          <div className="mt-4 flex flex-nowrap items-center gap-2 overflow-x-auto scrollbar-hide px-1 text-sm text-[#64748B] sm:flex-wrap sm:justify-center sm:gap-x-3">
             <span className="shrink-0">Popular:</span>
             {[
               { l: 'Driver', h: '/jobs?q=Driver' },
@@ -96,18 +90,10 @@ export default async function HomePage() {
               { l: 'Visa Provided', h: '/jobs/visa-provided' },
               { l: 'Urgent Hiring', h: '/jobs/urgent-hiring-uae' },
             ].map((p) => (
-              <Link key={p.h} href={p.h} className="shrink-0 rounded-full border px-3 py-1 text-xs hover:border-[#3a9ea5]" style={{ borderColor: 'rgba(58,158,165,0.3)', color: '#1a7a50', background: 'rgba(255,255,255,0.6)' }}>
+              <Link key={p.h} href={p.h} className="shrink-0 rounded-full border border-[#E5EEF0] bg-white px-3 py-1 text-xs text-[#2E8E97] hover:border-[#2E8E97]">
                 {p.l}
               </Link>
             ))}
-          </div>
-
-          {/* inline stats */}
-          <div className="mx-auto mt-12 grid max-w-2xl grid-cols-2 sm:grid-cols-4">
-            <HeroStat value={stats.totalActive} suffix="+" label="Active Jobs" />
-            <HeroStat value={76} label="WA Groups" />
-            <HeroStat value={7} label="Emirates" />
-            <HeroStat value={stats.totalSeekers} suffix="+" label="Jobseekers" last />
           </div>
         </div>
       </section>
@@ -115,45 +101,36 @@ export default async function HomePage() {
       {/* ── Live jobs ticker ───────────────────────────── */}
       <JobTicker items={tickerItems} />
 
-      {/* ── Below-hero: sidebar + main content ─────────── */}
-      <div className="mx-auto max-w-7xl gap-6 px-4 lg:grid lg:grid-cols-[220px_1fr]">
-        <aside className="hidden py-6 lg:block">
-          <HomeSidebar />
-        </aside>
-        <div className="min-w-0">
+      <FeatureCards />
+      <StatsBar />
 
-      {/* Filter tabs (underline style) */}
-      <div className="flex flex-nowrap gap-6 overflow-x-auto scrollbar-hide border-b border-slate-200 pt-6">
-        {[
-          { l: 'All Jobs', h: '/jobs', active: true },
-          { l: 'Walk-in', h: '/jobs/walk-in-interview-dubai', active: false },
-          { l: 'Urgent', h: '/jobs/urgent-hiring-uae', active: false },
-          { l: 'Visa Provided', h: '/jobs/visa-provided', active: false },
-          { l: 'Freshers', h: '/jobs/fresher-jobs-uae', active: false },
-        ].map((p) => (
-          <Link
-            key={p.h}
-            href={p.h}
-            className={`shrink-0 border-b-2 pb-2.5 text-sm transition-colors ${p.active ? 'border-[#3a9ea5] font-semibold text-[#3a9ea5]' : 'border-transparent font-medium text-slate-500 hover:text-[#3a9ea5]'}`}
-          >
-            {p.l}
-          </Link>
-        ))}
-      </div>
-
-      {/* ── Latest Jobs (primary) ──────────────────────── */}
-      <section className="py-8">
-        <SectionHead title="Latest Jobs" subtitle={`Showing ${Math.min(6, recent.length)} of ${stats.totalActive.toLocaleString('en-AE')} jobs`} href="/jobs" />
+      {/* ── Latest Jobs ────────────────────────────────── */}
+      <section className="mx-auto max-w-7xl px-4 py-12">
+        <SectionHead title="Latest Jobs" subtitle={`Showing ${Math.min(8, recent.length)} of ${stats.totalActive.toLocaleString('en-AE')} jobs`} href="/jobs" />
+        <div className="mt-5 flex flex-nowrap gap-6 overflow-x-auto scrollbar-hide border-b border-[#E5EEF0]">
+          {[
+            { l: 'All Jobs', h: '/jobs', active: true },
+            { l: 'Walk-in', h: '/jobs/walk-in-interview-dubai', active: false },
+            { l: 'Visa Provided', h: '/jobs/visa-provided', active: false },
+            { l: 'Urgent', h: '/jobs/urgent-hiring-uae', active: false },
+            { l: 'Remote', h: '/jobs/remote', active: false },
+            { l: 'Freshers', h: '/jobs/fresher-jobs-uae', active: false },
+          ].map((p) => (
+            <Link key={p.h} href={p.h} className={`shrink-0 border-b-2 pb-2.5 text-sm transition-colors ${p.active ? 'border-[#2E8E97] font-semibold text-[#2E8E97]' : 'border-transparent font-medium text-[#64748B] hover:text-[#2E8E97]'}`}>
+              {p.l}
+            </Link>
+          ))}
+        </div>
         {recent.length === 0 ? (
           <div className="mt-8 rounded-2xl border border-dashed bg-white p-10 text-center">
-            <p className="font-display text-lg font-bold text-navy-900">No jobs yet</p>
-            <p className="mt-1 text-navy-700/60">Be the first to hire on DdotsMediaJobs.</p>
+            <p className="font-display text-lg font-bold text-[#0F172A]">No jobs yet</p>
+            <p className="mt-1 text-[#64748B]">Be the first to hire on DdotsMediaJobs.</p>
             <Button asChild variant="accent" className="mt-4"><Link href="/employer/post">Post the first job <ArrowRight /></Link></Button>
           </div>
         ) : (
           <>
-            <div className="mt-8 grid gap-4 lg:grid-cols-2">
-              {recent.slice(0, 6).map((job) => (
+            <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              {recent.slice(0, 8).map((job) => (
                 <LatestJobCard key={job.id} job={job} />
               ))}
             </div>
@@ -164,33 +141,14 @@ export default async function HomePage() {
         )}
       </section>
 
-      {/* ── Category pills (compact, horizontal scroll) ── */}
-      <section className="pb-4">
-        <div className="flex items-center gap-3">
-          <span className="shrink-0 text-sm font-semibold text-navy-700">Browse Categories:</span>
-          <div className="flex flex-nowrap gap-2 overflow-x-auto scrollbar-hide py-1">
-            {CATEGORIES.map((c) => (
-              <Link
-                key={c.slug}
-                href={`/category/${c.slug}`}
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm text-navy-700 transition-colors hover:border-teal-400 hover:bg-teal-50 hover:text-teal-700"
-              >
-                <CategoryIcon name={c.icon} className="h-3.5 w-3.5" />
-                {c.name}
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-        </div>
-      </div>
+      <CategoryGrid counts={stats.byCategory} />
 
       {/* ── Featured jobs ──────────────────────────────── */}
       {featured.length > 0 && (
-        <section className="bg-navy-50/50">
-          <div className="mx-auto max-w-7xl px-4 py-16">
+        <section className="bg-[#F7FAFC]">
+          <div className="mx-auto max-w-7xl px-4 py-14">
             <SectionHead title="Featured Jobs" subtitle="Hand-picked opportunities from top UAE employers" href="/jobs" />
-            <div className="mt-8 grid gap-4 md:grid-cols-2">
+            <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {featured.map((job) => (
                 <JobCard key={job.id} job={job} />
               ))}
@@ -199,46 +157,10 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* ── Emirates ───────────────────────────────────── */}
-      <section className="mx-auto max-w-7xl px-4 py-16">
-        <SectionHead title="Jobs by Emirate" subtitle="Explore opportunities in your city" />
-        <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {EMIRATES.map((e) => (
-            <Link
-              key={e.slug}
-              href={`/jobs-in/${e.slug}`}
-              className="rounded-xl border border-l-4 border-slate-100 border-l-[#3a9ea5] bg-white p-5 transition-all hover:border-[#3a9ea5] hover:border-l-[#3a9ea5] hover:shadow-md"
-            >
-              <span className="block font-display text-lg font-bold text-slate-900">{e.name}</span>
-              <span className="text-sm font-semibold text-[#3a9ea5]">
-                {(stats.byEmirate[e.slug] ?? 0).toLocaleString('en-AE')} open jobs →
-              </span>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* ── Employer CTA ───────────────────────────────── */}
-      <section className="bg-navy-900">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 px-4 py-14 text-center md:flex-row md:text-left">
-          <div>
-            <h2 className="font-display text-2xl font-bold text-white md:text-3xl">Post a Job in 60 Seconds</h2>
-            <ul className="mt-3 flex flex-wrap justify-center gap-x-5 gap-y-1 text-sm text-navy-100/80 md:justify-start">
-              <li>✓ Free to post</li>
-              <li>✓ AI writes the job description</li>
-              <li>✓ Reach thousands of UAE jobseekers</li>
-            </ul>
-          </div>
-          <div className="w-full shrink-0 text-center sm:w-auto">
-            <Button asChild variant="accent" size="lg" className="w-full sm:w-auto">
-              <Link href="/employer/post">
-                Post a Job Free <ArrowRight />
-              </Link>
-            </Button>
-            <p className="mt-2 text-xs text-navy-100/60">No account needed to start</p>
-          </div>
-        </div>
-      </section>
+      <EmployerCTA />
+      <WhatsAppSection />
+      <SuccessStories />
+      <EmailAlerts />
     </>
   );
 }
@@ -289,17 +211,6 @@ function LatestJobCard({ job }: { job: RecentJob }) {
         <span className="inline-flex items-center gap-1 text-xs text-navy-700/50"><Clock className="h-3 w-3" /> {formatJobDate(job.publishedAt)}</span>
       </div>
     </Link>
-  );
-}
-
-function HeroStat({ value, label, suffix, last }: { value: number; label: string; suffix?: string; last?: boolean }) {
-  return (
-    <div className={`px-2 py-1 text-center ${last ? '' : 'sm:border-r sm:border-slate-200'}`}>
-      <div className="font-display text-2xl font-extrabold text-[#3a9ea5]">
-        <NumberTicker value={value} suffix={suffix} />
-      </div>
-      <div className="mt-1 text-xs font-medium uppercase tracking-widest text-[#2d6b50]">{label}</div>
-    </div>
   );
 }
 
