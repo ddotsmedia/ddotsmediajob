@@ -81,6 +81,7 @@ export type BulkJobDraft = {
   salaryMax: number;
   description: string;
   requirements: string;
+  contactPhone: string;
   contactWhatsapp: string;
   contactEmail: string;
   visaProvided: boolean;
@@ -113,8 +114,9 @@ const BULK_EXTRACT_TOOL = {
             salaryMax: { type: 'integer', description: 'Monthly AED maximum (0 if unstated)' },
             description: { type: 'string', description: 'Short clean job description' },
             requirements: { type: 'string', description: 'Key requirements / must-haves' },
-            contactWhatsapp: { type: 'string', description: 'Contact phone/WhatsApp if present, else empty' },
-            contactEmail: { type: 'string', description: 'Contact email if present, else empty' },
+            contactPhone: { type: 'string', description: "Extract ANY phone number near this job entry (UAE formats: 05X-XXX-XXXX, +971-XX-XXX-XXXX, 00971XXXXXXXXX, or any digit sequence that looks like a phone). Empty if none." },
+            contactEmail: { type: 'string', description: 'Extract any email address found near this job entry. Empty if none.' },
+            contactWhatsapp: { type: 'string', description: "Extract a WhatsApp number if mentioned (wa.me/ links or 'WhatsApp: XXXX'). Empty if none." },
             visaProvided: { type: 'boolean' },
             accommodation: { type: 'boolean' },
             freshersWelcome: { type: 'boolean' },
@@ -155,6 +157,7 @@ function normalizeBulkDraft(j: Partial<BulkJobDraft>): BulkJobDraft {
     salaryMax: Number.isFinite(Number(j.salaryMax)) ? Math.max(0, Math.trunc(Number(j.salaryMax))) : 0,
     description: String(j.description ?? '').trim(),
     requirements: String(j.requirements ?? '').trim(),
+    contactPhone: String(j.contactPhone ?? '').trim().slice(0, 30),
     contactWhatsapp: String(j.contactWhatsapp ?? '').trim().slice(0, 30),
     contactEmail: String(j.contactEmail ?? '').trim().slice(0, 255),
     visaProvided: Boolean(j.visaProvided),

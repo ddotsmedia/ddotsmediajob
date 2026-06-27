@@ -1,8 +1,9 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import { toast } from 'sonner';
-import { Loader2, Wand2, Check, X, Layers, Trash2 } from 'lucide-react';
+import { Loader2, Wand2, Check, X, Layers, Trash2, AlertTriangle } from 'lucide-react';
 import { CATEGORIES, EMIRATES, JOB_TYPES } from '@ddots/shared';
 import { trpc } from '@/trpc/react';
 import { Button } from '@/components/ui/button';
@@ -20,6 +21,7 @@ type Draft = {
   salaryMax: number;
   description: string;
   requirements: string;
+  contactPhone: string;
   contactWhatsapp: string;
   contactEmail: string;
   visaProvided: boolean;
@@ -34,7 +36,7 @@ type Row = Draft & { selected: boolean };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-/** Map an editable card to the admin.bulkCreateJobs input shape. */
+/** Map an editable card to the admin.createJob input shape. */
 function toJobInput(d: Draft, status: 'active' | 'draft') {
   const desc =
     [d.description.trim(), d.requirements.trim() ? `Requirements:\n${d.requirements.trim()}` : '']
@@ -55,19 +57,25 @@ function toJobInput(d: Draft, status: 'active' | 'draft') {
     isRemote: d.remote,
     isUrgent: d.urgent,
     isFresher: d.freshersWelcome,
-    contactWhatsapp: d.contactWhatsapp.trim() || undefined,
+    // No separate phone field on jobs — WhatsApp falls back to any plain phone.
+    contactWhatsapp: (d.contactWhatsapp.trim() || d.contactPhone.trim()) || undefined,
     applyEmail: EMAIL_RE.test(d.contactEmail.trim()) ? d.contactEmail.trim() : undefined,
     source: 'paste' as const,
     status,
   };
 }
 
+type Failure = { title: string; error: string };
+
 export default function BulkExtractPage() {
   const [text, setText] = useState('');
   const [rows, setRows] = useState<Row[]>([]);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  const [result, setResult] = useState<{ published: number; status: 'active' | 'draft'; failures: Failure[] } | null>(null);
 
   const extract = trpc.ai.bulkExtractJobs.useMutation({
     onSuccess: (jobs) => {
+      setResult(null);
       if (!jobs.length) {
         toast.info('No vacancies found — try pasting more detail or add manually.');
         setRows([]);
@@ -79,9 +87,10 @@ export default function BulkExtractPage() {
     onError: (e) => toast.error(e.message || 'Extraction failed'),
   });
 
-  const bulk = trpc.admin.bulkCreateJobs.useMutation();
+  const create = trpc.admin.createJob.useMutation();
 
   const selectedCount = useMemo(() => rows.filter((r) => r.selected && r.title.trim().length >= 3).length, [rows]);
+  const publishing = progress !== null;
 
   function patch(i: number, p: Partial<Row>) {
     setRows((prev) => prev.map((r, idx) => (idx === i ? { ...r, ...p } : r)));
@@ -90,16 +99,33 @@ export default function BulkExtractPage() {
   async function publish(status: 'active' | 'draft') {
     const picked = rows.filter((r) => r.selected && r.title.trim().length >= 3);
     if (!picked.length) return toast.error('Select at least one job (title needs 3+ characters).');
-    try {
-      const res = await bulk.mutateAsync({ jobs: picked.map((d) => toJobInput(d, status)) as never });
-      const verb = status === 'active' ? 'Published' : 'Saved as draft';
-      toast.success(`${verb} ${res.created}${res.errors.length ? ` · ${res.errors.length} failed` : ''}`);
-      if (res.errors.length) console.warn('[bulk-extract] row errors', res.errors);
-      // Drop the rows that were just saved; keep nothing on full success.
-      if (res.created > 0) setRows((prev) => prev.filter((r) => !(r.selected && r.title.trim().length >= 3)));
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Save failed');
+
+    setResult(null);
+    setProgress({ done: 0, total: picked.length });
+    const failures: Failure[] = [];
+    const publishedKeys = new Set<string>();
+
+    for (let i = 0; i < picked.length; i++) {
+      const d = picked[i]!;
+      try {
+        await create.mutateAsync(toJobInput(d, status) as never);
+        publishedKeys.add(`${d.title}__${i}`);
+      } catch (e) {
+        failures.push({ title: d.title || `Job ${i + 1}`, error: e instanceof Error ? e.message : 'failed' });
+      }
+      setProgress({ done: i + 1, total: picked.length });
     }
+
+    const published = picked.length - failures.length;
+    // Keep only the rows that failed (or were not selected) so the user can retry.
+    const failedTitles = new Set(failures.map((f) => f.title));
+    setRows((prev) => prev.filter((r) => !(r.selected && r.title.trim().length >= 3) || failedTitles.has(r.title || '')));
+    setProgress(null);
+    setResult({ published, status, failures });
+
+    const verb = status === 'active' ? 'published' : 'saved as draft';
+    if (published > 0) toast.success(`${published} ${published === 1 ? 'job' : 'jobs'} ${verb}`);
+    if (failures.length) toast.error(`${failures.length} failed — see panel below`);
   }
 
   return (
@@ -128,6 +154,37 @@ export default function BulkExtractPage() {
         {extract.isPending && <p className="mt-2 text-sm text-navy-700/60">Extracting jobs…</p>}
       </div>
 
+      {result && (
+        <div className="mt-6 rounded-xl border bg-white p-5">
+          {result.published > 0 && (
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="inline-flex items-center gap-2 font-semibold text-lime-700">
+                <Check className="h-5 w-5" /> {result.published} {result.published === 1 ? 'job' : 'jobs'}{' '}
+                {result.status === 'active' ? 'published!' : 'saved as drafts!'}
+              </span>
+              <Button asChild variant="outline" size="sm">
+                <Link href={result.status === 'active' ? '/admin/jobs' : '/admin/jobs/drafts'}>View Jobs</Link>
+              </Button>
+            </div>
+          )}
+          {result.failures.length > 0 && (
+            <div className={cn(result.published > 0 && 'mt-4')}>
+              <p className="inline-flex items-center gap-2 text-sm font-semibold text-accent-700">
+                <AlertTriangle className="h-4 w-4" /> {result.failures.length} failed
+              </p>
+              <ul className="mt-2 space-y-1 text-sm text-navy-700/70">
+                {result.failures.map((f, i) => (
+                  <li key={i}>
+                    <span className="font-medium text-navy-900">{f.title}</span> — {f.error}
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-2 text-xs text-navy-700/50">Failed jobs are kept below — fix and click publish again to retry.</p>
+            </div>
+          )}
+        </div>
+      )}
+
       {rows.length > 0 && (
         <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {rows.map((r, i) => (
@@ -140,14 +197,14 @@ export default function BulkExtractPage() {
         <div className="fixed inset-x-0 bottom-0 z-30 border-t border-navy-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
           <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3">
             <span className="text-sm font-semibold text-navy-900">
-              {selectedCount} of {rows.length} selected
+              {progress ? `Saving ${progress.done}/${progress.total}…` : `${selectedCount} of ${rows.length} selected`}
             </span>
             <div className="flex flex-wrap gap-2">
-              <Button variant="outline" onClick={() => publish('draft')} disabled={bulk.isPending || selectedCount === 0}>
-                {bulk.isPending ? <Loader2 className="animate-spin" /> : null} Save as Drafts
+              <Button variant="outline" onClick={() => publish('draft')} disabled={publishing || selectedCount === 0}>
+                {publishing ? <Loader2 className="animate-spin" /> : null} Save as Drafts
               </Button>
-              <Button onClick={() => publish('active')} disabled={bulk.isPending || selectedCount === 0}>
-                {bulk.isPending ? <Loader2 className="animate-spin" /> : <Check />} Publish All Selected
+              <Button onClick={() => publish('active')} disabled={publishing || selectedCount === 0}>
+                {publishing ? <Loader2 className="animate-spin" /> : <Check />} Publish All Selected
               </Button>
             </div>
           </div>
@@ -242,6 +299,21 @@ function JobCard({
             value={row.salaryMax || ''}
             onChange={(e) => onPatch(index, { salaryMax: Number(e.target.value) || 0 })}
           />
+        </div>
+      </div>
+
+      <div className="space-y-1">
+        <Label>Contact phone</Label>
+        <Input value={row.contactPhone} onChange={(e) => onPatch(index, { contactPhone: e.target.value })} placeholder="05X XXX XXXX" />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-1">
+          <Label>WhatsApp</Label>
+          <Input value={row.contactWhatsapp} onChange={(e) => onPatch(index, { contactWhatsapp: e.target.value })} placeholder="+9715…" />
+        </div>
+        <div className="space-y-1">
+          <Label>Email</Label>
+          <Input value={row.contactEmail} onChange={(e) => onPatch(index, { contactEmail: e.target.value })} placeholder="jobs@…" />
         </div>
       </div>
 
