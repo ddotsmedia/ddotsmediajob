@@ -35,6 +35,7 @@ const NAV: NavItem[] = [
   { href: '/admin/jobs/add', label: 'Add Job', icon: PlusCircle },
   { href: '/admin/quick-import', label: 'Quick Import', icon: Sparkles },
   { href: '/admin/tools/bulk-import', label: 'Bulk Import', icon: Layers },
+  { href: '/admin/bulk-extract', label: 'Bulk Extract', icon: Layers },
   { href: '/admin/tools/bookmarklet', label: 'Bookmarklet', icon: Bookmark },
   { href: '/admin/approvals', label: 'Job Approvals', icon: CheckSquare },
   { href: '/admin/jobs', label: 'All Jobs', icon: Briefcase },

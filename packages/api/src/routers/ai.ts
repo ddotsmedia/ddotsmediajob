@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { jobs, jobseekerProfiles, eq, and, gte, ne, isNotNull } from '@ddots/db';
-import { formatSalary, inferExperienceLevel } from '@ddots/shared';
+import { formatSalary, inferExperienceLevel, EMIRATE_SLUGS, CATEGORY_SLUGS, JOB_TYPES } from '@ddots/shared';
 import { router, publicProcedure, protectedProcedure, employerProcedure, adminProcedure } from '../trpc';
 import {
   chat,
@@ -61,6 +61,110 @@ const JOB_EXTRACT_SYSTEM =
   'You are a UAE recruitment expert. Extract or generate structured job data and call the job_draft function. ' +
   'Know all 7 UAE emirates, common job categories, WPS salary norms (monthly AED), visa terminology, free zones, and standard UAE benefits. ' +
   'Map locations to the correct emirate slug ONLY when stated — if the emirate/location is not in the text, omit emirate (do not guess or default to Dubai). If salary is unstated use 0. Set each confidence field to high/medium/low based on how certain the value is from the source.';
+
+// ─── Bulk extract (many vacancies from one pasted block) ────────────
+const BULK_EXTRACT_SYSTEM =
+  'You are a UAE recruitment expert. A single pasted message often advertises MANY separate vacancies. ' +
+  'Extract EVERY distinct job as its own array item — do not merge different roles into one. ' +
+  'Know all 7 UAE emirates and map locations to the correct slug ONLY when stated (omit/empty if not). ' +
+  "If the company is not named use 'Direct Employer'. Salaries are monthly AED — use 0 when unstated. " +
+  'Use the requirements field for must-haves; keep description concise.';
+
+export type BulkJobDraft = {
+  title: string;
+  company: string;
+  emirate: string;
+  area: string;
+  categorySlug: string;
+  jobType: string;
+  salaryMin: number;
+  salaryMax: number;
+  description: string;
+  requirements: string;
+  contactWhatsapp: string;
+  contactEmail: string;
+  visaProvided: boolean;
+  accommodation: boolean;
+  freshersWelcome: boolean;
+  remote: boolean;
+  urgent: boolean;
+  vacancies: number;
+};
+
+const BULK_EXTRACT_TOOL = {
+  name: 'job_drafts',
+  description: 'Extract all individual job vacancies found in the pasted text.',
+  input_schema: {
+    type: 'object' as const,
+    properties: {
+      jobs: {
+        type: 'array',
+        description: 'One entry per distinct vacancy.',
+        items: {
+          type: 'object',
+          properties: {
+            title: { type: 'string' },
+            company: { type: 'string', description: "Hiring company, or 'Direct Employer' if not stated" },
+            emirate: { type: 'string', description: 'UAE emirate slug (dubai, abu-dhabi, sharjah, ajman, ras-al-khaimah, fujairah, umm-al-quwain) — empty if not stated' },
+            area: { type: 'string', description: 'Area / district within the emirate' },
+            categorySlug: { type: 'string', enum: [...CATEGORY_SLUGS] },
+            jobType: { type: 'string', enum: [...JOB_TYPES] },
+            salaryMin: { type: 'integer', description: 'Monthly AED minimum (0 if unstated)' },
+            salaryMax: { type: 'integer', description: 'Monthly AED maximum (0 if unstated)' },
+            description: { type: 'string', description: 'Short clean job description' },
+            requirements: { type: 'string', description: 'Key requirements / must-haves' },
+            contactWhatsapp: { type: 'string', description: 'Contact phone/WhatsApp if present, else empty' },
+            contactEmail: { type: 'string', description: 'Contact email if present, else empty' },
+            visaProvided: { type: 'boolean' },
+            accommodation: { type: 'boolean' },
+            freshersWelcome: { type: 'boolean' },
+            remote: { type: 'boolean' },
+            urgent: { type: 'boolean' },
+            vacancies: { type: 'integer' },
+          },
+          required: ['title'],
+        },
+      },
+    },
+    required: ['jobs'],
+  },
+};
+
+/** Coerce a free-text emirate (slug / name / RAK / UAQ) to a canonical slug; default dubai. */
+function normBulkEmirate(raw: unknown): string {
+  const k = String(raw ?? '').trim().toLowerCase();
+  const dash = k.replace(/\s+/g, '-');
+  if ((EMIRATE_SLUGS as readonly string[]).includes(dash)) return dash;
+  const compact = k.replace(/[\s-]/g, '');
+  const alias: Record<string, string> = { rak: 'ras-al-khaimah', uaq: 'umm-al-quwain', abudhabi: 'abu-dhabi', rasalkhaimah: 'ras-al-khaimah', ummalquwain: 'umm-al-quwain' };
+  return alias[compact] ?? 'dubai';
+}
+
+/** Validate / default every field so the review cards + bulk publish never crash. */
+function normalizeBulkDraft(j: Partial<BulkJobDraft>): BulkJobDraft {
+  const cat = String(j.categorySlug ?? '').trim().toLowerCase();
+  const jt = String(j.jobType ?? '').trim().toLowerCase();
+  return {
+    title: String(j.title ?? '').trim().slice(0, 160),
+    company: String(j.company ?? '').trim().slice(0, 160) || 'Direct Employer',
+    emirate: normBulkEmirate(j.emirate),
+    area: String(j.area ?? '').trim().slice(0, 160),
+    categorySlug: (CATEGORY_SLUGS as readonly string[]).includes(cat) ? cat : 'admin',
+    jobType: (JOB_TYPES as readonly string[]).includes(jt) ? jt : 'full-time',
+    salaryMin: Number.isFinite(Number(j.salaryMin)) ? Math.max(0, Math.trunc(Number(j.salaryMin))) : 0,
+    salaryMax: Number.isFinite(Number(j.salaryMax)) ? Math.max(0, Math.trunc(Number(j.salaryMax))) : 0,
+    description: String(j.description ?? '').trim(),
+    requirements: String(j.requirements ?? '').trim(),
+    contactWhatsapp: String(j.contactWhatsapp ?? '').trim().slice(0, 30),
+    contactEmail: String(j.contactEmail ?? '').trim().slice(0, 255),
+    visaProvided: Boolean(j.visaProvided),
+    accommodation: Boolean(j.accommodation),
+    freshersWelcome: Boolean(j.freshersWelcome),
+    remote: Boolean(j.remote),
+    urgent: Boolean(j.urgent),
+    vacancies: Number.isFinite(Number(j.vacancies)) && Number(j.vacancies) > 0 ? Math.trunc(Number(j.vacancies)) : 1,
+  };
+}
 
 // Lenient schema for the JSON-fallback path (title required, everything else optional).
 const jsonDraftSchema = z
@@ -339,6 +443,32 @@ export const aiRouter = router({
       } catch (err) {
         console.error('[extractJobFromText] JSON fallback failed:', err instanceof Error ? err.message : err);
         return null;
+      }
+    }),
+
+  /**
+   * Extract MANY job vacancies from one pasted block (Haiku). Returns an array
+   * of reviewable drafts — does NOT save. NON-BLOCKING: returns [] on total AI
+   * failure so the page degrades to an empty result instead of throwing.
+   */
+  bulkExtractJobs: adminProcedure
+    .input(z.object({ text: z.string().min(30).max(30000) }).strict())
+    .mutation(async ({ ctx, input }): Promise<BulkJobDraft[]> => {
+      await guardAi(ctx, input.text);
+      try {
+        const res = await structured<{ jobs?: Partial<BulkJobDraft>[] }>(
+          BULK_EXTRACT_SYSTEM,
+          `Extract every distinct job vacancy from this text — one array item per role:\n\n${wrapUserContent(input.text)}`,
+          BULK_EXTRACT_TOOL as never,
+          { model: MODEL_FAST, maxTokens: 4000 },
+        );
+        return (res.jobs ?? [])
+          .filter((j) => j && String(j.title ?? '').trim().length > 0)
+          .map(normalizeBulkDraft)
+          .slice(0, 50);
+      } catch (err) {
+        console.error('[bulkExtractJobs]', err instanceof Error ? err.message : err);
+        return [];
       }
     }),
 
