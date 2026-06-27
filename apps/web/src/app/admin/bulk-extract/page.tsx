@@ -72,19 +72,27 @@ export default function BulkExtractPage() {
   const [rows, setRows] = useState<Row[]>([]);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [result, setResult] = useState<{ published: number; status: 'active' | 'draft'; failures: Failure[] } | null>(null);
+  const [noResults, setNoResults] = useState(false);
 
   const extract = trpc.ai.bulkExtractJobs.useMutation({
-    onSuccess: (jobs) => {
+    onMutate: () => {
       setResult(null);
+      setNoResults(false);
+    },
+    onSuccess: (jobs) => {
       if (!jobs.length) {
-        toast.info('No vacancies found — try pasting more detail or add manually.');
         setRows([]);
+        setNoResults(true);
         return;
       }
+      setNoResults(false);
       setRows(jobs.map((j) => ({ ...j, selected: true })));
       toast.success(`Found ${jobs.length} ${jobs.length === 1 ? 'vacancy' : 'vacancies'}`);
     },
-    onError: (e) => toast.error(e.message || 'Extraction failed'),
+    onError: (e) => {
+      setNoResults(false);
+      toast.error(e.message || 'Extraction failed');
+    },
   });
 
   const create = trpc.admin.createJob.useMutation();
@@ -154,6 +162,12 @@ export default function BulkExtractPage() {
         {extract.isPending && <p className="mt-2 text-sm text-navy-700/60">Extracting jobs…</p>}
       </div>
 
+      {noResults && !extract.isPending && (
+        <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-6 text-center text-sm font-medium text-amber-800">
+          ⚠️ No jobs found. Try pasting a clearer job announcement.
+        </div>
+      )}
+
       {result && (
         <div className="mt-6 rounded-xl border bg-white p-5">
           {result.published > 0 && (
@@ -186,7 +200,7 @@ export default function BulkExtractPage() {
       )}
 
       {rows.length > 0 && (
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="mt-6 grid gap-4 pb-32 sm:grid-cols-2 xl:grid-cols-3">
           {rows.map((r, i) => (
             <JobCard key={i} row={r} index={i} onPatch={patch} onRemove={() => setRows((p) => p.filter((_, idx) => idx !== i))} />
           ))}
@@ -194,17 +208,20 @@ export default function BulkExtractPage() {
       )}
 
       {rows.length > 0 && (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-navy-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
-          <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3">
+        <div
+          className="fixed inset-x-0 bottom-0 z-50 border-t border-slate-200 bg-white"
+          style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+        >
+          <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <span className="text-sm font-semibold text-navy-900">
-              {progress ? `Saving ${progress.done}/${progress.total}…` : `${selectedCount} of ${rows.length} selected`}
+              {progress ? `Saving ${progress.done}/${progress.total}…` : `${selectedCount} jobs selected`}
             </span>
-            <div className="flex flex-wrap gap-2">
-              <Button variant="outline" onClick={() => publish('draft')} disabled={publishing || selectedCount === 0}>
-                {publishing ? <Loader2 className="animate-spin" /> : null} Save as Drafts
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Button variant="outline" className="w-full sm:w-auto" onClick={() => publish('draft')} disabled={publishing || selectedCount === 0}>
+                {publishing ? <Loader2 className="animate-spin" /> : null} Save Drafts
               </Button>
-              <Button onClick={() => publish('active')} disabled={publishing || selectedCount === 0}>
-                {publishing ? <Loader2 className="animate-spin" /> : <Check />} Publish All Selected
+              <Button className="w-full sm:w-auto" onClick={() => publish('active')} disabled={publishing || selectedCount === 0}>
+                {publishing ? <Loader2 className="animate-spin" /> : <Check />} Publish All
               </Button>
             </div>
           </div>
@@ -303,18 +320,31 @@ function JobCard({
       </div>
 
       <div className="space-y-1">
-        <Label>Contact phone</Label>
-        <Input value={row.contactPhone} onChange={(e) => onPatch(index, { contactPhone: e.target.value })} placeholder="05X XXX XXXX" />
+        <Label>📞 Phone</Label>
+        <Input
+          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+          value={row.contactPhone}
+          onChange={(e) => onPatch(index, { contactPhone: e.target.value })}
+          placeholder="05X XXX XXXX"
+        />
       </div>
-      <div className="grid grid-cols-2 gap-2">
-        <div className="space-y-1">
-          <Label>WhatsApp</Label>
-          <Input value={row.contactWhatsapp} onChange={(e) => onPatch(index, { contactWhatsapp: e.target.value })} placeholder="+9715…" />
-        </div>
-        <div className="space-y-1">
-          <Label>Email</Label>
-          <Input value={row.contactEmail} onChange={(e) => onPatch(index, { contactEmail: e.target.value })} placeholder="jobs@…" />
-        </div>
+      <div className="space-y-1">
+        <Label>💬 WhatsApp</Label>
+        <Input
+          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+          value={row.contactWhatsapp}
+          onChange={(e) => onPatch(index, { contactWhatsapp: e.target.value })}
+          placeholder="+9715…"
+        />
+      </div>
+      <div className="space-y-1">
+        <Label>✉️ Email</Label>
+        <Input
+          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+          value={row.contactEmail}
+          onChange={(e) => onPatch(index, { contactEmail: e.target.value })}
+          placeholder="jobs@…"
+        />
       </div>
 
       {(row.visaProvided || row.accommodation || row.remote || row.urgent || row.freshersWelcome) && (
