@@ -36,7 +36,9 @@ export async function uniqueJobSlug(title: string): Promise<string> {
 export async function generateJobSlug(title: string, emirate?: string | null, company?: string | null): Promise<string> {
   const parts = [
     slugify(title),
-    emirate ? emirate.split('-')[0] : null,
+    // slugify first: callers may pass the emirate display name ("Abu Dhabi") not the slug,
+    // and a raw space/uppercase here produces an un-findable slug → 404 on the job page.
+    emirate ? slugify(emirate).split('-')[0] : null,
     company ? slugify(company).slice(0, 15) : null,
   ].filter(Boolean);
   const base = (parts.join('-').replace(/-+$/g, '').slice(0, 60) || 'job').replace(/-+$/g, '');
