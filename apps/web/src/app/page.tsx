@@ -31,12 +31,22 @@ const EMPTY_STATS = { byCategory: {} as Record<string, number>, byEmirate: {} as
 
 export default async function HomePage() {
   const api = await getApi();
-  const [stats, featured, recent] = await Promise.all([
+  const [stats, featured, recent, catRows] = await Promise.all([
     api.jobs.stats().catch(() => EMPTY_STATS),
     api.jobs.featured({ limit: 6 }).catch(() => [] as Awaited<ReturnType<typeof api.jobs.featured>>),
     api.jobs.recent({ limit: 10 }).catch(() => [] as Awaited<ReturnType<typeof api.jobs.recent>>),
+    api.content.categories().catch(() => [] as Awaited<ReturnType<typeof api.content.categories>>),
   ]);
   const tickerItems = recent.map((j) => ({ slug: j.slug, title: j.title, emirateSlug: j.emirateSlug, publishedAt: j.publishedAt }));
+
+  // Group subcategory names under their parent's slug for the category cards (names only).
+  const parentSlugById = new Map(catRows.filter((c) => !c.parentId).map((c) => [c.id, c.slug]));
+  const subsByParent: Record<string, string[]> = {};
+  for (const r of catRows) {
+    if (!r.parentId) continue;
+    const pslug = parentSlugById.get(r.parentId);
+    if (pslug) (subsByParent[pslug] ??= []).push(r.name);
+  }
 
   const jsonLd = [
     {
@@ -141,7 +151,7 @@ export default async function HomePage() {
         )}
       </section>
 
-      <CategoryGrid counts={stats.byCategory} />
+      <CategoryGrid counts={stats.byCategory} subs={subsByParent} />
 
       {/* ── Featured jobs ──────────────────────────────── */}
       {featured.length > 0 && (

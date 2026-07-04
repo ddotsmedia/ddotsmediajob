@@ -1,9 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import type { LucideIcon } from 'lucide-react';
-import { LayoutGrid, Footprints, Zap, ShieldCheck, Sparkles, Clock, FileText, BarChart3, ShieldAlert, Calculator, MessageCircle } from 'lucide-react';
+import { LayoutGrid, Footprints, Zap, ShieldCheck, Sparkles, Clock, FileText, BarChart3, ShieldAlert, Calculator, MessageCircle, ChevronDown } from 'lucide-react';
 import { categoryBySlug } from '@ddots/shared';
 import { trpc } from '@/trpc/react';
 import { CategoryIcon } from '@/components/category-icon';
@@ -33,16 +34,29 @@ const TOOLS: { label: string; href: string; icon: LucideIcon }[] = [
 
 export function HomeSidebar() {
   const pathname = usePathname();
+  const search = useSearchParams();
+  const [open, setOpen] = useState<Record<string, boolean>>({});
   const stats = trpc.jobs.stats.useQuery(undefined, { staleTime: 300_000 });
   const byCat = stats.data?.byCategory ?? {};
   const cats = trpc.content.categories.useQuery(undefined, { staleTime: 300_000 });
   // top-level active categories from DB (fallback to hardcoded list while loading)
-  const dbCats = (cats.data ?? []).filter((c) => !c.parentId);
+  const allCats = cats.data ?? [];
+  const dbCats = allCats.filter((c) => !c.parentId);
+  // Subcategory names grouped under their parent's slug (names only — jobs aren't sub-tagged).
+  const subsByParent: Record<string, string[]> = {};
+  for (const c of allCats) {
+    if (!c.parentId) continue;
+    const p = dbCats.find((d) => d.id === c.parentId);
+    if (p) (subsByParent[p.slug] ??= []).push(c.name);
+  }
   const categoryList = dbCats.length
     ? dbCats.slice(0, 10).map((c) => ({ slug: c.slug, name: c.name }))
     : CAT_SLUGS.map((slug) => ({ slug, name: categoryBySlug(slug)?.name ?? slug }));
 
   const row = (active: boolean) => cn(linkBase, 'border-l-4 pl-3', active ? 'border-[#3a9ea5] bg-[#f0fafa] font-medium text-[#3a9ea5]' : 'border-transparent text-slate-600');
+  // A subcategory link is "active" when the jobs list is filtered to that parent + keyword.
+  const subActive = (parent: string, sub: string) =>
+    pathname === '/jobs' && search.get('category') === parent && search.get('q') === sub;
 
   return (
     <div className="sticky top-20 rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
@@ -62,11 +76,45 @@ export function HomeSidebar() {
         {categoryList.map(({ slug, name }) => {
           const iconName = categoryBySlug(slug)?.icon ?? 'briefcase';
           const n = byCat[slug] ?? 0;
+          const subs = subsByParent[slug] ?? [];
+          const isOpen = open[slug] ?? false;
           return (
-            <Link key={slug} href={`/category/${slug}`} className={row(pathname === `/category/${slug}`)}>
-              <CategoryIcon name={iconName} className={ico} /><span className="flex-1 truncate">{name}</span>
-              {n > 0 && <span className="ml-auto rounded bg-[#f0fdf4] px-1.5 text-xs font-medium text-green-700">{n}</span>}
-            </Link>
+            <div key={slug}>
+              <div className={cn(row(pathname === `/category/${slug}`), 'pr-1')}>
+                <CategoryIcon name={iconName} className={ico} />
+                <Link href={`/category/${slug}`} className="flex-1 truncate">{name}</Link>
+                {n > 0 && <span className="rounded bg-[#f0fdf4] px-1.5 text-xs font-medium text-green-700">{n}</span>}
+                {subs.length > 0 && (
+                  <button
+                    type="button"
+                    aria-label={isOpen ? `Collapse ${name}` : `Expand ${name}`}
+                    aria-expanded={isOpen}
+                    onClick={() => setOpen((o) => ({ ...o, [slug]: !isOpen }))}
+                    className="ml-0.5 shrink-0 rounded p-0.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                  >
+                    <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', isOpen && 'rotate-180')} />
+                  </button>
+                )}
+              </div>
+              {isOpen && subs.length > 0 && (
+                <div className="mb-1 ml-[26px] space-y-0.5 border-l border-slate-100 pl-2">
+                  {subs.map((sub) => (
+                    <Link
+                      key={sub}
+                      href={`/jobs?category=${slug}&q=${encodeURIComponent(sub)}`}
+                      className={cn(
+                        'block truncate border-l-2 py-1 pl-2 text-[12px] transition-colors',
+                        subActive(slug, sub)
+                          ? 'border-[#3a9ea5] font-medium text-[#3a9ea5]'
+                          : 'border-transparent text-slate-500 hover:text-[#3a9ea5]',
+                      )}
+                    >
+                      {sub}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
           );
         })}
       </nav>

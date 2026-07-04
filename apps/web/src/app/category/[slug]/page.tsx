@@ -5,6 +5,7 @@ import { CATEGORIES, categoryBySlug, EMIRATES, SITE } from '@ddots/shared';
 import { getApi } from '@/trpc/server';
 import { JobCard } from '@/components/job-card';
 import { CategoryIcon } from '@/components/category-icon';
+import { CategoryAccordion } from '@/components/category-accordion';
 
 export const revalidate = 600;
 export const dynamicParams = false;
@@ -40,9 +41,27 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
   if (!category) notFound();
 
   const api = await getApi();
-  const { jobs, total } = await api.jobs
-    .list({ category: slug, sort: 'newest', page: 1, perPage: 24 } as never)
-    .catch(() => ({ jobs: [] as never[], total: 0 }));
+  const [{ jobs, total }, stats, catRows] = await Promise.all([
+    api.jobs.list({ category: slug, sort: 'newest', page: 1, perPage: 24 } as never).catch(() => ({ jobs: [] as never[], total: 0 })),
+    api.jobs.stats().catch(() => null),
+    api.content.categories().catch(() => [] as Awaited<ReturnType<typeof api.content.categories>>),
+  ]);
+
+  // Build the browse accordion: static (linkable) parents + live counts + DB subcategory names.
+  const byCategory = stats?.byCategory ?? {};
+  const parentSlugById = new Map(catRows.filter((c) => !c.parentId).map((c) => [c.id, c.slug]));
+  const subsByParent: Record<string, string[]> = {};
+  for (const r of catRows) {
+    if (!r.parentId) continue;
+    const pslug = parentSlugById.get(r.parentId);
+    if (pslug) (subsByParent[pslug] ??= []).push(r.name);
+  }
+  const accordionItems = CATEGORIES.map((c) => ({
+    slug: c.slug,
+    name: c.name,
+    count: byCategory[c.slug] ?? 0,
+    subs: (subsByParent[c.slug] ?? []).slice(0, 12),
+  }));
 
   const faq = categoryFaqs(category.name);
   const jsonLd = [
@@ -108,26 +127,13 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
           </div>
         </section>
 
-        <RelatedCategories current={slug} />
-      </div>
-    </div>
-  );
-}
-
-function RelatedCategories({ current }: { current: string }) {
-  return (
-    <div className="mt-12 border-t pt-8">
-      <h2 className="font-display text-lg font-bold text-navy-900">Explore other categories</h2>
-      <div className="mt-4 flex flex-wrap gap-2">
-        {CATEGORIES.filter((c) => c.slug !== current).map((c) => (
-          <Link
-            key={c.slug}
-            href={`/category/${c.slug}`}
-            className="rounded-full border bg-white px-4 py-1.5 text-sm text-navy-700 hover:border-teal-300 hover:text-teal-600"
-          >
-            {c.name}
-          </Link>
-        ))}
+        <div className="mt-12 border-t pt-8">
+          <h2 className="font-display text-lg font-bold text-navy-900">Browse all categories</h2>
+          <p className="mt-1 text-sm text-navy-700/60">Tap a category to see its specialisations.</p>
+          <div className="mt-4">
+            <CategoryAccordion items={accordionItems} current={slug} />
+          </div>
+        </div>
       </div>
     </div>
   );
