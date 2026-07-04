@@ -7,6 +7,8 @@ import { Logo } from '@/components/logo';
 import { SocialAuthButtons } from '@/components/auth/social-auth-buttons';
 
 export const metadata: Metadata = { title: 'Create Account', robots: { index: false, follow: true } };
+// Read enabled social providers from live env at request time (matches runtime provider registration).
+export const dynamic = 'force-dynamic';
 
 export default function RegisterPage() {
   return (
