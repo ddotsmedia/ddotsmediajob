@@ -951,7 +951,15 @@ export const adminRouter = router({
     }),
 
   // ─── Job categories (admin-managed) ────────────────────────────────
-  getCategories: adminProcedure.query(({ ctx }) => ctx.db.query.jobCategories.findMany({ orderBy: [asc(jobCategories.sortOrder), asc(jobCategories.name)] })),
+  getCategories: adminProcedure.query(async ({ ctx }) => {
+    const rows = await ctx.db.query.jobCategories.findMany({ orderBy: [asc(jobCategories.sortOrder), asc(jobCategories.name)] });
+    // Live job counts per slug (jobs reference a parent categorySlug; subcategories carry none → 0).
+    const counts = await ctx.db.select({ slug: jobs.categorySlug, n: count() }).from(jobs).groupBy(jobs.categorySlug);
+    const jobsBySlug = new Map(counts.map((c) => [c.slug, Number(c.n)]));
+    const subCountByParent = new Map<string, number>();
+    for (const r of rows) if (r.parentId) subCountByParent.set(r.parentId, (subCountByParent.get(r.parentId) ?? 0) + 1);
+    return rows.map((r) => ({ ...r, jobCount: jobsBySlug.get(r.slug) ?? 0, subCount: subCountByParent.get(r.id) ?? 0 }));
+  }),
 
   createCategory: adminProcedure
     .input(z.object({ name: z.string().min(2).max(120), nameAr: z.string().max(120).optional(), slug: z.string().min(2).max(60).optional(), icon: z.string().max(60).optional(), parentId: z.string().uuid().nullable().optional(), sortOrder: z.number().int().default(0), isActive: z.boolean().default(true) }))
@@ -985,6 +993,25 @@ export const adminRouter = router({
     await audit(ctx.session.user.id, 'admin.category.delete', 'job_categories', input.id, { slug: cat.slug });
     return { ok: true };
   }),
+
+  /** Insert many subcategories under one parent in a single call (idempotent per slug). */
+  bulkAddSubcategories: adminProcedure
+    .input(z.object({ parentId: z.string().uuid(), names: z.array(z.string().trim().min(1).max(120)).min(1).max(100) }))
+    .mutation(async ({ ctx, input }) => {
+      const parent = await ctx.db.query.jobCategories.findFirst({ where: eq(jobCategories.id, input.parentId) });
+      if (!parent) throw new TRPCError({ code: 'NOT_FOUND', message: 'Parent category not found.' });
+      if (parent.parentId) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Cannot nest subcategories under a subcategory.' });
+      const names = [...new Set(input.names.map((n) => n.trim()).filter(Boolean))];
+      if (!names.length) return { ok: true, added: 0 };
+      const [existing] = await ctx.db.select({ n: count() }).from(jobCategories).where(eq(jobCategories.parentId, parent.id));
+      const base = (existing?.n ?? 0) + 1;
+      const values = names.map((name, i) => ({ slug: slugify(`${parent.slug}-${name}`), name, icon: parent.icon, parentId: parent.id, sortOrder: base + i, isActive: true }));
+      await ctx.db.insert(jobCategories).values(values).onConflictDoNothing();
+      await invalidateCategories();
+      revalidateCategoryPages();
+      await audit(ctx.session.user.id, 'admin.category.bulkAddSubs', 'job_categories', parent.id, { count: names.length });
+      return { ok: true, added: names.length };
+    }),
 
   // ─── Whapi import settings ─────────────────────────────────────────
   whapiSettings: adminProcedure.query(() => getWhapiSettings()),
