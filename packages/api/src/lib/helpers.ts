@@ -17,6 +17,24 @@ export async function notify(
   }
 }
 
+/** Default job lifetime — auto-expire this many days after posting. */
+export const JOB_TTL_DAYS = 60;
+
+/**
+ * Expiry date for a newly-created job: posted + 60 days, or (for walk-ins) the day
+ * after the walk-in window so the listing drops once the interview date has passed.
+ */
+export function jobExpiry(input?: { walkIn?: boolean | null; walkInLastDate?: string | null; walkInDate?: string | null }): Date {
+  if (input?.walkIn) {
+    const d = input.walkInLastDate || input.walkInDate;
+    if (d) {
+      const parsed = new Date(d);
+      if (!Number.isNaN(parsed.getTime())) return new Date(parsed.getTime() + 86_400_000);
+    }
+  }
+  return new Date(Date.now() + JOB_TTL_DAYS * 86_400_000);
+}
+
 /** Generate a slug unique within the jobs table by appending a short suffix. */
 export async function uniqueJobSlug(title: string): Promise<string> {
   const base = slugify(title) || 'job';

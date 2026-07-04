@@ -4,7 +4,7 @@ import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Loader2, Save, ArrowLeft, Trash2 } from 'lucide-react';
+import { Loader2, Save, ArrowLeft, Trash2, CalendarPlus } from 'lucide-react';
 import { CATEGORIES, EMIRATES, JOB_TYPES, formatDateTime } from '@ddots/shared';
 import { trpc } from '@/trpc/react';
 import { Button } from '@/components/ui/button';
@@ -41,6 +41,10 @@ export default function AdminJobEditPage({ params }: { params: Promise<{ id: str
   });
   const del = trpc.admin.deleteJob.useMutation({
     onSuccess: () => { toast.success('Job deleted successfully'); router.push('/admin/jobs'); },
+    onError: (e) => toast.error(e.message),
+  });
+  const extend = trpc.admin.extendJobExpiry.useMutation({
+    onSuccess: (r) => { toast.success(r.reactivated ? 'Extended 30 days & reactivated' : 'Expiry extended 30 days'); void job.refetch(); },
     onError: (e) => toast.error(e.message),
   });
 
@@ -95,6 +99,7 @@ export default function AdminJobEditPage({ params }: { params: Promise<{ id: str
           <Info label="Published" value={job.data.publishedAt ? formatDateTime(job.data.publishedAt) : 'Not yet published'} />
           <Info label="Last updated" value={formatDateTime(job.data.updatedAt)} />
           <Info label="Source" value={job.data.source} />
+          <Info label="Expires" value={job.data.expiresAt ? formatDateTime(job.data.expiresAt) : 'No expiry'} />
           <Info label="Views" value={String(job.data.viewCount ?? 0)} />
           <Info label="Applications" value={String(job.data.applicationCount ?? 0)} />
         </div>
@@ -146,7 +151,12 @@ export default function AdminJobEditPage({ params }: { params: Promise<{ id: str
         )}
 
         <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
-          <Button variant="accent" onClick={save} disabled={update.isPending}>{update.isPending ? <Loader2 className="animate-spin" /> : <Save />} Save changes</Button>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button variant="accent" onClick={save} disabled={update.isPending}>{update.isPending ? <Loader2 className="animate-spin" /> : <Save />} Save changes</Button>
+            <Button variant="outline" onClick={() => extend.mutate({ id, days: 30 })} disabled={extend.isPending} title="Push expiry out 30 days (reactivates if expired)">
+              {extend.isPending ? <Loader2 className="animate-spin" /> : <CalendarPlus className="h-4 w-4" />} Extend +30 days
+            </Button>
+          </div>
           <Button
             variant="outline"
             className="border-red-300 text-red-600 hover:bg-red-50"

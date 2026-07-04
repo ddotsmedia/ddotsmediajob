@@ -13,8 +13,8 @@ const STATUS_COLOR: Record<string, string> = {
   active: 'bg-green-100 text-green-700',
   draft: 'bg-amber-100 text-amber-700',
   pending: 'bg-blue-100 text-blue-700',
-  expired: 'bg-navy-100 text-navy-600',
-  rejected: 'bg-red-100 text-red-700',
+  expired: 'bg-red-100 text-red-700',
+  rejected: 'bg-red-200 text-red-800',
 };
 
 export default async function AdminDashboard() {

@@ -22,7 +22,7 @@ import {
 } from '@ddots/db';
 import { jobFilterSchema, jobInputSchema, jobFieldsSchema, aiQuickPostSchema, communityPostSchema } from '@ddots/shared';
 import { router, publicProcedure, employerProcedure, protectedProcedure } from '../trpc';
-import { uniqueJobSlug, generateJobSlug, audit } from '../lib/helpers';
+import { uniqueJobSlug, generateJobSlug, audit, jobExpiry } from '../lib/helpers';
 import { enqueueSearchSync, enqueueJobEvent } from '../lib/queue';
 import { generateJobFromPrompt } from '../lib/anthropic';
 import { isSearchConfigured, searchJobs, suggest as meiliSuggest } from '../lib/meili';
@@ -256,6 +256,7 @@ export const jobsRouter = router({
         companyId: employerProfile?.companyId ?? null,
         status: isAdmin ? 'active' : 'pending',
         publishedAt: isAdmin ? new Date() : null,
+        expiresAt: jobExpiry(),
       })
       .returning();
 

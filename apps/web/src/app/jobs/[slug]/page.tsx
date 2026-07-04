@@ -115,6 +115,7 @@ export default async function JobDetailPage({ params }: Props) {
 
   const emirate = emirateBySlug(job.emirateSlug);
   const category = categoryBySlug(job.categorySlug);
+  const expired = (!!job.expiresAt && isExpired(job.expiresAt)) || job.status !== 'active';
 
   // Google for Jobs structured data
   const jsonLd = {
@@ -321,6 +322,13 @@ export default async function JobDetailPage({ params }: Props) {
               walkInVenue={job.walkInVenue}
             />
 
+            {expired && (
+              <div className="flex items-start gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
+                <span aria-hidden>⚠️</span>
+                <span>This job posting has expired. It may no longer be accepting applications. Details are shown below for reference.</span>
+              </div>
+            )}
+
             <Card>
               <CardContent className="prose prose-slate max-w-none p-6 prose-headings:font-display">
                 <h2 className="text-lg font-bold text-navy-900">Job Description</h2>
@@ -478,6 +486,13 @@ export default async function JobDetailPage({ params }: Props) {
                       </div>
                     );
                   })()
+                ) : expired ? (
+                  <div className="space-y-3">
+                    <p className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800">⚠️ This posting has expired.</p>
+                    <Button asChild variant="accent" className="w-full">
+                      <Link href={`/jobs?category=${job.categorySlug}`}>Find Similar Jobs →</Link>
+                    </Button>
+                  </div>
                 ) : (
                   <>
                     {/* Apply buttons — desktop only; mobile uses the sticky bottom bar */}

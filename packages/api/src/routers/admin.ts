@@ -40,7 +40,7 @@ import {
 import { toDataURL } from 'qrcode';
 import { createJobFromWhatsApp, type ParsedJob } from '../lib/whatsapp';
 import { router, adminProcedure } from '../trpc';
-import { audit, notify, uniqueJobSlug, generateJobSlug } from '../lib/helpers';
+import { audit, notify, uniqueJobSlug, generateJobSlug, jobExpiry } from '../lib/helpers';
 import { enqueueEmail, enqueueSearchSync, enqueueJobEvent } from '../lib/queue';
 import { extractAndSaveDraft } from '../lib/import';
 import { enforceRateLimit } from '../lib/security';
@@ -168,6 +168,7 @@ async function insertAdminJob(db: typeof import('@ddots/db').db, actorId: string
       source: input.source,
       aiGenerated: input.source !== 'manual',
       publishedAt: active ? new Date() : null,
+      expiresAt: jobExpiry(input),
     })
     .returning();
   return job;
@@ -413,6 +414,22 @@ export const adminRouter = router({
     await audit(ctx.session.user.id, 'admin.job.delete', 'job', input.id);
     return { ok: true };
   }),
+
+  /** Push a job's expiry out by N days (default 30). Reactivates an already-expired job. */
+  extendJobExpiry: adminProcedure
+    .input(z.object({ id: z.string().uuid(), days: z.number().int().min(1).max(365).default(30) }))
+    .mutation(async ({ ctx, input }) => {
+      const job = await ctx.db.query.jobs.findFirst({ where: eq(jobs.id, input.id), columns: { id: true, expiresAt: true, status: true } });
+      if (!job) throw new TRPCError({ code: 'NOT_FOUND' });
+      // Extend from whichever is later — now or the current expiry — so extending isn't swallowed by a past date.
+      const base = job.expiresAt && job.expiresAt > new Date() ? job.expiresAt : new Date();
+      const expiresAt = new Date(base.getTime() + input.days * 86_400_000);
+      const reactivate = job.status === 'expired';
+      await ctx.db.update(jobs).set({ expiresAt, ...(reactivate ? { status: 'active' as const } : {}) }).where(eq(jobs.id, input.id));
+      if (reactivate) await enqueueSearchSync({ type: 'upsert', jobId: input.id });
+      await audit(ctx.session.user.id, 'admin.job.extendExpiry', 'job', input.id, { days: input.days, reactivated: reactivate });
+      return { ok: true, expiresAt, reactivated: reactivate };
+    }),
 
   /** Load any job for admin editing. */
   jobForEdit: adminProcedure.input(z.object({ id: z.string().uuid() })).query(async ({ ctx, input }) => {

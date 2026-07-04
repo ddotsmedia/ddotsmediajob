@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { db, jobs, users, companies, notifications, eq, sql } from '@ddots/db';
 import { slugify, inferExperienceLevel, JOB_TYPES } from '@ddots/shared';
-import { generateJobSlug } from './helpers';
+import { generateJobSlug, jobExpiry } from './helpers';
 import { structured, JOB_DRAFT_TOOL, MODEL_FAST, MODEL_SMART, type JobDraft } from './anthropic';
 import { detectLanguage } from './ai-router';
 import { wrapUserContent } from './security';
@@ -262,6 +262,7 @@ export async function extractAndSaveDraft(text: string, source: string, sourceMe
       applyEmail: draft.contactEmail || extractEmail(text),
       status: opts?.autoPublish ? 'active' : 'draft',
       publishedAt: opts?.autoPublish ? new Date() : null,
+      expiresAt: jobExpiry(),
       source,
       sourceMetadata: { ...(sourceMetadata ?? {}), extractionStatus: 'ok' },
       aiGenerated: true,
