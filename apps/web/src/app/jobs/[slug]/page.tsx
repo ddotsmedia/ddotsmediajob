@@ -49,8 +49,11 @@ export function generateStaticParams() {
 async function loadJob(slug: string) {
   try {
     const api = await getApi();
-    return await api.jobs.bySlug({ slug });
+    const job = await api.jobs.bySlug({ slug });
+    console.log('[loadJob] found job:', job?.id, job?.status);
+    return job;
   } catch (err) {
+    console.error('[loadJob] slug:', slug, 'error:', err);
     if (err instanceof TRPCError && err.code === 'NOT_FOUND') return null;
     throw err;
   }
