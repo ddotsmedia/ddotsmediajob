@@ -1,8 +1,10 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import Link from 'next/link';
+import { socialProviders } from '@ddots/auth';
 import { LoginForm } from './login-form';
 import { Logo } from '@/components/logo';
+import { SocialAuthButtons } from '@/components/auth/social-auth-buttons';
 
 export const metadata: Metadata = { title: 'Sign In', robots: { index: false, follow: true } };
 
@@ -16,6 +18,7 @@ export default function LoginPage() {
         <h1 className="mt-6 text-center font-display text-2xl font-bold text-navy-900">Welcome back</h1>
         <p className="mt-1 text-center text-sm text-navy-700/60">Sign in to continue to DdotsMediaJobs</p>
         <Suspense>
+          <SocialAuthButtons enabled={socialProviders} />
           <LoginForm />
         </Suspense>
         <p className="mt-6 text-center text-sm text-navy-700/70">

@@ -69,10 +69,6 @@ export function RegisterForm() {
       <Button type="submit" className="w-full" disabled={register.isPending}>
         {register.isPending && <Loader2 className="animate-spin" />} Create account
       </Button>
-
-      <Button type="button" variant="outline" className="w-full" onClick={() => signIn('google', { callbackUrl: '/dashboard' })}>
-        Continue with Google
-      </Button>
     </form>
   );
 }

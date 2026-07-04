@@ -1,7 +1,10 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import Link from 'next/link';
+import { socialProviders } from '@ddots/auth';
 import { RegisterForm } from './register-form';
 import { Logo } from '@/components/logo';
+import { SocialAuthButtons } from '@/components/auth/social-auth-buttons';
 
 export const metadata: Metadata = { title: 'Create Account', robots: { index: false, follow: true } };
 
@@ -14,7 +17,10 @@ export default function RegisterPage() {
         </div>
         <h1 className="mt-6 text-center font-display text-2xl font-bold text-navy-900">Create your account</h1>
         <p className="mt-1 text-center text-sm text-navy-700/60">Join DdotsMediaJobs — it's free</p>
-        <RegisterForm />
+        <Suspense>
+          <SocialAuthButtons enabled={socialProviders} />
+          <RegisterForm />
+        </Suspense>
         <p className="mt-6 text-center text-sm text-navy-700/70">
           Already have an account?{' '}
           <Link href="/login" className="font-semibold text-teal-600 hover:underline">

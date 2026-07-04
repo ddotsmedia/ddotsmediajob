@@ -1,6 +1,9 @@
 import NextAuth, { type DefaultSession } from 'next-auth';
 import type { JWT } from 'next-auth/jwt';
 import Google from 'next-auth/providers/google';
+import Facebook from 'next-auth/providers/facebook';
+import LinkedIn from 'next-auth/providers/linkedin';
+import Twitter from 'next-auth/providers/twitter';
 import Credentials from 'next-auth/providers/credentials';
 import { DrizzleAdapter } from '@auth/drizzle-adapter';
 import { db, users, accounts, sessions, verificationTokens, securityLogs, eq } from '@ddots/db';
@@ -9,6 +12,16 @@ import { verifyPassword } from './password';
 import { decryptSecret, verifyTotp, consumeBackupCode } from './totp';
 
 export * from './totp';
+
+/** Which OAuth providers are actually configured — drives which social buttons render.
+ *  Mirrors the conditional provider registration below (single source of truth for the UI). */
+export const socialProviders = {
+  google: !!(process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET),
+  facebook: !!(process.env.AUTH_FACEBOOK_ID && process.env.AUTH_FACEBOOK_SECRET),
+  linkedin: !!(process.env.AUTH_LINKEDIN_ID && process.env.AUTH_LINKEDIN_SECRET),
+  twitter: !!(process.env.AUTH_TWITTER_ID && process.env.AUTH_TWITTER_SECRET),
+} as const;
+export type SocialProvider = keyof typeof socialProviders;
 
 /** Record a failed login (fail-open — never throws, never blocks sign-in). */
 async function logFailedLogin(req: Request | undefined, reason: string): Promise<void> {
@@ -56,6 +69,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       clientSecret: process.env.AUTH_GOOGLE_SECRET,
       allowDangerousEmailAccountLinking: true,
     }),
+    // Extra OAuth providers register only when their credentials are configured — an
+    // unconfigured provider must never reach NextAuth (it would break auth site-wide).
+    ...(process.env.AUTH_FACEBOOK_ID && process.env.AUTH_FACEBOOK_SECRET
+      ? [Facebook({ clientId: process.env.AUTH_FACEBOOK_ID, clientSecret: process.env.AUTH_FACEBOOK_SECRET, allowDangerousEmailAccountLinking: true })]
+      : []),
+    ...(process.env.AUTH_LINKEDIN_ID && process.env.AUTH_LINKEDIN_SECRET
+      ? [LinkedIn({ clientId: process.env.AUTH_LINKEDIN_ID, clientSecret: process.env.AUTH_LINKEDIN_SECRET, allowDangerousEmailAccountLinking: true })]
+      : []),
+    ...(process.env.AUTH_TWITTER_ID && process.env.AUTH_TWITTER_SECRET
+      ? [Twitter({ clientId: process.env.AUTH_TWITTER_ID, clientSecret: process.env.AUTH_TWITTER_SECRET, allowDangerousEmailAccountLinking: true })]
+      : []),
     Credentials({
       credentials: {
         email: { label: 'Email', type: 'email' },
