@@ -123,7 +123,8 @@ export default async function JobDetailPage({ params }: Props) {
     title: job.title,
     description: job.description,
     datePosted: (job.publishedAt ?? job.createdAt).toISOString(),
-    validThrough: job.expiresAt?.toISOString(),
+    // Google flags a missing validThrough — fall back to posted date + 60 days when no expiry set.
+    validThrough: (job.expiresAt ?? new Date((job.publishedAt ?? job.createdAt).getTime() + 60 * 86_400_000)).toISOString(),
     employmentType: GTAG_EMPLOYMENT[job.jobType] ?? 'FULL_TIME',
     hiringOrganization: {
       '@type': 'Organization',
