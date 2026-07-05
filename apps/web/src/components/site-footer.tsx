@@ -6,17 +6,17 @@ import { Logo } from './logo';
 export function SiteFooter() {
   const year = 2026;
   return (
-    <footer className="bg-[#0f172a] text-slate-300">
+    <footer className="bg-[#0a2a2b] text-slate-300">
       {/* Row 1 — brand + 5 columns */}
       <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:grid-cols-2 lg:grid-cols-6">
         <div>
           <Logo dark />
-          <p className="mt-4 max-w-xs text-sm text-slate-400">{SITE.description}</p>
-          <div className="mt-4 flex items-center gap-3 text-[#3a9ea5]">
-            <a href="https://wa.me/971509379212" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" className="hover:text-white"><MessageCircle className="h-5 w-5" /></a>
-            <a href="https://www.facebook.com/ddotsmediajobs" target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="hover:text-white"><Facebook className="h-5 w-5" /></a>
-            <a href="https://www.linkedin.com/company/ddotsmedia" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" className="hover:text-white"><Linkedin className="h-5 w-5" /></a>
-            <a href="https://www.instagram.com/ddotsmediajobs" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="hover:text-white"><Instagram className="h-5 w-5" /></a>
+          <p className="mt-4 max-w-xs text-sm text-[#5f8a8b]">{SITE.description}</p>
+          <div className="mt-4 flex items-center gap-3">
+            <a href="https://wa.me/971509379212" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" className="flex h-9 w-9 items-center justify-center rounded-full bg-[#25d366] text-white hover:opacity-90"><MessageCircle className="h-4 w-4" /></a>
+            <a href="https://www.facebook.com/ddotsmediajobs" target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1877f2] text-white hover:opacity-90"><Facebook className="h-4 w-4" /></a>
+            <a href="https://www.linkedin.com/company/ddotsmedia" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0077b5] text-white hover:opacity-90"><Linkedin className="h-4 w-4" /></a>
+            <a href="https://www.instagram.com/ddotsmediajobs" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0f3a3b] text-[#5f8a8b] hover:text-white"><Instagram className="h-4 w-4" /></a>
           </div>
         </div>
 
@@ -60,10 +60,10 @@ export function SiteFooter() {
       </div>
 
       {/* Row 2 — horizontal link rows on a darker strip */}
-      <div className="border-t border-slate-700 bg-[#0a1628]">
+      <div className="border-t border-[#1a4a4b] bg-[#0a2a2b]">
         <div className="mx-auto max-w-7xl space-y-4 px-4 py-6">
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-            <span className="mr-6 text-xs font-semibold uppercase tracking-widest text-slate-400">For Jobseekers</span>
+            <span className="mr-6 text-xs font-semibold uppercase tracking-widest text-[#5eead4]">For Jobseekers</span>
             <HLink href="/jobs">Browse Jobs</HLink>
             <HLink href="/register">Create Account</HLink>
             <HLink href="/dashboard/alerts">Job Alerts</HLink>
@@ -80,7 +80,7 @@ export function SiteFooter() {
             <HLink href="/feedback">Send Feedback</HLink>
           </div>
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-            <span className="mr-6 text-xs font-semibold uppercase tracking-widest text-slate-400">UAE Tools</span>
+            <span className="mr-6 text-xs font-semibold uppercase tracking-widest text-[#5eead4]">UAE Tools</span>
             <HLink href="/golden-visa-checker">Golden Visa Checker</HLink>
             <HLink href="/wps-calculator">WPS &amp; Gratuity Calculator</HLink>
             <HLink href="/cost-of-living">Cost of Living</HLink>
@@ -96,13 +96,13 @@ export function SiteFooter() {
         </div>
       </div>
 
-      <div className="border-t border-slate-800">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 px-4 py-6 text-xs text-slate-500 md:flex-row">
+      <div className="border-t border-[#1a4a4b] bg-[#071e1f]">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 px-4 py-6 text-xs text-[#3d7a7b] md:flex-row">
           <p>© {year} {SITE.name}. All rights reserved.</p>
           <div className="flex gap-4">
-            <Link href="/privacy" className="hover:text-white">Privacy</Link>
-            <Link href="/terms" className="hover:text-white">Terms</Link>
-            <Link href="/sitemap.xml" className="hover:text-white">Sitemap</Link>
+            <Link href="/privacy" className="text-[#3d7a7b] hover:text-[#7fb3b5]">Privacy</Link>
+            <Link href="/terms" className="text-[#3d7a7b] hover:text-[#7fb3b5]">Terms</Link>
+            <Link href="/sitemap.xml" className="text-[#3d7a7b] hover:text-[#7fb3b5]">Sitemap</Link>
           </div>
         </div>
       </div>
@@ -113,7 +113,7 @@ export function SiteFooter() {
 function FooterCol({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <h4 className="mb-3 border-b border-slate-700 pb-2 font-display text-xs font-semibold uppercase tracking-widest text-white">{title}</h4>
+      <h4 className="mb-3 border-b border-[#1a4a4b] pb-2 font-display text-xs font-semibold uppercase tracking-widest text-[#5eead4]">{title}</h4>
       <ul className="flex flex-col gap-y-2.5">{children}</ul>
     </div>
   );
@@ -121,12 +121,12 @@ function FooterCol({ title, children }: { title: string; children: React.ReactNo
 function FooterLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
     <li>
-      <Link href={href} className="text-sm text-slate-400 hover:text-white">{children}</Link>
+      <Link href={href} className="text-sm text-[#7fb3b5] hover:text-white">{children}</Link>
     </li>
   );
 }
 function HLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
-    <Link href={href} className="text-sm text-slate-400 hover:text-white">{children}</Link>
+    <Link href={href} className="text-sm text-[#5f8a8b] hover:text-[#7fb3b5]">{children}</Link>
   );
 }
