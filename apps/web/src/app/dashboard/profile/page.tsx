@@ -8,6 +8,7 @@ import { trpc } from '@/trpc/react';
 import { Button } from '@/components/ui/button';
 import { Input, Label, Select, Textarea } from '@/components/ui/primitives';
 import { AvatarUpload } from '@/components/avatar-upload';
+import { CvUpload } from '@/components/cv-upload';
 
 export default function ProfilePage() {
   const profile = trpc.jobseekers.me.useQuery();
@@ -34,6 +35,9 @@ export default function ProfilePage() {
       categorySlug: (String(f.get('category')) || undefined) as never,
       experienceLevel: (String(f.get('experience')) || undefined) as never,
       visaStatus: (String(f.get('visa')) || undefined) as never,
+      nationality: String(f.get('nationality')) || undefined,
+      availabilityStatus: (String(f.get('availability')) || undefined) as never,
+      yearsExperience: f.get('years') ? Number(f.get('years')) : undefined,
       skills: skills.split(',').map((s) => s.trim()).filter(Boolean),
       openToWork: f.get('openToWork') === 'on',
     });
@@ -44,6 +48,10 @@ export default function ProfilePage() {
     <div className="max-w-2xl">
       <h1 className="font-display text-2xl font-bold text-navy-900">My Profile</h1>
       <p className="text-navy-700/60">Complete your profile to stand out to employers.</p>
+
+      <div className="mt-6">
+        <CvUpload initialUrl={p?.resumeUrl ?? null} initialName={p?.resumeFilename ?? null} initialAt={p?.resumeUploadedAt ?? null} />
+      </div>
 
       <form onSubmit={onSubmit} className="mt-6 space-y-5 rounded-xl border bg-white p-6">
         <AvatarUpload />
@@ -79,6 +87,20 @@ export default function ProfilePage() {
             <Select name="visa" defaultValue={p?.visaStatus ?? ''}>
               <option value="">Select</option>
               {VISA_STATUS.map((v) => <option key={v} value={v} className="capitalize">{v.replace(/-/g, ' ')}</option>)}
+            </Select>
+          </Field>
+          <Field label="Nationality">
+            <Input name="nationality" defaultValue={p?.nationality ?? ''} placeholder="e.g. Indian" />
+          </Field>
+          <Field label="Years of experience">
+            <Input name="years" type="number" min={0} max={60} defaultValue={p?.yearsExperience ? String(p.yearsExperience) : ''} placeholder="e.g. 6" />
+          </Field>
+          <Field label="Availability">
+            <Select name="availability" defaultValue={p?.availabilityStatus ?? ''}>
+              <option value="">Select</option>
+              <option value="actively_looking">Actively looking</option>
+              <option value="open_to_work">Open to work</option>
+              <option value="not_looking">Not looking</option>
             </Select>
           </Field>
         </div>

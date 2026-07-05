@@ -23,6 +23,7 @@ import { getApi } from '@/trpc/server';
 import { JobActions } from '@/components/job-actions';
 import { JobViewTracker } from '@/components/job-view-tracker';
 import { QuickApplyButton } from '@/components/quick-apply-button';
+import { CvQuickApply } from '@/components/cv-quick-apply';
 import { JobAiTools } from '@/components/job-ai-tools';
 import { MatchScoreCard } from '@/components/ai/match-score';
 import { SkillGap } from '@/components/ai/skill-gap';
@@ -521,6 +522,9 @@ export default async function JobDetailPage({ params }: Props) {
                       />
                       <div className="mt-3">
                         <QuickApplyButton jobId={job.id} className="w-full" preferWhatsapp={job.applyWhatsapp || job.contactWhatsapp} preferEmail={job.applyEmail} />
+                      </div>
+                      <div className="mt-3">
+                        <CvQuickApply jobId={job.id} />
                       </div>
                     </div>
                   </>

@@ -189,6 +189,8 @@ export const jobseekerProfiles = pgTable('jobseeker_profiles', {
   languages: jsonb('languages').$type<string[]>().default([]).notNull(),
   skills: jsonb('skills').$type<string[]>().default([]).notNull(),
   resumeUrl: text('resume_url'),
+  resumeFilename: varchar('resume_filename', { length: 255 }),
+  resumeUploadedAt: timestamp('resume_uploaded_at', { withTimezone: true }),
   resumeData: jsonb('resume_data').$type<Record<string, unknown>>(),
   openToWork: boolean('open_to_work').default(true).notNull(),
   // Talent profile / availability

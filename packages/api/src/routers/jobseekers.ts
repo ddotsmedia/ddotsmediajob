@@ -3,7 +3,7 @@ import { TRPCError } from '@trpc/server';
 import { jobseekerProfiles, savedJobs, savedJobFolders, jobs, users, eq, and, ne, desc, ilike, sql } from '@ddots/db';
 import { jobseekerProfileSchema, slugify } from '@ddots/shared';
 import { router, protectedProcedure, publicProcedure, employerProcedure } from '../trpc';
-import { presignUpload } from '../lib/r2';
+import { presignUpload, deleteObjectByUrl } from '../lib/r2';
 import { notify } from '../lib/helpers';
 import { assertUploadType, enforceRateLimit } from '../lib/security';
 
@@ -245,4 +245,24 @@ export const jobseekersRouter = router({
     await ctx.db.update(users).set({ image: input.url }).where(eq(users.id, ctx.session.user.id));
     return { ok: true };
   }),
+
+  /** Save an uploaded CV (already PUT to R2) onto the profile; removes the previous file. */
+  setResume: protectedProcedure
+    .input(z.object({ url: z.string().url(), filename: z.string().trim().min(1).max(255) }))
+    .mutation(async ({ ctx, input }) => {
+      const username = await ensureUsername(ctx.db, ctx.session.user.id, ctx.session.user.name ?? null);
+      const prev = await ctx.db.query.jobseekerProfiles.findFirst({
+        where: eq(jobseekerProfiles.userId, ctx.session.user.id),
+        columns: { resumeUrl: true },
+      });
+      const set = { resumeUrl: input.url, resumeFilename: input.filename, resumeUploadedAt: new Date() };
+      await ctx.db
+        .insert(jobseekerProfiles)
+        .values({ userId: ctx.session.user.id, username, ...set })
+        .onConflictDoUpdate({ target: jobseekerProfiles.userId, set });
+      if (prev?.resumeUrl && prev.resumeUrl !== input.url) {
+        await deleteObjectByUrl(prev.resumeUrl).catch(() => {});
+      }
+      return { ok: true };
+    }),
 });
