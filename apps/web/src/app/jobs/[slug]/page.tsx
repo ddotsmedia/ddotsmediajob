@@ -298,6 +298,12 @@ export default async function JobDetailPage({ params }: Props) {
                     </div>
                   );
                 })()}
+                {job.applicantLocation && job.applicantLocation !== 'both' && (
+                  <p className="mt-4 border-t pt-4 text-sm text-navy-700/80">
+                    📍 <span className="font-semibold">Location requirement:</span>{' '}
+                    {job.applicantLocation === 'in_uae' ? 'Candidates currently in the UAE preferred.' : 'Open to overseas applicants.'}
+                  </p>
+                )}
                 {(() => {
                   const days = expiryDaysLeft(job.expiresAt);
                   if (days == null || days < 0) return null;
@@ -373,15 +379,22 @@ export default async function JobDetailPage({ params }: Props) {
               const email = job.applyEmail;
               if (!wa && !email && !job.applyUrl) return null;
               const fmtWa = wa.startsWith('971') && wa.length === 12 ? `+971 ${wa.slice(3, 5)} ${wa.slice(5, 8)} ${wa.slice(8)}` : `+${wa}`;
+              // Pre-filled WhatsApp application with the fields employers ask for first.
+              const company = job.isAnonymous ? 'your company' : (job.company?.name ?? 'your company');
+              const waText = encodeURIComponent(
+                `Hi, I'm interested in the *${job.title}* position at *${company}* advertised on DdotsMediaJobs.\n\nName: \nNationality: \nCurrent Location: \nExperience: \nNotice Period/Availability: `,
+              );
               return (
                 <Card>
                   <CardContent className="p-6">
                     <h2 className="font-display text-lg font-bold text-navy-900">How to apply</h2>
                     <div className="mt-3 space-y-2">
-                      {wa && (
-                        <a href={`https://wa.me/${wa}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 rounded-lg border border-[#25D366]/30 bg-[#25D366]/5 px-4 py-3 text-sm font-semibold text-[#1a8a4d] hover:bg-[#25D366]/10">
-                          📲 Apply on WhatsApp: <span className="font-bold">{fmtWa}</span>
+                      {wa ? (
+                        <a href={`https://wa.me/${wa}?text=${waText}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 rounded-lg bg-[#25D366] px-4 py-3 text-sm font-bold text-white hover:bg-[#1da851]">
+                          📲 Apply via WhatsApp
                         </a>
+                      ) : (
+                        <p className="rounded-lg border bg-navy-50/50 px-4 py-3 text-sm text-navy-700/70">Contact the employer via the details below.</p>
                       )}
                       {email && (
                         <a href={`mailto:${email}?subject=${encodeURIComponent(`Application for ${job.title}`)}`} className="flex items-center gap-3 rounded-lg border px-4 py-3 text-sm font-semibold text-navy-800 hover:bg-navy-50">

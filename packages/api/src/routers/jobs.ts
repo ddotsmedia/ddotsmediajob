@@ -19,6 +19,7 @@ import {
   sql,
   count,
   inArray,
+  isNull,
 } from '@ddots/db';
 import { jobFilterSchema, jobInputSchema, jobFieldsSchema, aiQuickPostSchema, communityPostSchema } from '@ddots/shared';
 import { router, publicProcedure, employerProcedure, protectedProcedure } from '../trpc';
@@ -81,6 +82,12 @@ export const jobsRouter = router({
     if (input.emirate) conds.push(eq(jobs.emirateSlug, input.emirate));
     if (input.jobType) conds.push(eq(jobs.jobType, input.jobType));
     if (input.visaStatus) conds.push(eq(jobs.visaStatus, input.visaStatus));
+    // Applicant-location filter: show jobs open to the candidate's location (NULL treated as 'both').
+    if (input.applicantLocation === 'in_uae') {
+      conds.push(or(isNull(jobs.applicantLocation), inArray(jobs.applicantLocation, ['in_uae', 'both']))!);
+    } else if (input.applicantLocation === 'outside_uae') {
+      conds.push(or(isNull(jobs.applicantLocation), inArray(jobs.applicantLocation, ['outside_uae', 'both']))!);
+    }
     if (input.experienceLevel) conds.push(eq(jobs.experienceLevel, input.experienceLevel));
     if (input.salaryMin) conds.push(gte(jobs.salaryMax, input.salaryMin));
     if (input.isRemote) conds.push(eq(jobs.isRemote, true));

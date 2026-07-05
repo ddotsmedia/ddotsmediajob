@@ -24,6 +24,7 @@ export type JobCardData = {
   isUrgent: boolean;
   isFresher: boolean;
   visaProvided?: boolean;
+  applicantLocation?: string | null;
   isFeatured: boolean;
   freeZone?: boolean;
   freeZoneName?: string | null;
@@ -143,6 +144,7 @@ export function JobCard({ job }: { job: JobCardData }) {
             {job.isRemote && <Badge variant="success">Remote</Badge>}
             {job.isFresher && <Badge variant="outline">Fresher</Badge>}
             {job.visaProvided && <Badge variant="outline" className="border-lime-200 bg-lime-50 text-[#65a30d]">Visa provided</Badge>}
+            {job.applicantLocation === 'in_uae' && <Badge variant="outline" className="border-slate-200 bg-slate-50 text-slate-600">🇦🇪 UAE residents only</Badge>}
             {job.isUrgent && (
               <Badge variant="outline" className="border-yellow-200 bg-yellow-50 text-amber-700">
                 <Zap className="mr-1 h-3 w-3" /> Urgent

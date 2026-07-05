@@ -1,0 +1,1 @@
+ALTER TABLE "jobs" ADD COLUMN IF NOT EXISTS "applicant_location" varchar(20) DEFAULT 'both';

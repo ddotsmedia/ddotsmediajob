@@ -88,6 +88,14 @@ export function JobFilters() {
         </Select>
       </Field>
 
+      <Field label="I am currently">
+        <Select value={get('applicantLocation')} onChange={(e) => setParam('applicantLocation', e.target.value)}>
+          <option value="">Anywhere</option>
+          <option value="in_uae">In the UAE</option>
+          <option value="outside_uae">Outside the UAE</option>
+        </Select>
+      </Field>
+
       <Field label="Minimum salary (AED/mo)">
         <Select value={get('salaryMin')} onChange={(e) => setParam('salaryMin', e.target.value)}>
           <option value="">Any salary</option>

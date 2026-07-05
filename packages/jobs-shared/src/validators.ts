@@ -2,6 +2,7 @@ import { z } from 'zod';
 import {
   JOB_TYPES,
   VISA_STATUS,
+  APPLICANT_LOCATIONS,
   EXPERIENCE_LEVELS,
   SALARY_PERIODS,
   CATEGORY_SLUGS,
@@ -105,6 +106,7 @@ export const jobFilterSchema = z.object({
   emirate: z.enum(EMIRATE_SLUGS as [string, ...string[]]).optional(),
   jobType: z.enum(JOB_TYPES).optional(),
   visaStatus: z.enum(VISA_STATUS).optional(),
+  applicantLocation: z.enum(APPLICANT_LOCATIONS).optional(), // where the candidate is (filters jobs open to them)
   experienceLevel: z.enum(EXPERIENCE_LEVELS).optional(),
   salaryMin: z.coerce.number().int().nonnegative().optional(),
   isRemote: z.coerce.boolean().optional(),

@@ -62,6 +62,15 @@ export type JobType = (typeof JOB_TYPES)[number];
 export const VISA_STATUS = ['any', 'visit-visa', 'cancelled-visa', 'employment-visa', 'golden-visa', 'sponsored'] as const;
 export type VisaStatus = (typeof VISA_STATUS)[number];
 
+// Where a job accepts applicants from.
+export const APPLICANT_LOCATIONS = ['in_uae', 'outside_uae', 'both'] as const;
+export type ApplicantLocation = (typeof APPLICANT_LOCATIONS)[number];
+export const APPLICANT_LOCATION_LABEL: Record<ApplicantLocation, string> = {
+  in_uae: 'In UAE only',
+  outside_uae: 'Outside UAE welcome',
+  both: 'Open to all',
+};
+
 export const EXPERIENCE_LEVELS = ['fresher', 'junior', '1-3-years', '3-5-years', '5-10-years', '10-plus-years'] as const;
 export type ExperienceLevel = (typeof EXPERIENCE_LEVELS)[number];
 

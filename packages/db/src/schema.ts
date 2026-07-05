@@ -241,6 +241,8 @@ export const jobs = pgTable(
     freeZoneName: varchar('free_zone_name', { length: 40 }),
     isAnonymous: boolean('is_anonymous').default(false).notNull(),
     visaProvided: boolean('visa_provided').default(false).notNull(),
+    // Who can apply: 'in_uae' | 'outside_uae' | 'both' (see APPLICANT_LOCATIONS).
+    applicantLocation: varchar('applicant_location', { length: 20 }).default('both'),
     accommodationProvided: boolean('accommodation_provided').default(false).notNull(),
     skills: jsonb('skills').$type<string[]>().default([]).notNull(),
     benefits: jsonb('benefits').$type<string[]>().default([]).notNull(),

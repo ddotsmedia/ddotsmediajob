@@ -28,7 +28,7 @@ import {
   sql,
   ilike,
 } from '@ddots/db';
-import { slugify } from '@ddots/shared';
+import { slugify, APPLICANT_LOCATIONS } from '@ddots/shared';
 import {
   generateTotpSecret,
   encryptSecret,
@@ -80,6 +80,7 @@ const adminJobInput = z.object({
   salaryHidden: z.boolean().default(false),
   salaryNegotiable: z.boolean().default(false),
   visaProvided: z.boolean().default(false),
+  applicantLocation: z.enum(APPLICANT_LOCATIONS).default('both'),
   accommodationProvided: z.boolean().default(false),
   isRemote: z.boolean().default(false),
   isUrgent: z.boolean().default(false),
@@ -140,6 +141,7 @@ async function insertAdminJob(db: typeof import('@ddots/db').db, actorId: string
       salaryHidden: input.salaryHidden,
       salaryNegotiable: input.salaryNegotiable,
       visaProvided: input.visaProvided,
+      applicantLocation: input.applicantLocation,
       accommodationProvided: input.accommodationProvided,
       isRemote: input.isRemote,
       isUrgent: input.isUrgent,
@@ -452,6 +454,7 @@ export const adminRouter = router({
       salaryMax: z.number().int().nonnegative().nullable().optional(),
       salaryHidden: z.boolean(),
       visaProvided: z.boolean(),
+      applicantLocation: z.enum(APPLICANT_LOCATIONS).optional(),
       accommodationProvided: z.boolean(),
       isFresher: z.boolean(),
       isRemote: z.boolean(),

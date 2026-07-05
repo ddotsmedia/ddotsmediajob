@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Loader2, Save, ArrowLeft, Trash2, CalendarPlus } from 'lucide-react';
-import { CATEGORIES, EMIRATES, JOB_TYPES, formatDateTime } from '@ddots/shared';
+import { CATEGORIES, EMIRATES, JOB_TYPES, APPLICANT_LOCATIONS, APPLICANT_LOCATION_LABEL, formatDateTime } from '@ddots/shared';
 import { trpc } from '@/trpc/react';
 import { Button } from '@/components/ui/button';
 import { Input, Label, Select, Textarea } from '@/components/ui/primitives';
@@ -20,7 +20,7 @@ const FLAGS = [
 
 type Form = {
   title: string; description: string; categorySlug: string; emirateSlug: string; location: string;
-  jobType: string; salaryMin: string; salaryMax: string; status: string;
+  jobType: string; salaryMin: string; salaryMax: string; status: string; applicantLocation: string;
   contactWhatsapp: string; applyEmail: string; skills: string; benefits: string;
   visaProvided: boolean; accommodationProvided: boolean; isFresher: boolean; isRemote: boolean;
   isUrgent: boolean; isFeatured: boolean; freeZone: boolean; isAnonymous: boolean; salaryHidden: boolean; showEmployerInfo: boolean;
@@ -54,7 +54,7 @@ export default function AdminJobEditPage({ params }: { params: Promise<{ id: str
     setF({
       title: j.title, description: j.description, categorySlug: j.categorySlug, emirateSlug: j.emirateSlug,
       location: j.location ?? '', jobType: j.jobType, salaryMin: j.salaryMin?.toString() ?? '', salaryMax: j.salaryMax?.toString() ?? '',
-      status: j.status, contactWhatsapp: j.contactWhatsapp ?? '', applyEmail: j.applyEmail ?? '',
+      status: j.status, applicantLocation: j.applicantLocation ?? 'both', contactWhatsapp: j.contactWhatsapp ?? '', applyEmail: j.applyEmail ?? '',
       skills: (j.skills ?? []).join(', '), benefits: (j.benefits ?? []).join(', '),
       visaProvided: j.visaProvided, accommodationProvided: j.accommodationProvided, isFresher: j.isFresher,
       isRemote: j.isRemote, isUrgent: j.isUrgent, isFeatured: j.isFeatured, freeZone: j.freeZone,
@@ -83,6 +83,7 @@ export default function AdminJobEditPage({ params }: { params: Promise<{ id: str
       skills: f.skills.split(',').map((s) => s.trim()).filter(Boolean),
       benefits: f.benefits.split(',').map((s) => s.trim()).filter(Boolean),
       contactWhatsapp: f.contactWhatsapp || undefined, applyEmail: f.applyEmail || undefined,
+      applicantLocation: f.applicantLocation as never,
       status: f.status as never,
     });
   }
@@ -113,6 +114,7 @@ export default function AdminJobEditPage({ params }: { params: Promise<{ id: str
           <Fld label="Emirate"><Select value={f.emirateSlug} onChange={(e) => set('emirateSlug', e.target.value)}>{EMIRATES.map((e) => <option key={e.slug} value={e.slug}>{e.name}</option>)}</Select></Fld>
           <Fld label="Job type"><Select value={f.jobType} onChange={(e) => set('jobType', e.target.value)}>{JOB_TYPES.map((t) => <option key={t} value={t} className="capitalize">{t.replace('-', ' ')}</option>)}</Select></Fld>
           <Fld label="Area"><Input value={f.location} onChange={(e) => set('location', e.target.value)} placeholder="e.g. Deira" /></Fld>
+          <Fld label="Applicant location"><Select value={f.applicantLocation} onChange={(e) => set('applicantLocation', e.target.value)}>{APPLICANT_LOCATIONS.map((l) => <option key={l} value={l}>{APPLICANT_LOCATION_LABEL[l]}</option>)}</Select></Fld>
           <Fld label="Salary min (AED)"><Input type="number" value={f.salaryMin} onChange={(e) => set('salaryMin', e.target.value)} /></Fld>
           <Fld label="Salary max (AED)"><Input type="number" value={f.salaryMax} onChange={(e) => set('salaryMax', e.target.value)} /></Fld>
           <Fld label="Contact WhatsApp"><Input value={f.contactWhatsapp} onChange={(e) => set('contactWhatsapp', e.target.value)} placeholder="+9715xxxxxxxx" /></Fld>
