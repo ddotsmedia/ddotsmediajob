@@ -21,8 +21,16 @@ export const revalidate = 300; // ISR — refresh stats/featured every 5 min
 export const metadata: Metadata = {
   title: { absolute: 'UAE Jobs 2026 — Find Jobs in Dubai, Abu Dhabi & All Emirates | DdotsMediaJobs' },
   description:
-    'Browse thousands of verified UAE jobs. Driver jobs Dubai, Nurse jobs UAE, IT jobs, Accountant jobs and more. Free job portal. Apply in one click.',
+    'Find jobs in UAE across Dubai, Abu Dhabi, Sharjah and all emirates. Browse driver, nurse, accountant, engineer jobs. Walk-in interviews, visa provided & urgent hiring. Free to apply. WhatsApp-powered job portal.',
   keywords: ['UAE Jobs', 'Dubai Jobs', 'Jobs in UAE', 'Gulf Jobs', 'UAE Careers', 'UAE Vacancies'],
+  alternates: { canonical: SITE.url },
+  openGraph: {
+    type: 'website',
+    siteName: SITE.name,
+    url: SITE.url,
+    title: 'UAE Jobs 2026 — Find Jobs in Dubai, Abu Dhabi & All Emirates',
+    description: "UAE's WhatsApp-powered job portal. Free to apply across all 7 emirates.",
+  },
 };
 
 const EMPTY_STATS = { byCategory: {} as Record<string, number>, byEmirate: {} as Record<string, number>, totalActive: 0, totalSeekers: 0 };
@@ -54,13 +62,24 @@ export default async function HomePage() {
       url: SITE.url,
       logo: `${SITE.url}/logo.png`,
       description: SITE.description,
-      sameAs: ['https://www.facebook.com/ddotsmediajobs', 'https://www.linkedin.com/company/ddotsmedia'],
+      contactPoint: {
+        '@type': 'ContactPoint',
+        telephone: '+971509379212',
+        contactType: 'customer service',
+        availableLanguage: ['English', 'Arabic'],
+      },
+      sameAs: [
+        'https://www.facebook.com/ddotsmediajobs',
+        'https://www.linkedin.com/company/ddotsmedia',
+        'https://www.instagram.com/ddotsmediajobs',
+      ],
     },
     {
       '@context': 'https://schema.org',
       '@type': 'WebSite',
       name: SITE.name,
       url: SITE.url,
+      description: SITE.description,
       potentialAction: {
         '@type': 'SearchAction',
         target: { '@type': 'EntryPoint', urlTemplate: `${SITE.url}/jobs?q={search_term_string}` },
