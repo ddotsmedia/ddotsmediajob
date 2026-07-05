@@ -13,7 +13,6 @@ import { StatsBar } from '@/components/home/stats-bar';
 import { CategoryGrid } from '@/components/home/category-grid';
 import { EmployerCTA } from '@/components/home/employer-cta';
 import { WhatsAppSection } from '@/components/home/whatsapp-section';
-import { SuccessStories } from '@/components/home/success-stories';
 import { EmailAlerts } from '@/components/home/email-alerts';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/primitives';
@@ -169,7 +168,6 @@ export default async function HomePage() {
 
       <EmployerCTA />
       <WhatsAppSection />
-      <SuccessStories />
       <EmailAlerts />
     </>
   );
