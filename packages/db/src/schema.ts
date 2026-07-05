@@ -369,9 +369,9 @@ export const jobAlerts = pgTable(
   'job_alerts',
   {
     id: uuid('id').defaultRandom().primaryKey(),
-    userId: uuid('user_id')
-      .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
+    // Nullable: anonymous email subscriptions (from the homepage) have no user account.
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
+    email: varchar('email', { length: 255 }),
     keywords: varchar('keywords', { length: 160 }),
     categorySlug: varchar('category_slug', { length: 40 }),
     emirateSlug: varchar('emirate_slug', { length: 40 }),
@@ -381,9 +381,16 @@ export const jobAlerts = pgTable(
     whatsappNumber: varchar('whatsapp_number', { length: 30 }),
     isActive: boolean('is_active').default(true).notNull(),
     lastSentAt: timestamp('last_sent_at', { withTimezone: true }),
+    // Unsubscribe token for anonymous email alerts (nulls allowed for account-based alerts).
+    token: varchar('token', { length: 64 }),
     ...timestamps,
   },
-  (t) => [index('job_alerts_user_idx').on(t.userId), index('job_alerts_active_idx').on(t.isActive)],
+  (t) => [
+    index('job_alerts_user_idx').on(t.userId),
+    index('job_alerts_active_idx').on(t.isActive),
+    uniqueIndex('job_alerts_email_idx').on(t.email),
+    uniqueIndex('job_alerts_token_idx').on(t.token),
+  ],
 );
 
 // ─── Blog ────────────────────────────────────────────────

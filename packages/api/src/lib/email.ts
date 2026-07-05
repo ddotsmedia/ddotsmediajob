@@ -5,6 +5,7 @@ import {
   ApplyConfirmationEmail,
   JobApprovedEmail,
   JobAlertEmail,
+  JobAlertConfirmEmail,
   PasswordResetEmail,
   VerifyEmail,
 } from '@ddots/email';
@@ -62,7 +63,12 @@ async function renderEmail(job: EmailJob): Promise<{ subject: string; html: stri
     case 'job-alert':
       return {
         subject: `${job.jobs.length} new jobs match your alert`,
-        html: await render(JobAlertEmail({ name: job.name, jobs: job.jobs })),
+        html: await render(JobAlertEmail({ name: job.name, jobs: job.jobs, unsubscribeUrl: job.unsubscribeUrl })),
+      };
+    case 'job-alert-confirm':
+      return {
+        subject: 'Job alerts activated – DdotsMediaJobs',
+        html: await render(JobAlertConfirmEmail({ keywords: job.keywords, emirate: job.emirate, unsubscribeUrl: job.unsubscribeUrl })),
       };
     case 'password-reset':
       return {

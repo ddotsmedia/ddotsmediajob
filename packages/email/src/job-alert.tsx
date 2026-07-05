@@ -4,7 +4,7 @@ import { EmailLayout, styles, Text } from './layout';
 
 type AlertJob = { title: string; companyName: string; location: string; salary: string; url: string };
 
-export function JobAlertEmail({ name, jobs }: { name: string; jobs: AlertJob[] }) {
+export function JobAlertEmail({ name, jobs, unsubscribeUrl }: { name: string; jobs: AlertJob[]; unsubscribeUrl?: string }) {
   return (
     <EmailLayout preview={`${jobs.length} new jobs match your alert`}>
       <Text style={styles.h1}>{jobs.length} new jobs for you 🔔</Text>
@@ -22,8 +22,8 @@ export function JobAlertEmail({ name, jobs }: { name: string; jobs: AlertJob[] }
         </Section>
       ))}
       <Text style={{ ...styles.p, marginTop: 20 }}>
-        <a href="https://ddotsmediajobs.com/dashboard/alerts" style={{ color: styles.teal }}>
-          Manage your job alerts
+        <a href={unsubscribeUrl ?? 'https://ddotsmediajobs.com/dashboard/alerts'} style={{ color: styles.teal }}>
+          {unsubscribeUrl ? 'Unsubscribe from these alerts' : 'Manage your job alerts'}
         </a>
       </Text>
     </EmailLayout>

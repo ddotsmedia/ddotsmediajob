@@ -267,6 +267,13 @@
       "when": 1781900100000,
       "tag": "0037_walkin_extra",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1783214056621,
+      "tag": "0038_thin_trish_tilby",
+      "breakpoints": true
     }
   ]
 }

@@ -98,11 +98,12 @@ new Worker<AlertScanJob>(
         with: { company: { columns: { name: true } } },
       });
 
-      if (matches.length && alert.user?.email) {
+      const recipient = alert.user?.email ?? alert.email;
+      if (matches.length && recipient) {
         await enqueueEmail({
           type: 'job-alert',
-          to: alert.user.email,
-          name: alert.user.name ?? 'there',
+          to: recipient,
+          name: alert.user?.name ?? 'there',
           jobs: matches.map((m) => ({
             title: m.title,
             companyName: m.company?.name ?? 'Employer',
@@ -110,6 +111,8 @@ new Worker<AlertScanJob>(
             salary: formatSalary(m.salaryMin, m.salaryMax, m.salaryPeriod, m.salaryHidden),
             url: `${APP_URL}/jobs/${m.slug}`,
           })),
+          // Anonymous alerts unsubscribe via token; account alerts manage in the dashboard.
+          ...(alert.token ? { unsubscribeUrl: `${APP_URL}/unsubscribe?token=${alert.token}` } : {}),
         });
       }
       await db.update(jobAlerts).set({ lastSentAt: new Date() }).where(eq(jobAlerts.id, alert.id));

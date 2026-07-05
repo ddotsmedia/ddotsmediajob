@@ -55,7 +55,9 @@ export type EmailJob =
       to: string;
       name: string;
       jobs: { title: string; companyName: string; location: string; salary: string; url: string }[];
-    };
+      unsubscribeUrl?: string;
+    }
+  | { type: 'job-alert-confirm'; to: string; keywords: string | null; emirate: string | null; unsubscribeUrl: string };
 
 export type SearchSyncJob =
   | { type: 'upsert'; jobId: string }
