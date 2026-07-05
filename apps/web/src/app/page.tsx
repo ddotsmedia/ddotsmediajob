@@ -9,7 +9,6 @@ import { JobSearchBar } from '@/components/job-search-bar';
 import { JobCard, formatWalkinDate } from '@/components/job-card';
 import { JobTicker } from '@/components/job-ticker';
 import { FeatureCards } from '@/components/home/feature-cards';
-import { StatsBar } from '@/components/home/stats-bar';
 import { CategoryGrid } from '@/components/home/category-grid';
 import { EmployerCTA } from '@/components/home/employer-cta';
 import { WhatsAppSection } from '@/components/home/whatsapp-section';
@@ -111,7 +110,6 @@ export default async function HomePage() {
       <JobTicker items={tickerItems} />
 
       <FeatureCards />
-      <StatsBar />
 
       {/* ── Latest Jobs ────────────────────────────────── */}
       <section className="mx-auto max-w-7xl px-4 py-12">
