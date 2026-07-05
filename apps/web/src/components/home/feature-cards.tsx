@@ -3,10 +3,10 @@ import type { LucideIcon } from 'lucide-react';
 import { Footprints, ShieldCheck, Laptop, Sparkles, Wand2, MessageCircle } from 'lucide-react';
 
 const CARDS: { icon: LucideIcon; title: string; sub: string; href: string }[] = [
-  { icon: Footprints, title: 'Walk-in Jobs', sub: 'Interview on the spot', href: '/jobs/walk-in-interview-dubai' },
+  { icon: Footprints, title: 'Walk-in Jobs', sub: 'Meet candidates face to face', href: '/jobs/walk-in-interview-dubai' },
   { icon: ShieldCheck, title: 'Visa Sponsorship', sub: 'Employer-provided visa', href: '/jobs/visa-provided' },
   { icon: Laptop, title: 'Remote Jobs', sub: 'Work from anywhere', href: '/jobs/remote' },
-  { icon: Sparkles, title: 'Freshers Jobs', sub: 'No experience needed', href: '/jobs/fresher-jobs-uae' },
+  { icon: Sparkles, title: 'Fresher Jobs', sub: 'Start your career in UAE', href: '/jobs/fresher-jobs-uae' },
   { icon: Wand2, title: 'AI Recommended', sub: 'Matched to your profile', href: '/jobs' },
   { icon: MessageCircle, title: 'WhatsApp Groups', sub: '76 active groups', href: '/whatsapp-groups' },
 ];

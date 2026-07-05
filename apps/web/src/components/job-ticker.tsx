@@ -16,7 +16,7 @@ export function JobTicker({ items }: { items: TickerItem[] }) {
           <div className="animate-ticker flex w-max gap-8 whitespace-nowrap py-1.5 pl-8 text-xs">
             {loop.map((j, i) => (
               <Link key={`${j.slug}-${i}`} href={`/jobs/${j.slug}`} className="inline-flex items-center gap-1.5 hover:underline">
-                🆕 <span className="font-semibold">{j.title}</span> in {emirateBySlug(j.emirateSlug)?.name ?? j.emirateSlug}
+                <span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-teal-400" /><span className="font-semibold">{j.title}</span> in {emirateBySlug(j.emirateSlug)?.name || j.emirateSlug || 'UAE'}
                 <span className="text-white/60">· {formatJobDate(j.publishedAt)}</span>
               </Link>
             ))}

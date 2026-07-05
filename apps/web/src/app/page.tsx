@@ -77,13 +77,13 @@ export default async function HomePage() {
         <div className="pointer-events-none absolute right-[8%] top-10 z-0 h-[300px] w-[300px] rounded-full" style={{ background: 'radial-gradient(circle, rgba(46,142,151,0.12) 0%, transparent 70%)' }} />
         <div className="relative z-10 mx-auto max-w-3xl px-4 py-14 text-center md:py-20">
           <span className="inline-flex items-center gap-2 rounded-full border border-[#E5EEF0] bg-white px-3 py-1 text-xs font-semibold text-[#2E8E97]">
-            <span className="h-2 w-2 rounded-full bg-[#8dc63f]" /> UAE&apos;s #1 WhatsApp-Powered Job Portal
+            <span className="h-2 w-2 rounded-full bg-[#8dc63f]" /> UAE&apos;s WhatsApp-Powered Job Portal
           </span>
           <h1 className="mt-4 font-display text-4xl font-extrabold leading-[1.05] tracking-tight text-[#0F172A] sm:text-5xl">
-            Find Your Dream Job in <span className="text-[#2E8E97]">UAE</span>
+            Find Your Next Job in the <span className="text-[#2E8E97]">UAE</span>
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-base text-[#64748B] md:text-lg">
-            AI Powered. Trusted by 80,000+ Professionals
+            76 WhatsApp groups · 120,000+ members · Free to apply
           </p>
           <div className="mx-auto mt-7 max-w-3xl rounded-2xl border border-[#E5EEF0] bg-white/80 p-2 shadow-lg backdrop-blur">
             <JobSearchBar />
