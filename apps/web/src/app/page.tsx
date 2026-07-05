@@ -83,7 +83,7 @@ export default async function HomePage() {
             Find Your Next Job in the <span className="text-[#2E8E97]">UAE</span>
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-base text-[#64748B] md:text-lg">
-            76 WhatsApp groups · 120,000+ members · Free to apply
+            76 groups · 120,000+ members · Free to apply
           </p>
           <div className="mx-auto mt-7 max-w-3xl rounded-2xl border border-[#E5EEF0] bg-white/80 p-2 shadow-lg backdrop-blur">
             <JobSearchBar />

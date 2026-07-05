@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Check, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-const POINTS = ['Free to post — no credit card', 'AI writes your job description', 'Reach 80,000+ UAE jobseekers', 'Broadcast to 120,000+ WhatsApp members'];
+const POINTS = ['Free to post — no credit card', 'AI writes your job description', 'Reach jobseekers across all 7 emirates', 'Broadcast to 120,000+ WhatsApp members'];
 
 const STATS = [
   { n: '80K+', l: 'Professionals' },
