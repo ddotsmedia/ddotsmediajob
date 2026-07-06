@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowRight, MapPin, Clock, Footprints } from 'lucide-react';
+import { ArrowRight, MapPin, Clock, Footprints, MessageCircle } from 'lucide-react';
 import type { inferRouterOutputs } from '@trpc/server';
 import type { AppRouter } from '@ddots/api';
 import { SITE, formatJobDate, isNew, formatSalary, categoryBySlug, emirateBySlug, getJobEmoji } from '@ddots/shared';
@@ -127,6 +127,22 @@ export default async function HomePage() {
 
       {/* ── Live jobs ticker ───────────────────────────── */}
       <JobTicker items={tickerItems} />
+
+      {/* ── WhatsApp groups banner ─────────────────────── */}
+      <section style={{ background: 'linear-gradient(135deg, #25d366, #1da851)' }}>
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-6 py-4 text-white sm:flex-row">
+          <div className="flex items-center gap-3">
+            <MessageCircle className="h-8 w-8 shrink-0" />
+            <div>
+              <p className="font-display font-bold">Join 76+ UAE Job Groups on WhatsApp</p>
+              <p className="text-sm text-white/80">120,000+ members · All professions · All emirates</p>
+            </div>
+          </div>
+          <Link href="/whatsapp-groups" className="w-full rounded-full bg-white px-5 py-2.5 text-center text-sm font-bold text-[#1da851] hover:bg-white/90 sm:w-auto">
+            View All Groups →
+          </Link>
+        </div>
+      </section>
 
       <FeatureCards />
 

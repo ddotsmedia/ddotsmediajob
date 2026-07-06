@@ -7,7 +7,7 @@ import { db } from './index';
 import { whatsappGroups } from './schema';
 import { slugify } from '@ddots/shared';
 
-const JOIN_LINK = 'https://wa.me/971509379212';
+const JOIN_LINK = 'https://chat.whatsapp.com/GiHlcJDYBPV4o8NNv4ahHS?mode=gi_t';
 
 const GROUPS: { name: string; category: string }[] = [
   // general
@@ -45,8 +45,12 @@ async function main() {
     seen.add(slug);
     values.push({ name: g.name, inviteUrl: JOIN_LINK, categorySlug: g.category, slug, isActive: true });
   }
-  await db.insert(whatsappGroups).values(values).onConflictDoNothing();
-  console.log(`✅ WhatsApp groups seed complete: ${values.length} groups (existing rows untouched).`);
+  // Upsert on slug: inserts new groups AND corrects the invite link on already-seeded rows.
+  await db
+    .insert(whatsappGroups)
+    .values(values)
+    .onConflictDoUpdate({ target: whatsappGroups.slug, set: { inviteUrl: JOIN_LINK, isActive: true } });
+  console.log(`✅ WhatsApp groups seed complete: ${values.length} groups (invite link synced).`);
   process.exit(0);
 }
 
