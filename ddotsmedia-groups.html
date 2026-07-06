@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DDotsMedia — WhatsApp Job Groups</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --teal-dark:   #084d5a;
+    --teal:        #0d6e82;
+    --teal-mid:    #1a8fa8;
+    --teal-light:  #e6f6f9;
+    --teal-xlight: #f0fafb;
+    --wa-green:    #25D366;
+    --wa-dark:     #128C7E;
+    --white:       #ffffff;
+    --bg:          #f4f8f9;
+    --card:        #ffffff;
+    --text:        #0d1f24;
+    --muted:       #5c7c84;
+    --border:      #d6edf2;
+    --new-badge:   #ff6b35;
+    --shadow-sm:   0 2px 8px rgba(8,77,90,0.07);
+    --shadow-md:   0 6px 24px rgba(8,77,90,0.12);
+    --shadow-lg:   0 16px 48px rgba(8,77,90,0.15);
+    --radius:      14px;
+    --radius-sm:   8px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Outfit', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── HERO ─────────────────────────────────────── */
+  .hero {
+    background: linear-gradient(135deg, var(--teal-dark) 0%, var(--teal) 50%, var(--teal-mid) 100%);
+    position: relative;
+    overflow: hidden;
+    padding: 70px 24px 80px;
+    text-align: center;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+
+  .hero-blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.15;
+    pointer-events: none;
+  }
+  .hero-blob-1 { width: 400px; height: 400px; background: #25d366; top: -100px; right: -80px; }
+  .hero-blob-2 { width: 300px; height: 300px; background: #ffffff; bottom: -100px; left: -60px; }
+
+  .hero-inner { position: relative; z-index: 1; max-width: 760px; margin: 0 auto; }
+
+  .logo-wrap {
+    display: inline-flex; align-items: center; gap: 14px;
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    backdrop-filter: blur(12px);
+    padding: 10px 20px 10px 10px;
+    border-radius: 60px;
+    margin-bottom: 32px;
+  }
+  .logo-img {
+    width: 48px; height: 48px; border-radius: 12px;
+    background: linear-gradient(135deg, #25D366, #128C7E);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-weight: 800; font-size: 18px; color: white;
+    flex-shrink: 0;
+  }
+  .logo-text { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 17px; color: white; letter-spacing: -0.3px; }
+
+  .hero h1 {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: clamp(2.2rem, 5vw, 3.4rem);
+    font-weight: 800;
+    color: white;
+    line-height: 1.1;
+    letter-spacing: -1px;
+    margin-bottom: 18px;
+  }
+  .hero h1 span { color: #25D366; }
+
+  .hero p {
+    font-size: 1.1rem; font-weight: 400; color: rgba(255,255,255,0.82);
+    max-width: 520px; margin: 0 auto 36px; line-height: 1.65;
+  }
+
+  /* stats */
+  .stats {
+    display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;
+    margin-bottom: 40px;
+  }
+  .stat-pill {
+    background: rgba(255,255,255,0.13); border: 1px solid rgba(255,255,255,0.2);
+    backdrop-filter: blur(8px);
+    padding: 10px 20px; border-radius: 40px;
+    display: flex; align-items: center; gap: 8px;
+    color: white;
+  }
+  .stat-pill strong { font-size: 1.2rem; font-weight: 700; font-family: 'Bricolage Grotesque', sans-serif; }
+  .stat-pill span { font-size: 0.82rem; opacity: 0.8; }
+
+  /* search */
+  .search-wrap {
+    position: relative; max-width: 500px; margin: 0 auto;
+  }
+  .search-wrap svg {
+    position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+    width: 20px; height: 20px; color: var(--muted); pointer-events: none;
+  }
+  #search {
+    width: 100%; padding: 16px 16px 16px 50px;
+    background: white; border: none; border-radius: 60px;
+    font-family: 'Outfit', sans-serif; font-size: 1rem; color: var(--text);
+    box-shadow: var(--shadow-lg);
+    outline: none; transition: box-shadow 0.2s;
+  }
+  #search:focus { box-shadow: 0 0 0 3px rgba(37,211,102,0.35), var(--shadow-lg); }
+  #search::placeholder { color: var(--muted); }
+
+  /* ── FILTER TABS ──────────────────────────────── */
+  .filter-section {
+    padding: 28px 24px 0;
+    max-width: 1200px; margin: 0 auto;
+  }
+  .filter-label { font-size: 0.78rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+
+  .filter-tabs {
+    display: flex; gap: 8px; flex-wrap: wrap;
+  }
+  .tab {
+    padding: 8px 18px; border-radius: 40px; border: 1.5px solid var(--border);
+    background: white; color: var(--muted); font-family: 'Outfit', sans-serif;
+    font-size: 0.875rem; font-weight: 500; cursor: pointer;
+    transition: all 0.18s; white-space: nowrap;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .tab .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); transition: background 0.18s; }
+  .tab:hover { border-color: var(--teal-mid); color: var(--teal); }
+  .tab.active {
+    background: var(--teal-dark); border-color: var(--teal-dark);
+    color: white; box-shadow: var(--shadow-sm);
+  }
+  .tab.active .dot { background: var(--wa-green); }
+  .tab .count { font-size: 0.72rem; opacity: 0.7; background: rgba(0,0,0,0.08); padding: 1px 6px; border-radius: 10px; }
+  .tab.active .count { background: rgba(255,255,255,0.2); }
+
+  /* ── GRID ─────────────────────────────────────── */
+  .grid-section {
+    padding: 24px 24px 60px;
+    max-width: 1200px; margin: 0 auto;
+  }
+
+  .results-info {
+    font-size: 0.85rem; color: var(--muted); margin-bottom: 18px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .results-info strong { color: var(--teal-dark); font-weight: 600; }
+
+  .groups-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 16px;
+  }
+
+  /* card */
+  .card {
+    background: var(--card); border-radius: var(--radius);
+    border: 1.5px solid var(--border);
+    padding: 22px;
+    display: flex; flex-direction: column; gap: 14px;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+    animation: fadeUp 0.35s ease both;
+    position: relative; overflow: hidden;
+  }
+  .card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--teal-mid);
+  }
+  .card.new-group { border-color: rgba(255,107,53,0.3); }
+  .card.new-group::before {
+    content: 'NEW';
+    position: absolute; top: 14px; right: 14px;
+    background: var(--new-badge); color: white;
+    font-size: 0.65rem; font-weight: 700; letter-spacing: 1px;
+    padding: 3px 8px; border-radius: 4px;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .card-header { display: flex; align-items: flex-start; gap: 12px; }
+
+  .cat-icon {
+    width: 44px; height: 44px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem; flex-shrink: 0;
+  }
+
+  .card-title-wrap { flex: 1; min-width: 0; }
+  .card-title {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 1rem; font-weight: 700;
+    color: var(--text); line-height: 1.3;
+    margin-bottom: 3px;
+  }
+  .card-cat-label {
+    font-size: 0.72rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.5px; color: var(--muted);
+  }
+
+  .card-desc {
+    font-size: 0.875rem; color: var(--muted); line-height: 1.6;
+  }
+
+  .card-tags {
+    display: flex; flex-wrap: wrap; gap: 6px;
+  }
+  .tag {
+    font-size: 0.72rem; font-weight: 500;
+    background: var(--teal-light); color: var(--teal-dark);
+    padding: 4px 10px; border-radius: 20px;
+    border: 1px solid var(--border);
+  }
+
+  .card-footer { display: flex; align-items: center; justify-content: space-between; margin-top: auto; }
+  .members-badge {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 0.78rem; color: var(--muted);
+  }
+  .members-badge svg { width: 14px; height: 14px; }
+
+  .join-btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: var(--wa-green); color: white;
+    padding: 10px 18px; border-radius: 40px; border: none;
+    font-family: 'Outfit', sans-serif; font-size: 0.85rem; font-weight: 600;
+    cursor: pointer; text-decoration: none;
+    box-shadow: 0 3px 12px rgba(37,211,102,0.35);
+    transition: all 0.18s;
+    white-space: nowrap;
+  }
+  .join-btn:hover {
+    background: var(--wa-dark);
+    box-shadow: 0 5px 18px rgba(37,211,102,0.45);
+    transform: scale(1.03);
+  }
+  .join-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+  /* no results */
+  .no-results {
+    grid-column: 1 / -1;
+    text-align: center; padding: 60px 20px;
+    color: var(--muted);
+  }
+  .no-results svg { width: 48px; height: 48px; opacity: 0.3; margin-bottom: 14px; }
+  .no-results p { font-size: 1rem; }
+
+  /* ── FOOTER ───────────────────────────────────── */
+  footer {
+    background: var(--teal-dark); color: rgba(255,255,255,0.7);
+    text-align: center; padding: 28px 24px;
+    font-size: 0.85rem; line-height: 1.6;
+  }
+  footer a { color: var(--wa-green); text-decoration: none; }
+  footer strong { color: white; }
+
+  /* hidden */
+  .hidden { display: none !important; }
+
+  /* ── MODAL OVERLAY ────────────────────────────── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; z-index: 1000;
+    background: rgba(8,30,36,0.65); backdrop-filter: blur(6px);
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  .modal-overlay.open { display: flex; animation: fadeIn 0.2s ease; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .modal {
+    background: white; border-radius: 20px; width: 100%; max-width: 480px;
+    box-shadow: 0 24px 80px rgba(8,30,36,0.3);
+    overflow: hidden; animation: slideUp 0.25s ease;
+  }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(24px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .modal-header {
+    background: linear-gradient(135deg, var(--teal-dark), var(--teal-mid));
+    padding: 24px 24px 20px; position: relative;
+  }
+  .modal-close {
+    position: absolute; top: 14px; right: 14px;
+    background: rgba(255,255,255,0.15); border: none; color: white;
+    width: 30px; height: 30px; border-radius: 50%; cursor: pointer;
+    font-size: 1rem; display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+  }
+  .modal-close:hover { background: rgba(255,255,255,0.28); }
+  .modal-group-cat {
+    font-size: 0.72rem; font-weight: 600; letter-spacing: 1px;
+    text-transform: uppercase; color: rgba(255,255,255,0.65); margin-bottom: 4px;
+  }
+  .modal-group-name {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 1.2rem; font-weight: 800; color: white; line-height: 1.3;
+    padding-right: 36px;
+  }
+
+  .modal-body { padding: 24px; }
+
+  /* UAE requirement banner */
+  .uae-banner {
+    display: flex; align-items: center; gap: 10px;
+    background: #fff8e6; border: 1.5px solid #ffd04d;
+    border-radius: 10px; padding: 12px 14px; margin-bottom: 20px;
+  }
+  .uae-flag { font-size: 1.5rem; flex-shrink: 0; }
+  .uae-banner-text { font-size: 0.82rem; line-height: 1.5; color: #7a5800; }
+  .uae-banner-text strong { display: block; font-size: 0.88rem; color: #5a3d00; margin-bottom: 2px; }
+
+  /* steps */
+  .steps { display: flex; flex-direction: column; gap: 12px; margin-bottom: 22px; }
+  .step { display: flex; align-items: flex-start; gap: 12px; }
+  .step-num {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--teal-dark); color: white;
+    font-size: 0.75rem; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .step-text { font-size: 0.875rem; color: var(--text); line-height: 1.5; }
+  .step-text strong { color: var(--teal-dark); }
+
+  /* form */
+  .modal-form { display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px; }
+  .form-row { display: flex; gap: 10px; }
+  .form-field { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+  .form-field label { font-size: 0.75rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .form-field input, .form-field select {
+    padding: 11px 14px; border: 1.5px solid var(--border); border-radius: 10px;
+    font-family: 'Outfit', sans-serif; font-size: 0.9rem; color: var(--text);
+    background: var(--bg); outline: none; transition: border-color 0.15s;
+    width: 100%;
+  }
+  .form-field input:focus, .form-field select:focus { border-color: var(--teal-mid); background: white; }
+  .form-field input::placeholder { color: #aac4cb; }
+
+  .send-cv-btn {
+    width: 100%; padding: 15px; border: none; border-radius: 12px;
+    background: var(--wa-green); color: white; cursor: pointer;
+    font-family: 'Bricolage Grotesque', sans-serif; font-size: 1rem; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    box-shadow: 0 4px 16px rgba(37,211,102,0.4);
+    transition: all 0.18s;
+  }
+  .send-cv-btn:hover { background: var(--wa-dark); box-shadow: 0 6px 22px rgba(18,140,126,0.45); transform: translateY(-1px); }
+  .send-cv-btn svg { width: 20px; height: 20px; flex-shrink: 0; }
+
+  .modal-note {
+    text-align: center; font-size: 0.75rem; color: var(--muted); line-height: 1.5;
+    padding-top: 4px;
+  }
+  .modal-note span { color: #e53935; font-weight: 600; }
+
+  /* update join-btn label */
+  .join-btn-label { pointer-events: none; }
+
+  /* ── ADMIN LOGIN ──────────────────────────────────── */
+  .admin-login-overlay {
+    display: none; position: fixed; inset: 0; z-index: 3000;
+    background: rgba(0,0,0,0.85); backdrop-filter: blur(10px);
+    align-items: center; justify-content: center;
+  }
+  .admin-login-overlay.open { display: flex; }
+  .admin-login-card {
+    background: #0d1f2d; border: 1px solid rgba(26,143,168,0.35);
+    border-radius: 18px; padding: 36px; width: 100%; max-width: 360px;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+  }
+  .admin-login-icon { font-size: 2rem; margin-bottom: 10px; }
+  .admin-login-title { font-family:'Bricolage Grotesque',sans-serif; font-size:1.4rem; font-weight:800; color:white; margin-bottom:4px; }
+  .admin-login-sub { font-size:0.82rem; color:rgba(255,255,255,0.45); margin-bottom:22px; }
+  .admin-pw-field {
+    width:100%; padding:12px 14px; border-radius:10px;
+    border:1.5px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.06);
+    color:white; font-family:'Outfit',sans-serif; font-size:0.95rem;
+    margin-bottom:12px; outline:none; transition:border-color 0.15s;
+  }
+  .admin-pw-field:focus { border-color:var(--teal-mid); }
+  .admin-pw-field::placeholder { color:rgba(255,255,255,0.25); }
+  .btn-login {
+    width:100%; padding:13px; border:none; border-radius:10px;
+    background:var(--teal-mid); color:white; cursor:pointer;
+    font-family:'Bricolage Grotesque',sans-serif; font-size:1rem; font-weight:700;
+    transition:all 0.18s;
+  }
+  .btn-login:hover { background:var(--teal); }
+  .admin-error { color:#ef5350; font-size:0.8rem; margin-top:8px; display:none; text-align:center; }
+  .admin-login-close { float:right; background:none; border:none; color:rgba(255,255,255,0.4); cursor:pointer; font-size:1.1rem; margin-top:-8px; }
+
+  /* ── ADMIN PANEL ──────────────────────────────────── */
+  .admin-overlay {
+    display:none; position:fixed; inset:0; z-index:2000;
+    background:#080f16; overflow-y:auto;
+  }
+  .admin-overlay.open { display:block; }
+  .admin-header {
+    background:linear-gradient(135deg,#0a1520,#0f2535);
+    border-bottom:2px solid var(--teal-mid);
+    padding:16px 28px; display:flex; align-items:center; justify-content:space-between;
+    position:sticky; top:0; z-index:10;
+  }
+  .admin-title { font-family:'Bricolage Grotesque',sans-serif; font-size:1.2rem; font-weight:800; color:white; display:flex; align-items:center; gap:8px; }
+  .admin-title em { color:var(--teal-mid); font-style:normal; }
+  .admin-actions { display:flex; gap:10px; align-items:center; }
+  .btn-admin { padding:9px 18px; border-radius:8px; border:none; cursor:pointer; font-family:'Outfit',sans-serif; font-size:0.85rem; font-weight:600; transition:all 0.15s; }
+  .btn-add-group { background:var(--wa-green); color:white; }
+  .btn-add-group:hover { background:var(--wa-dark); }
+  .btn-logout { background:rgba(255,255,255,0.08); color:rgba(255,255,255,0.75); border:1px solid rgba(255,255,255,0.15); }
+  .btn-logout:hover { background:rgba(255,255,255,0.15); }
+  .admin-body { padding:24px 28px; }
+  .admin-stats-row { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:20px; }
+  .admin-stat { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:12px 18px; }
+  .admin-stat strong { display:block; font-family:'Bricolage Grotesque',sans-serif; font-size:1.4rem; font-weight:800; color:white; }
+  .admin-stat span { font-size:0.75rem; color:rgba(255,255,255,0.45); }
+  .admin-search {
+    width:100%; max-width:320px; padding:9px 14px; border-radius:8px;
+    border:1px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.05);
+    color:white; font-family:'Outfit',sans-serif; font-size:0.875rem; outline:none; margin-bottom:16px;
+  }
+  .admin-search::placeholder { color:rgba(255,255,255,0.25); }
+  .admin-table-wrap { overflow-x:auto; border-radius:12px; border:1px solid rgba(255,255,255,0.08); }
+  .admin-table { width:100%; border-collapse:collapse; font-size:0.875rem; color:rgba(255,255,255,0.8); }
+  .admin-table th { background:rgba(255,255,255,0.04); padding:11px 14px; text-align:left; font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--teal-mid); white-space:nowrap; }
+  .admin-table td { padding:11px 14px; border-top:1px solid rgba(255,255,255,0.05); vertical-align:middle; }
+  .admin-table tr:hover td { background:rgba(255,255,255,0.02); }
+  .td-name { font-weight:600; color:white; max-width:200px; }
+  .td-cat-pill { display:inline-block; padding:3px 9px; border-radius:20px; font-size:0.7rem; font-weight:600; background:rgba(26,143,168,0.15); color:var(--teal-mid); white-space:nowrap; }
+  .btn-edit-row, .btn-del-row {
+    padding:6px 13px; border-radius:6px; border:none; cursor:pointer;
+    font-size:0.78rem; font-weight:600; transition:all 0.15s; white-space:nowrap;
+  }
+  .btn-edit-row { background:rgba(26,143,168,0.18); color:var(--teal-mid); margin-right:5px; }
+  .btn-edit-row:hover { background:rgba(26,143,168,0.38); }
+  .btn-del-row { background:rgba(239,83,80,0.14); color:#ef5350; }
+  .btn-del-row:hover { background:rgba(239,83,80,0.3); }
+
+  /* ── EDIT / ADD MODAL ─────────────────────────────── */
+  .edit-overlay {
+    display:none; position:fixed; inset:0; z-index:4000;
+    background:rgba(0,0,0,0.78); backdrop-filter:blur(6px);
+    align-items:flex-start; justify-content:center; padding:30px 20px; overflow-y:auto;
+  }
+  .edit-overlay.open { display:flex; }
+  .edit-card {
+    background:#0d1f2d; border:1px solid rgba(26,143,168,0.3);
+    border-radius:16px; width:100%; max-width:520px; margin:auto;
+    box-shadow:0 24px 80px rgba(0,0,0,0.55); overflow:hidden;
+  }
+  .edit-card-header { background:rgba(26,143,168,0.12); border-bottom:1px solid rgba(26,143,168,0.2); padding:15px 20px; display:flex; align-items:center; justify-content:space-between; }
+  .edit-card-title { font-family:'Bricolage Grotesque',sans-serif; font-size:1rem; font-weight:800; color:white; }
+  .edit-close { background:none; border:none; color:rgba(255,255,255,0.45); cursor:pointer; font-size:1.2rem; }
+  .edit-card-body { padding:20px; display:flex; flex-direction:column; gap:13px; }
+  .edit-field { display:flex; flex-direction:column; gap:5px; }
+  .edit-field label { font-size:0.7rem; font-weight:700; color:var(--teal-mid); text-transform:uppercase; letter-spacing:0.5px; }
+  .edit-field input, .edit-field select, .edit-field textarea {
+    padding:10px 13px; border-radius:8px;
+    border:1.5px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.05);
+    color:white; font-family:'Outfit',sans-serif; font-size:0.88rem; outline:none; transition:border-color 0.15s;
+  }
+  .edit-field input:focus, .edit-field select:focus, .edit-field textarea:focus { border-color:var(--teal-mid); }
+  .edit-field textarea { resize:vertical; min-height:80px; }
+  .edit-field select option { background:#0d1f2d; }
+  .edit-field .hint { font-size:0.72rem; color:rgba(255,255,255,0.35); margin-top:2px; }
+  .edit-row { display:flex; gap:12px; }
+  .edit-row .edit-field { flex:1; }
+  .edit-card-footer { padding:15px 20px; border-top:1px solid rgba(255,255,255,0.07); display:flex; gap:10px; justify-content:flex-end; }
+  .btn-cancel-edit { padding:10px 20px; border-radius:8px; border:1px solid rgba(255,255,255,0.15); background:none; color:rgba(255,255,255,0.65); cursor:pointer; font-family:'Outfit',sans-serif; font-weight:600; }
+  .btn-save-edit { padding:10px 24px; border-radius:8px; border:none; background:var(--teal-mid); color:white; cursor:pointer; font-family:'Outfit',sans-serif; font-weight:700; transition:background 0.15s; }
+  .btn-save-edit:hover { background:var(--teal); }
+
+  /* ── DELETE CONFIRM ───────────────────────────────── */
+  .del-overlay {
+    display:none; position:fixed; inset:0; z-index:5000;
+    background:rgba(0,0,0,0.85); backdrop-filter:blur(8px);
+    align-items:center; justify-content:center; padding:20px;
+  }
+  .del-overlay.open { display:flex; }
+  .del-card {
+    background:#1a0a0a; border:1px solid rgba(239,83,80,0.3);
+    border-radius:16px; padding:30px; max-width:360px; width:100%; text-align:center;
+    box-shadow:0 24px 60px rgba(0,0,0,0.6);
+  }
+  .del-icon { font-size:2.5rem; margin-bottom:12px; }
+  .del-title { font-family:'Bricolage Grotesque',sans-serif; font-size:1.1rem; font-weight:800; color:white; margin-bottom:8px; }
+  .del-sub { font-size:0.84rem; color:rgba(255,255,255,0.5); margin-bottom:22px; line-height:1.5; }
+  .del-btns { display:flex; gap:10px; justify-content:center; }
+  .btn-cancel-del { padding:10px 22px; border-radius:8px; border:1px solid rgba(255,255,255,0.2); background:none; color:rgba(255,255,255,0.7); cursor:pointer; font-weight:600; font-family:'Outfit',sans-serif; }
+  .btn-confirm-del { padding:10px 22px; border-radius:8px; border:none; background:#ef5350; color:white; cursor:pointer; font-weight:700; font-family:'Outfit',sans-serif; }
+  .btn-confirm-del:hover { background:#c62828; }
+
+  /* admin trigger in footer */
+  .admin-trigger { cursor:pointer; opacity:0.3; font-size:0.72rem; user-select:none; transition:opacity 0.2s; }
+  .admin-trigger:hover { opacity:0.7; }
+
+  /* group count badge */
+  .group-count-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: linear-gradient(135deg, var(--teal-dark), var(--teal-mid));
+    color: white; font-size: 0.72rem; font-weight: 700;
+    padding: 4px 10px; border-radius: 20px;
+    letter-spacing: 0.3px;
+  }
+  .group-count-badge::before { content: '⚡'; font-size: 0.7rem; }
+
+  /* mobile */
+  @media (max-width: 600px) {
+    .hero { padding: 50px 20px 60px; }
+    .groups-grid { grid-template-columns: 1fr; }
+    .stats { gap: 8px; }
+    .stat-pill { padding: 8px 14px; }
+    .stat-pill strong { font-size: 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══ HERO ═══════════════════════════════════════ -->
+<header class="hero">
+  <div class="hero-blob hero-blob-1"></div>
+  <div class="hero-blob hero-blob-2"></div>
+  <div class="hero-inner">
+
+    <div class="logo-wrap">
+      <div class="logo-img">DD</div>
+      <span class="logo-text">DDotsMedia</span>
+    </div>
+
+    <h1>Join the Right<br><span>Job Group</span> for You</h1>
+    <p>UAE's largest WhatsApp job community — specialized groups covering every profession. Send your CV to join instantly.</p>
+
+    <div class="stats">
+      <div class="stat-pill"><strong>60+</strong><span>Job Groups</span></div>
+      <div class="stat-pill"><strong>50K+</strong><span>Professionals</span></div>
+      <div class="stat-pill"><strong>Daily</strong><span>New Vacancies</span></div>
+      <div class="stat-pill"><strong>UAE</strong><span>All Emirates</span></div>
+    </div>
+
+    <div class="search-wrap">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+      </svg>
+      <input type="text" id="search" placeholder="Search by group name or job type…" />
+    </div>
+
+  </div>
+</header>
+
+<!-- ═══ FILTERS ══════════════════════════════════════ -->
+<section class="filter-section">
+  <div class="filter-label">Browse by Category</div>
+  <div class="filter-tabs" id="tabs">
+    <button class="tab active" data-cat="all">
+      <span class="dot"></span> All Groups <span class="count" id="count-all"></span>
+    </button>
+    <button class="tab" data-cat="general">
+      <span class="dot"></span> General / UAE <span class="count" id="count-general"></span>
+    </button>
+    <button class="tab" data-cat="location">
+      <span class="dot"></span> By Location <span class="count" id="count-location"></span>
+    </button>
+    <button class="tab" data-cat="medical">
+      <span class="dot"></span> Medical <span class="count" id="count-medical"></span>
+    </button>
+    <button class="tab" data-cat="it">
+      <span class="dot"></span> IT & Tech <span class="count" id="count-it"></span>
+    </button>
+    <button class="tab" data-cat="engineering">
+      <span class="dot"></span> Engineering <span class="count" id="count-engineering"></span>
+    </button>
+    <button class="tab" data-cat="accounts">
+      <span class="dot"></span> Accounts & Finance <span class="count" id="count-accounts"></span>
+    </button>
+    <button class="tab" data-cat="hr">
+      <span class="dot"></span> HR & Admin <span class="count" id="count-hr"></span>
+    </button>
+    <button class="tab" data-cat="sales">
+      <span class="dot"></span> Sales & Marketing <span class="count" id="count-sales"></span>
+    </button>
+    <button class="tab" data-cat="teaching">
+      <span class="dot"></span> Teaching <span class="count" id="count-teaching"></span>
+    </button>
+    <button class="tab" data-cat="logistics">
+      <span class="dot"></span> Logistics & Driving <span class="count" id="count-logistics"></span>
+    </button>
+    <button class="tab" data-cat="specialized">
+      <span class="dot"></span> Specialized <span class="count" id="count-specialized"></span>
+    </button>
+    <button class="tab" data-cat="community">
+      <span class="dot"></span> Community <span class="count" id="count-community"></span>
+    </button>
+  </div>
+</section>
+
+<!-- ═══ GRID ══════════════════════════════════════════ -->
+<section class="grid-section">
+  <div class="results-info">Showing <strong id="results-count"></strong> groups</div>
+  <div class="groups-grid" id="grid"></div>
+</section>
+
+<!-- ═══ JOIN MODAL ════════════════════════════════════ -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalGroupName">
+
+    <div class="modal-header">
+      <button class="modal-close" id="modalClose" aria-label="Close">✕</button>
+      <div class="modal-group-cat" id="modalGroupCat">Job Group</div>
+      <div class="modal-group-name" id="modalGroupName">Group Name</div>
+    </div>
+
+    <div class="modal-body">
+
+      <!-- UAE requirement banner -->
+      <div class="uae-banner">
+        <div class="uae-flag">🇦🇪</div>
+        <div class="uae-banner-text">
+          <strong>UAE WhatsApp Number Required</strong>
+          To join this group you must send your CV from a UAE number (+971). Indian or other country numbers will not be added.
+        </div>
+      </div>
+
+      <!-- Steps -->
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-text">Fill in your <strong>name</strong> and <strong>job role</strong> below.</div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-text">Tap <strong>"Send CV on WhatsApp"</strong> — it opens a pre-filled message to the DDotsMedia admin.</div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-text">Attach your <strong>CV / Resume</strong> to the message and send it from your <strong>UAE (+971) number</strong>.</div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-text">The admin will review your CV and <strong>add you to the group</strong> within 24 hours.</div>
+        </div>
+      </div>
+
+      <!-- Form -->
+      <div class="modal-form">
+        <div class="form-row">
+          <div class="form-field">
+            <label>Your Full Name *</label>
+            <input type="text" id="inputName" placeholder="e.g. Ahmed Al Farsi" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-field">
+            <label>Current Job Role / Profession *</label>
+            <input type="text" id="inputRole" placeholder="e.g. Staff Nurse, Accountant" />
+          </div>
+          <div class="form-field">
+            <label>Experience</label>
+            <select id="inputExp">
+              <option value="">Select</option>
+              <option>Fresher (0–1 yr)</option>
+              <option>1–3 years</option>
+              <option>3–5 years</option>
+              <option>5–10 years</option>
+              <option>10+ years</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <button class="send-cv-btn" id="sendCvBtn">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+        </svg>
+        Send CV on WhatsApp
+      </button>
+
+      <div class="modal-note">
+        <span>⚠ Only UAE (+971) numbers are accepted.</span><br>
+        Attach your CV as a PDF or Word file in the WhatsApp message.
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══ FOOTER ════════════════════════════════════════ -->
+<footer>
+  <strong>DDotsMedia</strong> — UAE's Premier Job Placement Network<br>
+  Website: <a href="https://ddotsmediajobs.com" target="_blank">ddotsmediajobs.com</a><br>
+  <span style="opacity:0.5;font-size:0.78rem;margin-top:8px;display:block;">© 2026 DDotsMedia. All rights reserved.</span>
+  <span class="admin-trigger" id="adminTrigger" title="">⚙</span>
+</footer>
+
+<!-- ═══ ADMIN LOGIN ════════════════════════════════════ -->
+<div class="admin-login-overlay" id="adminLoginOverlay">
+  <div class="admin-login-card">
+    <button class="admin-login-close" id="adminLoginClose">✕</button>
+    <div class="admin-login-icon">🔐</div>
+    <div class="admin-login-title">Admin Login</div>
+    <div class="admin-login-sub">Enter the admin password to manage groups</div>
+    <input type="password" class="admin-pw-field" id="adminPw" placeholder="Password" />
+    <button class="btn-login" id="btnLogin">Login →</button>
+    <div class="admin-error" id="adminError">Incorrect password. Try again.</div>
+  </div>
+</div>
+
+<!-- ═══ ADMIN PANEL ════════════════════════════════════ -->
+<div class="admin-overlay" id="adminOverlay">
+  <div class="admin-header">
+    <div class="admin-title">⚙ <em>DDotsMedia</em> Admin Panel</div>
+    <div class="admin-actions">
+      <button class="btn-admin btn-add-group" id="btnAddGroup">+ Add Group</button>
+      <button class="btn-admin btn-logout" id="btnLogout">Logout</button>
+    </div>
+  </div>
+  <div class="admin-body">
+    <div class="admin-stats-row">
+      <div class="admin-stat"><strong id="aStatTotal">0</strong><span>Total Groups</span></div>
+      <div class="admin-stat"><strong id="aStatNew">0</strong><span>New / Coming Soon</span></div>
+      <div class="admin-stat"><strong id="aStatCats">0</strong><span>Categories</span></div>
+    </div>
+    <input type="text" class="admin-search" id="adminSearch" placeholder="Search groups…" />
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Group Name</th>
+            <th>Category</th>
+            <th>Members</th>
+            <th>Groups</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="adminTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ EDIT / ADD MODAL ═══════════════════════════════ -->
+<div class="edit-overlay" id="editOverlay">
+  <div class="edit-card">
+    <div class="edit-card-header">
+      <div class="edit-card-title" id="editModalTitle">Edit Group</div>
+      <button class="edit-close" id="editClose">✕</button>
+    </div>
+    <div class="edit-card-body">
+      <div class="edit-field">
+        <label>Group Name *</label>
+        <input type="text" id="eName" placeholder="e.g. DDotsMedia Nurses Jobs UAE" />
+      </div>
+      <div class="edit-field">
+        <label>Category *</label>
+        <select id="eCat">
+          <option value="general">General / UAE</option>
+          <option value="location">By Location</option>
+          <option value="medical">Medical & Healthcare</option>
+          <option value="it">IT & Technology</option>
+          <option value="engineering">Engineering</option>
+          <option value="accounts">Accounts & Finance</option>
+          <option value="hr">HR & Administration</option>
+          <option value="sales">Sales & Marketing</option>
+          <option value="teaching">Teaching & Education</option>
+          <option value="logistics">Logistics & Driving</option>
+          <option value="specialized">Specialized & Trades</option>
+          <option value="community">Community</option>
+        </select>
+      </div>
+      <div class="edit-field">
+        <label>Description *</label>
+        <textarea id="eDesc" placeholder="Describe what jobs this group covers…"></textarea>
+      </div>
+      <div class="edit-field">
+        <label>Tags <span class="hint">(comma separated)</span></label>
+        <input type="text" id="eTags" placeholder="e.g. Nursing, ICU, OT, UAE" />
+      </div>
+      <div class="edit-row">
+        <div class="edit-field">
+          <label>Members</label>
+          <input type="text" id="eMembers" placeholder="e.g. 2,500+" />
+        </div>
+        <div class="edit-field">
+          <label>No. of Active Groups</label>
+          <input type="number" id="eGroupCount" placeholder="Leave blank if single" min="1" />
+        </div>
+      </div>
+      <div class="edit-field">
+        <label>Join Link</label>
+        <input type="text" id="eLink" placeholder="https://chat.whatsapp.com/…" />
+        <span class="hint">Leave blank to use default entry group link</span>
+      </div>
+      <div class="edit-field">
+        <label><input type="checkbox" id="eIsNew" style="margin-right:6px;accent-color:var(--teal-mid)"> Mark as NEW / Coming Soon</label>
+      </div>
+    </div>
+    <div class="edit-card-footer">
+      <button class="btn-cancel-edit" id="editCancel">Cancel</button>
+      <button class="btn-save-edit" id="editSave">Save Group</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ DELETE CONFIRM ════════════════════════════════ -->
+<div class="del-overlay" id="delOverlay">
+  <div class="del-card">
+    <div class="del-icon">🗑️</div>
+    <div class="del-title">Delete Group?</div>
+    <div class="del-sub" id="delSub">This will permanently remove the group from the list.</div>
+    <div class="del-btns">
+      <button class="btn-cancel-del" id="delCancel">Cancel</button>
+      <button class="btn-confirm-del" id="delConfirm">Yes, Delete</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG — replace with your actual UAE WhatsApp number ──
+const ADMIN_WA_NUMBER = '971509379212';
+
+// ── WhatsApp SVG ─────────────────────────────────────
+const waSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+</svg>`;
+
+// ── People SVG ────────────────────────────────────────
+const peopleSvg = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+</svg>`;
+
+// ── Category config ───────────────────────────────────
+const catConfig = {
+  general:     { label: "General / UAE",        icon: "🇦🇪", bg: "#e6f6f9", color: "#0d6e82" },
+  location:    { label: "By Location",           icon: "📍", bg: "#fff3e0", color: "#e65100" },
+  medical:     { label: "Medical & Healthcare",  icon: "🏥", bg: "#fce4ec", color: "#c62828" },
+  it:          { label: "IT & Technology",       icon: "💻", bg: "#e8eaf6", color: "#283593" },
+  engineering: { label: "Engineering",           icon: "⚙️", bg: "#e8f5e9", color: "#2e7d32" },
+  accounts:    { label: "Accounts & Finance",    icon: "📊", bg: "#fff8e1", color: "#f57f17" },
+  hr:          { label: "HR & Administration",   icon: "🤝", bg: "#f3e5f5", color: "#6a1b9a" },
+  sales:       { label: "Sales & Marketing",     icon: "📣", bg: "#e0f7fa", color: "#006064" },
+  teaching:    { label: "Teaching & Education",  icon: "🎓", bg: "#e8f5e9", color: "#1b5e20" },
+  logistics:   { label: "Logistics & Driving",   icon: "🚛", bg: "#efebe9", color: "#4e342e" },
+  specialized: { label: "Specialized & Trades",  icon: "🔧", bg: "#fafafa", color: "#37474f" },
+  community:   { label: "Community",             icon: "🌐", bg: "#e8eaf6", color: "#1a237e" },
+};
+
+// ── Group Data ────────────────────────────────────────
+const groups = [
+  // GENERAL
+  { name:"Ddotsmedia Jobs UAE", cat:"general", groupCount:11, desc:"UAE's largest WhatsApp job network — 11 active groups covering all sectors and experience levels. Daily vacancy postings from verified employers across all emirates.", tags:["All Sectors","All Levels","UAE","Daily Updates"], members:"25,000+", link:"https://chat.whatsapp.com/GiHlcJDYBPV4o8NNv4ahHS?mode=gi_t" },
+  { name:"Ddotsmedia Job Posts", cat:"general", desc:"Direct employer job posts and vacancy announcements for all candidate profiles.", tags:["Direct Hiring","Vacancies"], members:"2,000+", link:"https://chat.whatsapp.com/DdotsmediaJobPosts" },
+  { name:"Ddotsmedia Coordination", cat:"general", desc:"Operational coordination group for job seekers and recruiters to connect directly.", tags:["Networking","Direct Connect"], members:"1,500+", link:"https://chat.whatsapp.com/DdotsmediaCoord" },
+
+  // LOCATION
+  { name:"DDOTSMEDIA Jobs Ajman", cat:"location", desc:"Job vacancies specifically in Ajman — covering all sectors including retail, manufacturing, and services.", tags:["Ajman","Local Jobs"], members:"1,200+", link:"https://chat.whatsapp.com/DDOTSAjman" },
+  { name:"DDotsmedia Jobs Abudhabi", cat:"location", desc:"Abu Dhabi-focused job listings across government, oil & gas, healthcare, and private sectors.", tags:["Abu Dhabi","Government","Private"], members:"3,500+", link:"https://chat.whatsapp.com/DDotsAbudhabi" },
+  { name:"DDotsMedia Abudhabi Driver Jobs", cat:"location", desc:"Driver and transport vacancies specifically in Abu Dhabi — light vehicle, heavy, and personal drivers.", tags:["Abu Dhabi","Driving"], members:"900+", link:"https://chat.whatsapp.com/DDotsAbudhabiDriver" },
+  { name:"DDots Media Jobs (Dubai)", cat:"location", desc:"Dubai-centric job listings from top employers in hospitality, retail, finance, and more.", tags:["Dubai","Multi-Sector"], members:"4,200+", link:"https://chat.whatsapp.com/DDotsDubai" },
+  { name:"DDotsMedia Dubai Malayalees", cat:"location", desc:"Job group for the Malayalam-speaking community in Dubai. Malayalam & English postings.", tags:["Dubai","Malayalee","Malayalam"], members:"2,100+", link:"https://chat.whatsapp.com/DDotsDubaiMalayalee" },
+  { name:"DDotsmedia Jobs Sharjah", cat:"location", desc:"Sharjah job vacancies covering manufacturing, trading, education, and service industries.", tags:["Sharjah","Manufacturing","Trade"], members:"1,800+", link:"https://chat.whatsapp.com/DDotsSharjah" },
+  { name:"DDotsMedia Jobs Kerala", cat:"location", desc:"Job opportunities for Kerala-based candidates looking to work in the UAE.", tags:["Kerala","India-UAE","Freshers"], members:"2,500+", link:"https://chat.whatsapp.com/DDotsKerala" },
+
+  // MEDICAL
+  { name:"DDotsMedia Doctors UAE", cat:"medical", desc:"Exclusive group for qualified doctors — MBBS (Allopathy), BAMS (Ayurveda), and BHMS (Homeopathy) graduates seeking clinical and hospital vacancies across the UAE.", tags:["MBBS","BAMS","BHMS","Doctors","UAE"], members:"1,800+", link:"https://chat.whatsapp.com/DDotsDoctors" },
+  { name:"DDotsMedia Pharmacists UAE", cat:"medical", desc:"Pharmacy job vacancies in UAE hospitals, retail pharmacies, and pharmaceutical companies.", tags:["Pharmacist","DHA","MOH"], members:"1,400+", link:"https://chat.whatsapp.com/DDotsPharmacist" },
+  { name:"DDotsMedia Nurses Jobs UAE", cat:"medical", desc:"Nursing vacancies across UAE hospitals, clinics, and homecare — all specialties covered.", tags:["Nursing","ICU","OT","Homecare"], members:"3,200+", link:"https://chat.whatsapp.com/DDotsNurses" },
+  { name:"DDotsMedia Medical Job UAE", cat:"medical", desc:"Broad medical sector jobs — covering clinical, administrative, and technical healthcare roles.", tags:["Healthcare","Clinical","Admin"], members:"2,600+", link:"https://chat.whatsapp.com/DDotsMedical" },
+  { name:"DDotsMedia Medical & Paramedical", cat:"medical", desc:"Paramedical vacancies including physiotherapy, occupational therapy, and allied health roles.", tags:["Paramedical","Allied Health","PT"], members:"1,600+", link:"https://chat.whatsapp.com/DDotsPara" },
+  { name:"DDOTSMEDIA Medical Coders", cat:"medical", desc:"Medical coding and billing vacancies — ICD-10, CPT coding roles in UAE insurance and hospital sectors.", tags:["Medical Coding","ICD-10","Billing"], members:"900+", link:"https://chat.whatsapp.com/DDotsMedCoders" },
+  { name:"DDOTSMEDIA Hospital Management", cat:"medical", desc:"Hospital administrator, operations, and healthcare management roles at leading UAE healthcare groups.", tags:["Management","Administration","Operations"], members:"700+", link:"https://chat.whatsapp.com/DDotsHospitalMgmt" },
+  { name:"Ddotsmedia Biomedical Engineering", cat:"medical", desc:"Biomedical engineer vacancies — equipment maintenance, medical device support in UAE hospitals.", tags:["Biomedical","Engineering","Devices"], members:"800+", link:"https://chat.whatsapp.com/DDotsBiomedical" },
+  { name:"DDotsMedia MLT / OT / PT / OD / Radiology", cat:"medical", desc:"Specialized allied health roles — Medical Lab Technicians, OT technicians, Physiotherapists, Optometrists, and Radiology professionals.", tags:["MLT","Radiology","OT","PT"], members:"1,100+", link:"https://chat.whatsapp.com/DDotsMLT" },
+
+  // IT
+  { name:"DDotsMedia Data Analyst Job", cat:"it", desc:"Data analyst, business analyst, and BI roles across UAE corporates, banks, and tech companies.", tags:["Data Analytics","BI","SQL"], members:"1,200+", link:"https://chat.whatsapp.com/DDotsDataAnalyst" },
+  { name:"Ddotsmedia IT Jobs UAE", cat:"it", desc:"Full spectrum IT jobs — developers, sysadmins, network engineers, cybersecurity, and more.", tags:["Software","Networking","Security"], members:"2,800+", link:"https://chat.whatsapp.com/DDotsIT" },
+
+  // ENGINEERING
+  { name:"Ddotsmedia Engineering Jobs", cat:"engineering", desc:"Engineering vacancies across civil, mechanical, electrical, and structural disciplines in UAE projects.", tags:["Civil","Mechanical","Electrical"], members:"2,200+", link:"https://chat.whatsapp.com/DDotsEngineering" },
+  { name:"DDots Media – UAE Engineering", cat:"engineering", desc:"Project and site engineering roles for UAE construction, oil & gas, and infrastructure sectors.", tags:["Projects","Site","Infrastructure"], members:"1,900+", link:"https://chat.whatsapp.com/DDotsUAEEng" },
+  { name:"DDotsMedia Oil & Gas Jobs UAE", cat:"engineering", desc:"Oil, gas, and energy sector vacancies — engineers, technicians, and HSE professionals for UAE upstream and downstream.", tags:["Oil & Gas","Energy","Offshore"], members:"New", link:"https://chat.whatsapp.com/DDotsOilGas", isNew:true },
+  { name:"DDotsMedia Civil Engineering UAE", cat:"engineering", desc:"Civil and structural engineering roles in UAE construction — site engineers, quantity surveyors, and project managers.", tags:["Civil","QS","Construction"], members:"New", link:"https://chat.whatsapp.com/DDotsCivil", isNew:true },
+
+  // ACCOUNTS
+  { name:"Ddotsmedia Accounts Jobs", cat:"accounts", groupCount:5, desc:"5 active groups covering all accounts and finance roles — accountants, auditors, VAT specialists, banking professionals, and finance managers across UAE companies.", tags:["Accounts","Finance","Audit","VAT","Banking"], members:"10,000+", link:"https://chat.whatsapp.com/DDotsAccounts" },
+
+  // HR
+  { name:"DDotsmedia HR & Administration", cat:"hr", desc:"HR and admin roles — HR managers, recruiters, payroll specialists, and administrative assistants.", tags:["HR","Recruitment","Payroll"], members:"1,600+", link:"https://chat.whatsapp.com/DDotsHR" },
+  { name:"DDotsMedia HR Jobs", cat:"hr", desc:"Human resource vacancies at top UAE corporates — HR generalist, HRBP, and talent acquisition roles.", tags:["HRBP","Talent","Generalist"], members:"1,400+", link:"https://chat.whatsapp.com/DDotsHRJobs" },
+  { name:"Ddotsmedia Administration Jobs", cat:"hr", desc:"Office admin, executive assistant, and operations admin roles across all UAE sectors.", tags:["Admin","Executive Assistant","Office"], members:"1,900+", link:"https://chat.whatsapp.com/DDotsAdmin" },
+  { name:"Ddotsmedia Operations Jobs", cat:"hr", desc:"Operations manager, coordinator, and analyst roles in UAE logistics, retail, and services.", tags:["Operations","Coordinator","Manager"], members:"1,300+", link:"https://chat.whatsapp.com/DDotsOps" },
+
+  // SALES
+  { name:"Ddotsmedia Sales & Marketing", cat:"sales", desc:"Sales executive, business development, and marketing roles across UAE industries.", tags:["Sales","BDE","Marketing"], members:"2,700+", link:"https://chat.whatsapp.com/DDotsSales" },
+  { name:"DDOTSMEDIA Graphic Design", cat:"sales", desc:"Graphic designer, visual artist, and creative roles in UAE agencies and corporates.", tags:["Graphic Design","Creative","Adobe"], members:"1,100+", link:"https://chat.whatsapp.com/DDotsGraphic" },
+  { name:"DDotsMedia Customer Service Jobs UAE", cat:"sales", desc:"Customer service, call center, and client relations roles across UAE's banking, telecom, and retail sectors.", tags:["Customer Service","Call Center","CRM"], members:"New", link:"https://chat.whatsapp.com/DDotsCS", isNew:true },
+
+  // TEACHING
+  { name:"DDots Media – UAE Teachers", cat:"teaching", desc:"Teaching vacancies in UAE schools and universities — all subjects and curriculum (British, American, IB, CBSE).", tags:["Teaching","School","University"], members:"2,300+", link:"https://chat.whatsapp.com/DDotsTeachers" },
+  { name:"DDotsMedia UAE Teachers", cat:"teaching", desc:"Education sector jobs in the UAE — teachers, coordinators, principals, and education support staff.", tags:["Curriculum","Coordinator","Principal"], members:"2,000+", link:"https://chat.whatsapp.com/DDotsUAETeachers" },
+  { name:"DDots Media – INDIA Teachers", cat:"teaching", desc:"Teaching opportunities for India-based candidates seeking UAE education sector jobs.", tags:["India","CBSE","Recruitment"], members:"1,700+", link:"https://chat.whatsapp.com/DDotsIndiaTeachers" },
+
+  // LOGISTICS
+  { name:"DDotsMedia Driver Job Dubai", cat:"logistics", desc:"Driver vacancies in Dubai — personal drivers, chauffeurs, school bus, and delivery drivers.", tags:["Dubai","Driver","Delivery"], members:"1,500+", link:"https://chat.whatsapp.com/DDotsDriverDubai" },
+  { name:"DDots Media Driver Job UAE", cat:"logistics", desc:"UAE-wide driving jobs — light/heavy vehicle, tanker, forklift, and logistics drivers.", tags:["LMV","HMV","Forklift"], members:"1,800+", link:"https://chat.whatsapp.com/DDotsDriverUAE" },
+  { name:"DDOTSMEDIA Logistics Jobs", cat:"logistics", desc:"Logistics, supply chain, and warehouse jobs across UAE's thriving trade and e-commerce sector.", tags:["Supply Chain","Warehouse","Logistics"], members:"1,400+", link:"https://chat.whatsapp.com/DDotsLogistics" },
+  { name:"DDotsMedia Automobile Jobs", cat:"logistics", desc:"Automotive sector jobs — mechanics, service advisors, technicians, and showroom staff.", tags:["Automotive","Mechanic","Service"], members:"1,000+", link:"https://chat.whatsapp.com/DDotsAuto" },
+  { name:"DDotsMedia Aviation Jobs UAE", cat:"logistics", desc:"Aviation industry vacancies — cabin crew, ground staff, airport operations, and airline support roles.", tags:["Aviation","Cabin Crew","Airport"], members:"New", link:"https://chat.whatsapp.com/DDotsAviation", isNew:true },
+
+  // SPECIALIZED
+  { name:"DDotsMedia HSE Job", cat:"specialized", desc:"Health, Safety, and Environment officer roles — NEBOSH, IOSH certified professionals for UAE projects.", tags:["HSE","NEBOSH","Safety"], members:"900+", link:"https://chat.whatsapp.com/DDotsHSE" },
+  { name:"DDotsMedia Procurement Job", cat:"specialized", desc:"Procurement, purchasing, and supply chain management roles in UAE government and private sector.", tags:["Procurement","Purchasing","SCM"], members:"800+", link:"https://chat.whatsapp.com/DDotsProcurement" },
+  { name:"DDotsmedia Electrician / Offshore", cat:"specialized", desc:"Electrician and offshore technical vacancies — MEP, industrial electricians, and offshore rig roles.", tags:["Electrician","MEP","Offshore"], members:"1,100+", link:"https://chat.whatsapp.com/DDotsElectrician" },
+  { name:"DdotsMedia Document Control", cat:"specialized", desc:"Document controller and records management roles in UAE construction, oil & gas, and government sectors.", tags:["Document Control","Aconex","EDMS"], members:"700+", link:"https://chat.whatsapp.com/DDotsDocControl" },
+  { name:"DDOTSMEDIA Restaurant & Supermarket", cat:"specialized", desc:"F&B and retail jobs — restaurant staff, store supervisors, cashiers, and supermarket executives.", tags:["F&B","Retail","Restaurant"], members:"1,600+", link:"https://chat.whatsapp.com/DDotsRestaurant" },
+  { name:"DDOTSMEDIA Travels & Typing", cat:"specialized", desc:"Travel agency, typing center, and PRO service vacancies across UAE.", tags:["Travel","PRO","Typing"], members:"600+", link:"https://chat.whatsapp.com/DDotsTravels" },
+  { name:"DDotsMedia Ladies Jobs UAE", cat:"specialized", desc:"Job opportunities exclusively for female candidates across all sectors in the UAE.", tags:["Female","All Sectors","UAE"], members:"2,200+", link:"https://chat.whatsapp.com/DDotsLadies" },
+  { name:"DDotsMedia Housemaid Job UAE", cat:"specialized", desc:"Live-in and live-out housemaid, nanny, and domestic worker placements in UAE households.", tags:["Housemaid","Nanny","Domestic"], members:"1,300+", link:"https://chat.whatsapp.com/DDotsHousemaid" },
+  { name:"DDotsMedia Legal Jobs UAE", cat:"specialized", desc:"Legal professional vacancies — lawyers, legal advisors, paralegals, and compliance officers in UAE firms.", tags:["Legal","Compliance","Lawyer"], members:"New", link:"https://chat.whatsapp.com/DDotsLegal", isNew:true },
+  { name:"DDotsMedia Hotel Jobs UAE", cat:"specialized", desc:"Hospitality vacancies in UAE's top hotels — front desk, housekeeping, F&B service, and management roles.", tags:["Hospitality","Hotel","Front Office"], members:"New", link:"https://chat.whatsapp.com/DDotsHotel", isNew:true },
+  { name:"DDotsMedia Security Jobs UAE", cat:"specialized", desc:"Security guard, supervisor, and CCTV operator roles at UAE malls, buildings, and events.", tags:["Security","Guard","CCTV"], members:"New", link:"https://chat.whatsapp.com/DDotsSecurity", isNew:true },
+  { name:"DDotsMedia Salon & Spa Jobs UAE", cat:"specialized", desc:"Beauty industry vacancies — hair stylists, beauticians, nail technicians, and spa therapists in UAE salons.", tags:["Beauty","Salon","Wellness"], members:"New", link:"https://chat.whatsapp.com/DDotsSalon", isNew:true },
+
+  // COMMUNITY
+  { name:"DDotsMedia UAE Malayalees", cat:"community", desc:"Community and job group for UAE-based Malayalee professionals. Bilingual postings in Malayalam and English.", tags:["Malayalee","Kerala","UAE"], members:"3,000+", link:"https://chat.whatsapp.com/DDotsMalayalee" },
+  { name:"DDotsmedia Jobs – Indian Numbers", cat:"community", desc:"Dedicated group for Indian number holders seeking UAE job opportunities — all sectors.", tags:["India","Indian Numbers","UAE Jobs"], members:"1,800+", link:"https://chat.whatsapp.com/DDotsIndianNum" },
+];
+
+// ── Set real join link for all groups ────────────────
+const REAL_JOIN_LINK = 'https://chat.whatsapp.com/GiHlcJDYBPV4o8NNv4ahHS?mode=gi_t';
+groups.forEach(g => { g.link = REAL_JOIN_LINK; });
+
+// ── Render ────────────────────────────────────────────
+let activeTab = 'all';
+let searchVal = '';
+
+function updateCounts() {
+  const cats = ['all','general','location','medical','it','engineering','accounts','hr','sales','teaching','logistics','specialized','community'];
+  cats.forEach(c => {
+    const el = document.getElementById('count-' + c);
+    if (!el) return;
+    const n = c === 'all' ? groups.length : groups.filter(g => g.cat === c).length;
+    el.textContent = n;
+  });
+}
+
+function render() {
+  const grid = document.getElementById('grid');
+  const q = searchVal.toLowerCase();
+
+  const visible = groups.filter(g => {
+    const catMatch = activeTab === 'all' || g.cat === activeTab;
+    const searchMatch = !q || g.name.toLowerCase().includes(q) || g.desc.toLowerCase().includes(q) || g.tags.some(t => t.toLowerCase().includes(q));
+    return catMatch && searchMatch;
+  });
+
+  document.getElementById('results-count').textContent = visible.length;
+
+  if (!visible.length) {
+    grid.innerHTML = `<div class="no-results">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      <p>No groups found for "<strong>${searchVal}</strong>"</p>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = visible.map((g, i) => {
+    const cfg = catConfig[g.cat];
+    return `
+    <div class="card ${g.isNew ? 'new-group' : ''}" style="animation-delay:${Math.min(i, 15) * 0.03}s">
+      <div class="card-header">
+        <div class="cat-icon" style="background:${cfg.bg};font-size:1.4rem">${cfg.icon}</div>
+        <div class="card-title-wrap">
+          <div class="card-title">${g.name}</div>
+          <div class="card-cat-label">${cfg.label}</div>
+        </div>
+      </div>
+      <div class="card-desc">${g.desc}</div>
+      <div class="card-tags">
+        ${g.groupCount ? `<span class="group-count-badge">${g.groupCount} Active Groups</span>` : ''}
+        ${g.tags.map(t => `<span class="tag">${t}</span>`).join('')}
+      </div>
+      <div class="card-footer">
+        <div class="members-badge">
+          ${peopleSvg}
+          <span>${g.members === 'New' ? '<strong style="color:var(--new-badge)">Launching Soon</strong>' : g.members + ' members'}</span>
+        </div>
+        <button class="join-btn" onclick='openModal(${JSON.stringify({name:g.name,cat:g.cat})})'>
+          ${waSvg} Join Group
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Events ────────────────────────────────────────────
+document.querySelectorAll('.tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeTab = btn.dataset.cat;
+    render();
+  });
+});
+
+document.getElementById('search').addEventListener('input', e => {
+  searchVal = e.target.value;
+  render();
+});
+
+// ── Modal Logic ───────────────────────────────────────
+const overlay   = document.getElementById('modalOverlay');
+const modalName = document.getElementById('modalGroupName');
+const modalCat  = document.getElementById('modalGroupCat');
+const sendBtn   = document.getElementById('sendCvBtn');
+const closeBtn  = document.getElementById('modalClose');
+
+function openModal({ name, cat }) {
+  modalName.textContent = name;
+  modalCat.textContent  = catConfig[cat]?.label || 'Job Group';
+  document.getElementById('inputName').value = '';
+  document.getElementById('inputRole').value = '';
+  document.getElementById('inputExp').value  = '';
+  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => document.getElementById('inputName').focus(), 200);
+
+  // Store current group for send action
+  overlay.dataset.groupName = name;
+  overlay.dataset.groupCat  = catConfig[cat]?.label || 'Job Group';
+}
+
+function closeModal() {
+  overlay.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+closeBtn.addEventListener('click', closeModal);
+overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+sendBtn.addEventListener('click', () => {
+  const name = document.getElementById('inputName').value.trim();
+  const role = document.getElementById('inputRole').value.trim();
+  const exp  = document.getElementById('inputExp').value;
+  const grp  = overlay.dataset.groupName;
+
+  if (!name) { document.getElementById('inputName').focus(); shake(document.getElementById('inputName')); return; }
+  if (!role) { document.getElementById('inputRole').focus(); shake(document.getElementById('inputRole')); return; }
+
+  const expText = exp ? `\nExperience: ${exp}` : '';
+  const msg = `Hi DDotsMedia Team 👋\n\nI would like to join the *${grp}* group.\n\nName: ${name}\nRole: ${role}${expText}\n\nI am sending my CV as attachment. Please add me to the group.\n\nThank you!`;
+
+  const url = `https://wa.me/${ADMIN_WA_NUMBER}?text=${encodeURIComponent(msg)}`;
+  window.open(url, '_blank');
+});
+
+function shake(el) {
+  el.style.borderColor = '#e53935';
+  el.style.animation = 'shake 0.35s ease';
+  setTimeout(() => { el.style.animation = ''; el.style.borderColor = ''; }, 400);
+}
+
+// Add shake keyframe dynamically
+const shakeStyle = document.createElement('style');
+shakeStyle.textContent = `@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }`;
+document.head.appendChild(shakeStyle);
+
+// ── Init ──────────────────────────────────────────────
+updateCounts();
+render();
+
+// ════════════════════════════════════════════════════
+// ADMIN PANEL
+// ════════════════════════════════════════════════════
+const ADMIN_PASSWORD = 'ddotsmedia2026'; // ← change this to your password
+
+// Load saved groups from localStorage if available
+(function loadSaved() {
+  const saved = localStorage.getItem('ddots_groups');
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      groups.length = 0;
+      parsed.forEach(g => groups.push(g));
+      groups.forEach(g => { if (!g.link) g.link = REAL_JOIN_LINK; });
+      updateCounts(); render();
+    } catch(e) {}
+  }
+})();
+
+function saveGroups() {
+  localStorage.setItem('ddots_groups', JSON.stringify(groups));
+}
+
+// ── Admin trigger (click ⚙ in footer 3 times) ────────
+let triggerClicks = 0, triggerTimer;
+document.getElementById('adminTrigger').addEventListener('click', () => {
+  triggerClicks++;
+  clearTimeout(triggerTimer);
+  triggerTimer = setTimeout(() => { triggerClicks = 0; }, 600);
+  if (triggerClicks >= 3) { triggerClicks = 0; openAdminLogin(); }
+});
+
+// ── Admin Login ───────────────────────────────────────
+const adminLoginOverlay = document.getElementById('adminLoginOverlay');
+const adminPwInput      = document.getElementById('adminPw');
+const adminError        = document.getElementById('adminError');
+
+function openAdminLogin() {
+  adminLoginOverlay.classList.add('open');
+  adminPwInput.value = '';
+  adminError.style.display = 'none';
+  setTimeout(() => adminPwInput.focus(), 150);
+}
+function closeAdminLogin() { adminLoginOverlay.classList.remove('open'); }
+
+document.getElementById('adminLoginClose').addEventListener('click', closeAdminLogin);
+document.getElementById('btnLogin').addEventListener('click', attemptLogin);
+adminPwInput.addEventListener('keydown', e => { if (e.key === 'Enter') attemptLogin(); });
+
+function attemptLogin() {
+  if (adminPwInput.value === ADMIN_PASSWORD) {
+    closeAdminLogin();
+    openAdminPanel();
+  } else {
+    adminError.style.display = 'block';
+    adminPwInput.value = '';
+    adminPwInput.focus();
+    adminPwInput.style.borderColor = '#ef5350';
+    setTimeout(() => { adminPwInput.style.borderColor = ''; }, 1000);
+  }
+}
+
+// ── Admin Panel ───────────────────────────────────────
+const adminOverlay = document.getElementById('adminOverlay');
+const adminSearch  = document.getElementById('adminSearch');
+
+function openAdminPanel() {
+  adminOverlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  renderAdminTable(groups);
+  updateAdminStats();
+}
+function closeAdminPanel() {
+  adminOverlay.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.getElementById('btnLogout').addEventListener('click', closeAdminPanel);
+adminSearch.addEventListener('input', e => {
+  const q = e.target.value.toLowerCase();
+  const filtered = q ? groups.filter(g => g.name.toLowerCase().includes(q) || g.cat.includes(q)) : groups;
+  renderAdminTable(filtered);
+});
+
+function updateAdminStats() {
+  document.getElementById('aStatTotal').textContent = groups.length;
+  document.getElementById('aStatNew').textContent   = groups.filter(g => g.isNew).length;
+  document.getElementById('aStatCats').textContent  = [...new Set(groups.map(g => g.cat))].length;
+}
+
+function renderAdminTable(data) {
+  const tbody = document.getElementById('adminTableBody');
+  if (!data.length) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:rgba(255,255,255,0.3);padding:30px">No groups found</td></tr>`; return; }
+  tbody.innerHTML = data.map((g, i) => {
+    const idx = groups.indexOf(g);
+    return `<tr>
+      <td style="color:rgba(255,255,255,0.3);font-size:0.8rem">${idx + 1}</td>
+      <td class="td-name">${g.name}${g.isNew ? ' <span style="color:#ff6b35;font-size:0.7rem">NEW</span>' : ''}</td>
+      <td><span class="td-cat-pill">${catConfig[g.cat]?.icon || ''} ${catConfig[g.cat]?.label || g.cat}</span></td>
+      <td class="td-members" style="color:rgba(255,255,255,0.5)">${g.members || '—'}</td>
+      <td style="color:rgba(255,255,255,0.5)">${g.groupCount ? `<strong style="color:var(--teal-mid)">${g.groupCount}</strong>` : '1'}</td>
+      <td>
+        <button class="btn-edit-row" onclick="openEdit(${idx})">✏ Edit</button>
+        <button class="btn-del-row"  onclick="openDelete(${idx})">🗑 Delete</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Edit / Add Group ──────────────────────────────────
+const editOverlay = document.getElementById('editOverlay');
+let editIndex = -1; // -1 = new group
+
+function openEdit(idx) {
+  editIndex = idx;
+  const g = idx >= 0 ? groups[idx] : {};
+  document.getElementById('editModalTitle').textContent = idx >= 0 ? 'Edit Group' : 'Add New Group';
+  document.getElementById('eName').value       = g.name || '';
+  document.getElementById('eCat').value        = g.cat  || 'general';
+  document.getElementById('eDesc').value       = g.desc || '';
+  document.getElementById('eTags').value       = (g.tags || []).join(', ');
+  document.getElementById('eMembers').value    = g.members || '';
+  document.getElementById('eGroupCount').value = g.groupCount || '';
+  document.getElementById('eLink').value       = (g.link && g.link !== REAL_JOIN_LINK) ? g.link : '';
+  document.getElementById('eIsNew').checked    = !!g.isNew;
+  editOverlay.classList.add('open');
+  setTimeout(() => document.getElementById('eName').focus(), 150);
+}
+
+function closeEdit() { editOverlay.classList.remove('open'); }
+document.getElementById('editClose').addEventListener('click', closeEdit);
+document.getElementById('editCancel').addEventListener('click', closeEdit);
+
+document.getElementById('btnAddGroup').addEventListener('click', () => openEdit(-1));
+
+document.getElementById('editSave').addEventListener('click', () => {
+  const name = document.getElementById('eName').value.trim();
+  const desc = document.getElementById('eDesc').value.trim();
+  if (!name || !desc) { alert('Name and Description are required.'); return; }
+
+  const updated = {
+    name,
+    cat:        document.getElementById('eCat').value,
+    desc,
+    tags:       document.getElementById('eTags').value.split(',').map(t => t.trim()).filter(Boolean),
+    members:    document.getElementById('eMembers').value.trim() || '—',
+    groupCount: parseInt(document.getElementById('eGroupCount').value) || undefined,
+    link:       document.getElementById('eLink').value.trim() || REAL_JOIN_LINK,
+    isNew:      document.getElementById('eIsNew').checked || undefined,
+  };
+  if (!updated.groupCount) delete updated.groupCount;
+  if (!updated.isNew)      delete updated.isNew;
+
+  if (editIndex >= 0) { groups[editIndex] = updated; }
+  else                { groups.push(updated); }
+
+  saveGroups();
+  updateCounts(); render();
+  renderAdminTable(groups); updateAdminStats();
+  closeEdit();
+});
+
+// ── Delete ────────────────────────────────────────────
+const delOverlay = document.getElementById('delOverlay');
+let deleteIndex = -1;
+
+function openDelete(idx) {
+  deleteIndex = idx;
+  document.getElementById('delSub').textContent = `"${groups[idx].name}" will be permanently removed.`;
+  delOverlay.classList.add('open');
+}
+function closeDelete() { delOverlay.classList.remove('open'); deleteIndex = -1; }
+document.getElementById('delCancel').addEventListener('click', closeDelete);
+document.getElementById('delConfirm').addEventListener('click', () => {
+  if (deleteIndex < 0) return;
+  groups.splice(deleteIndex, 1);
+  saveGroups();
+  updateCounts(); render();
+  renderAdminTable(groups); updateAdminStats();
+  closeDelete();
+});
+</script>
+</body>
+</html>
