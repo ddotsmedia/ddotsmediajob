@@ -42,6 +42,9 @@ type Props = { params: Promise<{ slug: string }> };
 
 export const revalidate = 3600;
 
+/** Strip HTML/markdown to plain text — used for both meta and JSON-LD descriptions. */
+const stripHtml = (html: string) => html.replace(/<[^>]*>/g, '').replace(/[#*]+/g, ' ').replace(/\s+/g, ' ').trim();
+
 /** Pre-render the 84 role+emirate SEO pages; job slugs still render on-demand. */
 export function generateStaticParams() {
   return [...roleEmirateStaticParams(), ...rolePageStaticParams()];
@@ -75,7 +78,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const title = `${job.title} at ${company} in ${locationStr} | DdotsMediaJobs`;
   const pay = formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod, job.salaryHidden, job.salaryNegotiable);
   const posted = formatJobDate(job.publishedAt ?? job.createdAt);
-  const stripHtml = (html: string) => html.replace(/<[^>]*>/g, '').replace(/[#*]+/g, ' ').replace(/\s+/g, ' ').trim();
   // Drop the job title if the description repeats it at the start, then cap length.
   const stripTitle = (s: string) => { const t = job.title.trim(); return s.toLowerCase().startsWith(t.toLowerCase()) ? s.slice(t.length).replace(/^[\s:–-]+/, '') : s; };
   const cleanDescription = stripTitle(stripHtml(job.description)).slice(0, 100);
@@ -123,7 +125,7 @@ export default async function JobDetailPage({ params }: Props) {
     '@context': 'https://schema.org',
     '@type': 'JobPosting',
     title: job.title,
-    description: job.description,
+    description: stripHtml(job.description),
     datePosted: (job.publishedAt ?? job.createdAt).toISOString(),
     // Google flags a missing validThrough — fall back to posted date + 60 days when no expiry set.
     validThrough: (job.expiresAt ?? new Date((job.publishedAt ?? job.createdAt).getTime() + 60 * 86_400_000)).toISOString(),
