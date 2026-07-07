@@ -288,6 +288,13 @@
       "when": 1783229095375,
       "tag": "0040_lame_bedlam",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1783411283502,
+      "tag": "0041_skinny_tomorrow_man",
+      "breakpoints": true
     }
   ]
 }

@@ -254,7 +254,7 @@ export const jobs = pgTable(
     source: varchar('source', { length: 50 }).default('manual').notNull(), // paste|whatsapp|whapi|telegram|email|csv|quick|url|manual|community|whatsapp_bot|quick_post|admin_web
     sourceMetadata: jsonb('source_metadata').$type<Record<string, unknown>>(), // original message, sender, etc.
     relation: varchar('relation', { length: 20 }), // community referral: work_there|friend_referred|other
-    contactWhatsapp: varchar('contact_whatsapp', { length: 30 }),
+    contactWhatsapp: varchar('contact_whatsapp', { length: 200 }),
     rejectionReason: text('rejection_reason'),
     viewCount: integer('view_count').default(0).notNull(),
     applicationCount: integer('application_count').default(0).notNull(),
@@ -270,7 +270,7 @@ export const jobs = pgTable(
     walkInVenue: text('walk_in_venue'),
     walkInMapsUrl: text('walk_in_maps_url'),
     walkInLastDate: date('walk_in_last_date'),
-    walkInContactPhone: varchar('walk_in_contact_phone', { length: 20 }),
+    walkInContactPhone: varchar('walk_in_contact_phone', { length: 50 }),
     walkInRequiredDocs: text('walk_in_required_docs'),
     applyWhatsapp: varchar('apply_whatsapp', { length: 30 }),
     gccCountry: varchar('gcc_country', { length: 50 }).default('uae'),

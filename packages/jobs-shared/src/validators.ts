@@ -75,7 +75,7 @@ export const communityPostSchema = z.object({
   description: z.string().trim().min(30).max(8000),
   salaryMin: z.number().int().nonnegative().nullable().optional(),
   salaryMax: z.number().int().nonnegative().nullable().optional(),
-  contactWhatsapp: z.string().trim().max(30).optional(),
+  contactWhatsapp: z.string().trim().max(200).nullable().optional(),
   contactEmail: z.string().trim().toLowerCase().email().optional(),
   relation: z.enum(['work_there', 'friend_referred', 'other']),
   isAnonymous: z.boolean().default(false),
