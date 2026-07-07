@@ -4,7 +4,7 @@ import { emirateBySlug, SITE } from '@ddots/shared';
 import { getApi } from '@/trpc/server';
 import { JobCard } from '@/components/job-card';
 
-type RolePage = { slug: string; q: string; role: string; emirate?: string };
+type RolePage = { slug: string; q: string; role: string; emirate?: string; title?: string; description?: string; h1?: string };
 
 /** Specific job-title SEO pages. Slugs avoid the [category]-jobs-in-[emirate] format owned by role-emirate. */
 const ROLE_PAGES: RolePage[] = [
@@ -50,6 +50,19 @@ const ROLE_PAGES: RolePage[] = [
   { slug: 'hotel-jobs-uae', q: 'hotel', role: 'Hotel', emirate: undefined },
   { slug: 'nanny-jobs-dubai', q: 'nanny', role: 'Nanny', emirate: 'dubai' },
   { slug: 'babysitter-jobs-uae', q: 'babysitter', role: 'Babysitter' },
+  // High-traffic SEO landing pages with hand-written meta.
+  { slug: 'nurse-jobs-uae', q: 'nurse', role: 'Nurse',
+    title: 'Nurse Jobs in UAE 2026 — DHA/MOH/HAAD Vacancies | DdotsMediaJobs',
+    description: 'Find nursing jobs in Dubai, Abu Dhabi, Sharjah. DHA, MOH, HAAD licensed nurses wanted. ICU, ER, ward nurses. Apply via WhatsApp.',
+    h1: 'Nurse Jobs in UAE' },
+  { slug: 'accountant-jobs-dubai', q: 'accountant', role: 'Accountant', emirate: 'dubai',
+    title: 'Accountant Jobs in Dubai 2026 — Finance Vacancies | DdotsMediaJobs',
+    description: 'Find accountant jobs in Dubai. Accounts payable, receivable, VAT, audit. Apply free via WhatsApp.',
+    h1: 'Accountant Jobs in Dubai' },
+  { slug: 'security-guard-jobs-uae', q: 'security guard', role: 'Security Guard',
+    title: 'Security Guard Jobs in UAE 2026 — Urgent Vacancies | DdotsMediaJobs',
+    description: 'Find security guard jobs in UAE. SIRA licensed, armed/unarmed security. Dubai, Abu Dhabi, Sharjah.',
+    h1: 'Security Guard Jobs in UAE' },
 ];
 
 export function parseRolePage(slug: string): RolePage | null {
@@ -61,7 +74,12 @@ export function rolePageStaticParams(): { slug: string }[] {
 
 const emName = (p: RolePage) => (p.emirate ? emirateBySlug(p.emirate)?.name ?? 'UAE' : 'UAE');
 
-type JobRow = { id: string; salaryMin: number | null; salaryMax: number | null };
+type JobRow = {
+  id: string; slug: string; title: string; description?: string | null; emirateSlug: string;
+  jobType?: string | null; salaryMin: number | null; salaryMax: number | null;
+  publishedAt?: Date | string | null; createdAt?: Date | string | null;
+  company?: { name: string | null } | null;
+};
 async function load(p: RolePage) {
   const api = await getApi();
   const res = (await api.jobs
@@ -77,8 +95,8 @@ export async function rolePageMetadata(p: RolePage): Promise<Metadata> {
   const { total } = await load(p);
   const em = emName(p);
   return {
-    title: { absolute: `${p.role} Jobs in ${em} 2026 — ${total} Vacancies | DdotsMediaJobs` },
-    description: `Browse ${total} ${p.role.toLowerCase()} jobs in ${em}. Latest vacancies, salaries shown, visa-provided options. Apply free on DdotsMediaJobs.`,
+    title: { absolute: p.title ?? `${p.role} Jobs in ${em} 2026 — ${total} Vacancies | DdotsMediaJobs` },
+    description: p.description ?? `Browse ${total} ${p.role.toLowerCase()} jobs in ${em}. Latest vacancies, salaries shown, visa-provided options. Apply free on DdotsMediaJobs.`,
     alternates: { canonical: `${SITE.url}/jobs/${p.slug}` },
   };
 }
@@ -95,6 +113,8 @@ export async function RolePageView({ page }: { page: RolePage }) {
     { q: `How do I apply for ${page.role.toLowerCase()} jobs in ${em}?`, a: `Apply free on DdotsMediaJobs — one-click platform apply, direct WhatsApp, or email. No account needed to apply via WhatsApp.` },
   ];
 
+  const EMPLOYMENT: Record<string, string> = { 'full-time': 'FULL_TIME', 'part-time': 'PART_TIME', contract: 'CONTRACTOR', temporary: 'TEMPORARY', internship: 'INTERN', freelance: 'CONTRACTOR' };
+  const stripHtml = (s: string) => s.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
   const jsonLd = [
     { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Home', item: SITE.url },
@@ -102,6 +122,20 @@ export async function RolePageView({ page }: { page: RolePage }) {
       { '@type': 'ListItem', position: 3, name: `${page.role} in ${em}`, item: `${SITE.url}/jobs/${page.slug}` },
     ] },
     { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })) },
+    // A JobPosting for each live vacancy shown on the page.
+    ...jobs.map((j) => ({
+      '@context': 'https://schema.org',
+      '@type': 'JobPosting',
+      title: j.title,
+      description: stripHtml(j.description ?? j.title).slice(0, 300) || j.title,
+      datePosted: new Date(j.publishedAt ?? j.createdAt ?? Date.now()).toISOString(),
+      employmentType: EMPLOYMENT[j.jobType ?? 'full-time'] ?? 'FULL_TIME',
+      hiringOrganization: { '@type': 'Organization', name: j.company?.name ?? 'Direct Employer' },
+      jobLocation: { '@type': 'Place', address: { '@type': 'PostalAddress', addressRegion: emirateBySlug(j.emirateSlug)?.name ?? 'UAE', addressCountry: 'AE' } },
+      ...(j.salaryMin ? { baseSalary: { '@type': 'MonetaryAmount', currency: 'AED', value: { '@type': 'QuantitativeValue', minValue: j.salaryMin, maxValue: j.salaryMax ?? j.salaryMin, unitText: 'MONTH' } } } : {}),
+      url: `${SITE.url}/jobs/${j.slug}`,
+      directApply: true,
+    })),
   ];
 
   const related = ROLE_PAGES.filter((r) => r.slug !== page.slug && (r.role === page.role || r.emirate === page.emirate)).slice(0, 6);
@@ -112,7 +146,7 @@ export async function RolePageView({ page }: { page: RolePage }) {
       <div className="border-b bg-navy-900 py-10">
         <div className="mx-auto max-w-7xl px-4">
           <nav className="text-xs text-navy-100/60"><Link href="/" className="hover:text-teal-400">Home</Link> › <Link href="/jobs" className="hover:text-teal-400">Jobs</Link> › <span>{page.role} in {em}</span></nav>
-          <h1 className="mt-2 font-display text-2xl font-bold text-white sm:text-3xl md:text-4xl">{page.role} Jobs in {em} 2026 — {total} Vacancies</h1>
+          <h1 className="mt-2 font-display text-2xl font-bold text-white sm:text-3xl md:text-4xl">{page.h1 ?? `${page.role} Jobs in ${em} 2026 — ${total} Vacancies`}</h1>
           <p className="mt-2 max-w-2xl text-navy-100/80">Latest {page.role.toLowerCase()} vacancies in {em}, updated daily. Apply free in one click, via WhatsApp, or by email.</p>
         </div>
       </div>
@@ -134,6 +168,14 @@ export async function RolePageView({ page }: { page: RolePage }) {
         ) : (
           <p className="rounded-xl border bg-white p-10 text-center text-navy-700/60">No live {page.role.toLowerCase()} jobs in {em} right now. <Link href="/jobs" className="text-teal-600 hover:underline">Browse all jobs</Link> or check back tomorrow.</p>
         )}
+
+        <div className="mt-8 flex flex-col gap-3 rounded-xl border border-teal-100 bg-teal-50/50 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <p className="font-display font-bold text-navy-900">Can&apos;t find the right {page.role.toLowerCase()} role?</p>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Link href="/jobs" className="rounded-lg border border-navy-200 bg-white px-4 py-2 text-center text-sm font-semibold text-navy-700 hover:bg-navy-50">Browse all jobs</Link>
+            <Link href="/whatsapp-groups" className="rounded-lg bg-[#25D366] px-4 py-2 text-center text-sm font-semibold text-white hover:opacity-90">Join WhatsApp groups</Link>
+          </div>
+        </div>
 
         <section className="mt-10 max-w-3xl">
           <h2 className="font-display text-xl font-bold text-navy-900">Frequently asked questions</h2>
