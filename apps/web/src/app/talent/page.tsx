@@ -1,21 +1,39 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { auth } from '@ddots/auth';
 import { emirateBySlug, categoryBySlug, CATEGORIES, EMIRATES, VISA_STATUS, SITE } from '@ddots/shared';
 import { getApi } from '@/trpc/server';
 import { Badge } from '@/components/ui/primitives';
 import { Button } from '@/components/ui/button';
 
-export const revalidate = 600;
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'Find Talent in UAE — Free | DdotsMediaJobs',
-  description: 'Browse CVs from professionals across all 7 emirates. Free to browse, contact directly via WhatsApp. Filter by role, emirate, visa status and availability.',
+  description: 'Browse CVs from professionals across all 7 emirates. Free for employers, contact directly via WhatsApp. Filter by role, emirate, visa status and availability.',
+  // Employer-gated directory of candidate profiles — must not be indexed publicly.
+  robots: { index: false },
   alternates: { canonical: `${SITE.url}/talent` },
 };
 
 const AVAIL: Record<string, string> = { actively_looking: '🟢 Actively Looking', open_to_work: '🟡 Open to Work', not_looking: '⚫ Not Looking' };
 
 export default async function TalentDirectoryPage({ searchParams }: { searchParams: Promise<{ category?: string; emirate?: string; availability?: string; visaStatus?: string; page?: string }> }) {
+  const session = await auth();
+  const role = session?.user?.role;
+  if (role !== 'employer' && role !== 'admin') {
+    return (
+      <div className="mx-auto max-w-xl px-4 py-20 text-center">
+        <h1 className="font-display text-2xl font-bold text-navy-900">Find Talent in UAE</h1>
+        <p className="mt-2 text-navy-700/70">The talent directory is for employers. Log in or create a free employer account to browse candidates.</p>
+        <div className="mt-4 flex justify-center gap-3">
+          <Button asChild><Link href="/login?callbackUrl=/talent">Log in</Link></Button>
+          <Button asChild variant="outline"><Link href="/register">Create employer account</Link></Button>
+        </div>
+      </div>
+    );
+  }
+
   const sp = await searchParams;
   const availability = (['actively_looking', 'open_to_work', 'all'].includes(sp.availability ?? '') ? sp.availability : 'all') as 'actively_looking' | 'open_to_work' | 'all';
   const page = Math.max(1, Number(sp.page) || 1);
@@ -92,7 +110,7 @@ export default async function TalentDirectoryPage({ searchParams }: { searchPara
                     {c.yearsExperience > 0 && <><span className="text-navy-300">·</span><span>{c.yearsExperience} yrs</span></>}
                   </div>
                   <Link href={`/talent/${c.username}`} className="mt-4 inline-flex items-center justify-center rounded-lg border border-teal-300 px-3 py-2 text-sm font-semibold text-teal-700 hover:bg-teal-50">View Profile →</Link>
-                  <p className="mt-2 text-center text-[11px] text-navy-700/40">Phone &amp; email visible after login</p>
+                  <p className="mt-2 text-center text-[11px] text-navy-700/40">Open profile for contact options</p>
                 </div>
               ))}
             </div>

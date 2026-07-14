@@ -145,8 +145,9 @@ export const jobseekersRouter = router({
     return { ...profile, phone: null, expectedSalaryMin: null, expectedSalaryMax: null, salary, whatsapp, isOwner };
   }),
 
-  /** Public talent browse — ONLY profiles the jobseeker set to `public` (not employers_only). No contact info. */
-  browse: publicProcedure
+  /** Employer talent browse — all non-hidden, open-to-work profiles (public + employers_only). No contact info.
+   *  Gated to employers because employers_only profiles must not reach the public internet. */
+  browse: employerProcedure
     .input(z.object({
       category: z.string().optional(),
       emirate: z.string().optional(),
@@ -157,7 +158,7 @@ export const jobseekersRouter = router({
     .query(async ({ ctx, input }) => {
       const per = 20;
       const conds = [
-        eq(jobseekerProfiles.visibility, 'public'),
+        ne(jobseekerProfiles.visibility, 'hidden'),
         eq(jobseekerProfiles.openToWork, true),
         sql`${jobseekerProfiles.username} IS NOT NULL`,
       ];
