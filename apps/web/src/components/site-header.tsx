@@ -31,7 +31,7 @@ export function SiteHeader() {
   const role = session?.user?.role;
   const dashHref = role === 'admin' ? '/admin' : role === 'employer' ? '/employer' : role === 'volunteer' ? '/volunteer' : '/dashboard';
   // Any logged-in user can post (auto-upgraded to employer); guests go register first.
-  const postHref = session ? '/employer/post' : '/register';
+  const postHref = session ? '/employer/post' : '/register?callbackUrl=/employer/post';
 
   // Lock background scroll while the mobile menu is open.
   useEffect(() => {

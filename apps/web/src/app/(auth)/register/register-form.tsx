@@ -28,7 +28,10 @@ export function RegisterForm() {
       if (typeof window !== 'undefined') { try { localStorage.removeItem('ddots-ref'); } catch { /* ignore */ } }
       await signIn('credentials', { email, password, redirect: false });
       toast.success('Account created!');
-      router.push(role === 'employer' ? '/employer' : '/dashboard');
+      // Honor callbackUrl (same-origin only) — e.g. guest clicked "Post a Job" → /employer/post.
+      const cb = searchParams.get('callbackUrl');
+      const dest = cb && cb.startsWith('/') && !cb.startsWith('//') ? cb : role === 'employer' ? '/employer' : '/dashboard';
+      router.push(dest);
       router.refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Registration failed');
