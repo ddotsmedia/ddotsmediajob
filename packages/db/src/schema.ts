@@ -192,6 +192,8 @@ export const jobseekerProfiles = pgTable('jobseeker_profiles', {
   resumeFilename: varchar('resume_filename', { length: 255 }),
   resumeUploadedAt: timestamp('resume_uploaded_at', { withTimezone: true }),
   resumeData: jsonb('resume_data').$type<Record<string, unknown>>(),
+  workExperience: jsonb('work_experience').$type<{ title: string; company: string; from: string; to?: string; current?: boolean; description?: string }[]>(),
+  education: jsonb('education').$type<{ degree: string; institution: string; year?: string }[]>(),
   openToWork: boolean('open_to_work').default(true).notNull(),
   // Talent profile / availability
   availabilityStatus: varchar('availability_status', { length: 20 }).default('actively_looking').notNull(), // actively_looking|open_to_work|not_looking
@@ -206,6 +208,7 @@ export const jobseekerProfiles = pgTable('jobseeker_profiles', {
   showSalary: boolean('show_salary').default(false).notNull(),
   showWhatsapp: boolean('show_whatsapp').default(false).notNull(),
   lastActive: timestamp('last_active', { withTimezone: true }).defaultNow().notNull(),
+  profileCompletedAt: timestamp('profile_completed_at', { withTimezone: true }),
   profileViews: integer('profile_views').default(0).notNull(),
   ...timestamps,
 }, (t) => [index('jobseeker_username_idx').on(t.username), index('jobseeker_visibility_idx').on(t.visibility)]);

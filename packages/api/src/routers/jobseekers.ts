@@ -29,14 +29,53 @@ export const jobseekersRouter = router({
     return profile ?? null;
   }),
 
+  /** Alias of `me` — get the signed-in user's own profile. */
+  getProfile: protectedProcedure.query(async ({ ctx }) => {
+    return (await ctx.db.query.jobseekerProfiles.findFirst({ where: eq(jobseekerProfiles.userId, ctx.session.user.id) })) ?? null;
+  }),
+
   upsertProfile: protectedProcedure.input(jobseekerProfileSchema).mutation(async ({ ctx, input }) => {
     const username = await ensureUsername(ctx.db, ctx.session.user.id, ctx.session.user.name ?? null);
+    // Stamp completion once the core sections are filled in (never cleared afterwards).
+    const completed = !!(input.headline && input.bio && (input.skills?.length ?? 0) > 0 && input.emirateSlug);
+    const base = { ...input, lastActive: new Date(), ...(completed ? { profileCompletedAt: new Date() } : {}) };
     const [profile] = await ctx.db
       .insert(jobseekerProfiles)
-      .values({ userId: ctx.session.user.id, username, lastActive: new Date(), ...input })
-      .onConflictDoUpdate({ target: jobseekerProfiles.userId, set: { ...input, lastActive: new Date() } })
+      .values({ userId: ctx.session.user.id, username, ...base })
+      .onConflictDoUpdate({ target: jobseekerProfiles.userId, set: base })
       .returning();
     return profile;
+  }),
+
+  /** Alias of upsertProfile — save all profile fields. */
+  updateProfile: protectedProcedure.input(jobseekerProfileSchema).mutation(async ({ ctx, input }) => {
+    const username = await ensureUsername(ctx.db, ctx.session.user.id, ctx.session.user.name ?? null);
+    const completed = !!(input.headline && input.bio && (input.skills?.length ?? 0) > 0 && input.emirateSlug);
+    const base = { ...input, lastActive: new Date(), ...(completed ? { profileCompletedAt: new Date() } : {}) };
+    const [profile] = await ctx.db
+      .insert(jobseekerProfiles)
+      .values({ userId: ctx.session.user.id, username, ...base })
+      .onConflictDoUpdate({ target: jobseekerProfiles.userId, set: base })
+      .returning();
+    return profile;
+  }),
+
+  /** Toggle profile visibility to employers (hidden ↔ employers_only). */
+  toggleVisibility: protectedProcedure.mutation(async ({ ctx }) => {
+    const p = await ctx.db.query.jobseekerProfiles.findFirst({ where: eq(jobseekerProfiles.userId, ctx.session.user.id), columns: { visibility: true } });
+    const next = p?.visibility === 'hidden' ? 'employers_only' : 'hidden';
+    const username = await ensureUsername(ctx.db, ctx.session.user.id, ctx.session.user.name ?? null);
+    await ctx.db.insert(jobseekerProfiles).values({ userId: ctx.session.user.id, username, visibility: next }).onConflictDoUpdate({ target: jobseekerProfiles.userId, set: { visibility: next } });
+    return { visibility: next };
+  }),
+
+  /** Toggle the open-to-work flag. */
+  toggleOpenToWork: protectedProcedure.mutation(async ({ ctx }) => {
+    const p = await ctx.db.query.jobseekerProfiles.findFirst({ where: eq(jobseekerProfiles.userId, ctx.session.user.id), columns: { openToWork: true } });
+    const next = !(p?.openToWork ?? true);
+    const username = await ensureUsername(ctx.db, ctx.session.user.id, ctx.session.user.name ?? null);
+    await ctx.db.insert(jobseekerProfiles).values({ userId: ctx.session.user.id, username, openToWork: next }).onConflictDoUpdate({ target: jobseekerProfiles.userId, set: { openToWork: next } });
+    return { openToWork: next };
   }),
 
   /** Save the structured CV builder data (jsonb). */

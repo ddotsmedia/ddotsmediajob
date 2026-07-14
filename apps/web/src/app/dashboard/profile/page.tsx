@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Plus, Trash2, X, ChevronLeft, ChevronRight, Check } from 'lucide-react';
 import { CATEGORIES, EMIRATES, EXPERIENCE_LEVELS, VISA_STATUS } from '@ddots/shared';
 import { trpc } from '@/trpc/react';
 import { Button } from '@/components/ui/button';
@@ -10,120 +10,237 @@ import { Input, Label, Select, Textarea } from '@/components/ui/primitives';
 import { AvatarUpload } from '@/components/avatar-upload';
 import { CvUpload } from '@/components/cv-upload';
 
+type Work = { title: string; company: string; from: string; to: string; current: boolean; description: string };
+type Edu = { degree: string; institution: string; year: string };
+type Form = {
+  headline: string; bio: string; nationality: string; emirateSlug: string; categorySlug: string;
+  experienceLevel: string; visaStatus: string; availabilityStatus: string;
+  expectedSalaryMin: string; expectedSalaryMax: string;
+  skills: string[]; languages: string[]; workExperience: Work[]; education: Edu[];
+};
+
+const STEPS = ['Basic info', 'Work experience', 'Education & skills', 'Job preferences', 'CV & visibility'];
+const emptyWork: Work = { title: '', company: '', from: '', to: '', current: false, description: '' };
+const emptyEdu: Edu = { degree: '', institution: '', year: '' };
+
 export default function ProfilePage() {
+  const utils = trpc.useUtils();
   const profile = trpc.jobseekers.me.useQuery();
-  const upsert = trpc.jobseekers.upsertProfile.useMutation({
-    onSuccess: () => toast.success('Profile saved'),
+  const save = trpc.jobseekers.updateProfile.useMutation({
+    onSuccess: () => { toast.success('Profile saved'); utils.jobseekers.me.invalidate(); },
     onError: (e) => toast.error(e.message),
   });
-  const [skills, setSkills] = useState('');
+  const [step, setStep] = useState(0);
+  const [f, setF] = useState<Form | null>(null);
+  const set = <K extends keyof Form>(k: K, v: Form[K]) => setF((s) => (s ? { ...s, [k]: v } : s));
 
   useEffect(() => {
-    if (profile.data?.skills) setSkills(profile.data.skills.join(', '));
-  }, [profile.data]);
+    const p = profile.data;
+    if (!p || f) return;
+    setF({
+      headline: p.headline ?? '', bio: p.bio ?? '', nationality: p.nationality ?? '', emirateSlug: p.emirateSlug ?? '',
+      categorySlug: p.categorySlug ?? '', experienceLevel: p.experienceLevel ?? '', visaStatus: p.visaStatus ?? '',
+      availabilityStatus: p.availabilityStatus ?? 'actively_looking',
+      expectedSalaryMin: p.expectedSalaryMin ? String(p.expectedSalaryMin) : '', expectedSalaryMax: p.expectedSalaryMax ? String(p.expectedSalaryMax) : '',
+      skills: p.skills ?? [], languages: p.languages ?? [],
+      workExperience: (p.workExperience ?? []).map((w) => ({ title: w.title, company: w.company, from: w.from ?? '', to: w.to ?? '', current: w.current ?? false, description: w.description ?? '' })),
+      education: (p.education ?? []).map((e) => ({ degree: e.degree, institution: e.institution, year: e.year ?? '' })),
+    });
+  }, [profile.data, f]);
 
-  if (profile.isLoading) return <Loader2 className="animate-spin text-teal-500" />;
+  const pct = useMemo(() => {
+    if (!f) return 0;
+    const checks = [
+      !!f.headline, !!f.bio, !!f.nationality, !!f.emirateSlug, !!f.categorySlug, !!f.experienceLevel,
+      f.skills.length > 0, f.workExperience.length > 0, f.education.length > 0, f.languages.length > 0,
+      !!profile.data?.resumeUrl, !!(f.expectedSalaryMin || f.expectedSalaryMax),
+    ];
+    return Math.round((checks.filter(Boolean).length / checks.length) * 100);
+  }, [f, profile.data?.resumeUrl]);
 
-  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const f = new FormData(e.currentTarget);
-    upsert.mutate({
-      headline: String(f.get('headline')) || undefined,
-      bio: String(f.get('bio')) || undefined,
-      phone: String(f.get('phone')) || undefined,
-      emirateSlug: (String(f.get('emirate')) || undefined) as never,
-      categorySlug: (String(f.get('category')) || undefined) as never,
-      experienceLevel: (String(f.get('experience')) || undefined) as never,
-      visaStatus: (String(f.get('visa')) || undefined) as never,
-      nationality: String(f.get('nationality')) || undefined,
-      availabilityStatus: (String(f.get('availability')) || undefined) as never,
-      yearsExperience: f.get('years') ? Number(f.get('years')) : undefined,
-      skills: skills.split(',').map((s) => s.trim()).filter(Boolean),
-      openToWork: f.get('openToWork') === 'on',
+  if (profile.isLoading || !f) return <Loader2 className="animate-spin text-teal-500" />;
+
+  function persist() {
+    if (!f) return;
+    save.mutate({
+      headline: f.headline || undefined, bio: f.bio || undefined, nationality: f.nationality || undefined,
+      emirateSlug: (f.emirateSlug || undefined) as never, categorySlug: (f.categorySlug || undefined) as never,
+      experienceLevel: (f.experienceLevel || undefined) as never, visaStatus: (f.visaStatus || undefined) as never,
+      availabilityStatus: (f.availabilityStatus || undefined) as never,
+      expectedSalaryMin: f.expectedSalaryMin ? Number(f.expectedSalaryMin) : null,
+      expectedSalaryMax: f.expectedSalaryMax ? Number(f.expectedSalaryMax) : null,
+      skills: f.skills, languages: f.languages,
+      workExperience: f.workExperience.filter((w) => w.title && w.company),
+      education: f.education.filter((e) => e.degree && e.institution),
     });
   }
 
-  const p = profile.data;
   return (
     <div className="max-w-2xl">
       <h1 className="font-display text-2xl font-bold text-navy-900">My Profile</h1>
-      <p className="text-navy-700/60">Complete your profile to stand out to employers.</p>
 
-      <div className="mt-6">
-        <CvUpload initialUrl={p?.resumeUrl ?? null} initialName={p?.resumeFilename ?? null} initialAt={p?.resumeUploadedAt ?? null} />
+      {/* Completion banner + progress */}
+      <div className="mt-4 rounded-xl border bg-white p-4">
+        <div className="flex items-center justify-between text-sm">
+          <span className="font-semibold text-navy-900">Your profile is {pct}% complete</span>
+          <span className="text-navy-700/60">{pct === 100 ? 'All done 🎉' : 'Fill every step to stand out'}</span>
+        </div>
+        <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-navy-100">
+          <div className="h-full rounded-full bg-teal-500 transition-all" style={{ width: `${pct}%` }} />
+        </div>
       </div>
 
-      <form onSubmit={onSubmit} className="mt-6 space-y-5 rounded-xl border bg-white p-6">
-        <AvatarUpload />
-        <Field label="Headline">
-          <Input name="headline" defaultValue={p?.headline ?? ''} placeholder="e.g. Senior Accountant · 6 years" />
-        </Field>
-        <Field label="Bio">
-          <Textarea name="bio" defaultValue={p?.bio ?? ''} placeholder="Tell employers about yourself…" />
-        </Field>
-        <div className="grid gap-5 sm:grid-cols-2">
-          <Field label="Phone">
-            <Input name="phone" defaultValue={p?.phone ?? ''} placeholder="+971 5x xxx xxxx" />
-          </Field>
-          <Field label="Emirate">
-            <Select name="emirate" defaultValue={p?.emirateSlug ?? ''}>
-              <option value="">Select</option>
-              {EMIRATES.map((e) => <option key={e.slug} value={e.slug}>{e.name}</option>)}
-            </Select>
-          </Field>
-          <Field label="Field / Category">
-            <Select name="category" defaultValue={p?.categorySlug ?? ''}>
-              <option value="">Select</option>
-              {CATEGORIES.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}
-            </Select>
-          </Field>
-          <Field label="Experience">
-            <Select name="experience" defaultValue={p?.experienceLevel ?? ''}>
-              <option value="">Select</option>
-              {EXPERIENCE_LEVELS.map((l) => <option key={l} value={l} className="capitalize">{l.replace(/-/g, ' ')}</option>)}
-            </Select>
-          </Field>
-          <Field label="Visa status">
-            <Select name="visa" defaultValue={p?.visaStatus ?? ''}>
-              <option value="">Select</option>
-              {VISA_STATUS.map((v) => <option key={v} value={v} className="capitalize">{v.replace(/-/g, ' ')}</option>)}
-            </Select>
-          </Field>
-          <Field label="Nationality">
-            <Input name="nationality" defaultValue={p?.nationality ?? ''} placeholder="e.g. Indian" />
-          </Field>
-          <Field label="Years of experience">
-            <Input name="years" type="number" min={0} max={60} defaultValue={p?.yearsExperience ? String(p.yearsExperience) : ''} placeholder="e.g. 6" />
-          </Field>
-          <Field label="Availability">
-            <Select name="availability" defaultValue={p?.availabilityStatus ?? ''}>
-              <option value="">Select</option>
-              <option value="actively_looking">Actively looking</option>
-              <option value="open_to_work">Open to work</option>
-              <option value="not_looking">Not looking</option>
-            </Select>
-          </Field>
+      {/* Step tabs */}
+      <div className="mt-4 flex flex-wrap gap-1.5">
+        {STEPS.map((s, i) => (
+          <button key={s} onClick={() => setStep(i)} className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${step === i ? 'bg-teal-600 text-white' : 'bg-white text-navy-700 ring-1 ring-navy-200 hover:bg-navy-50'}`}>
+            {i + 1}. {s}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-4 space-y-5 rounded-xl border bg-white p-6">
+        {step === 0 && (
+          <>
+            <AvatarUpload />
+            <Fld label="Headline"><Input value={f.headline} onChange={(e) => set('headline', e.target.value)} placeholder="e.g. Senior Accountant · 6 years" /></Fld>
+            <Fld label="Summary"><Textarea value={f.bio} onChange={(e) => set('bio', e.target.value)} placeholder="Tell employers about yourself…" /></Fld>
+            <div className="grid gap-5 sm:grid-cols-2">
+              <Fld label="Nationality"><Input value={f.nationality} onChange={(e) => set('nationality', e.target.value)} placeholder="e.g. Indian" /></Fld>
+              <Fld label="Current location">
+                <Select value={f.emirateSlug} onChange={(e) => set('emirateSlug', e.target.value)}>
+                  <option value="">Select emirate</option>
+                  {EMIRATES.map((em) => <option key={em.slug} value={em.slug}>{em.name}</option>)}
+                </Select>
+              </Fld>
+            </div>
+          </>
+        )}
+
+        {step === 1 && (
+          <Repeater title="Work experience" items={f.workExperience} onAdd={() => set('workExperience', [...f.workExperience, { ...emptyWork }])} onRemove={(i) => set('workExperience', f.workExperience.filter((_, x) => x !== i))} render={(w, i) => (
+            <>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Input value={w.title} onChange={(e) => set('workExperience', f.workExperience.map((x, k) => k === i ? { ...x, title: e.target.value } : x))} placeholder="Job title" />
+                <Input value={w.company} onChange={(e) => set('workExperience', f.workExperience.map((x, k) => k === i ? { ...x, company: e.target.value } : x))} placeholder="Company" />
+                <Input value={w.from} onChange={(e) => set('workExperience', f.workExperience.map((x, k) => k === i ? { ...x, from: e.target.value } : x))} placeholder="From (e.g. Jan 2022)" />
+                <Input value={w.to} disabled={w.current} onChange={(e) => set('workExperience', f.workExperience.map((x, k) => k === i ? { ...x, to: e.target.value } : x))} placeholder="To (e.g. Dec 2024)" />
+              </div>
+              <label className="mt-2 flex items-center gap-2 text-sm text-navy-700"><input type="checkbox" checked={w.current} onChange={(e) => set('workExperience', f.workExperience.map((x, k) => k === i ? { ...x, current: e.target.checked, to: e.target.checked ? '' : x.to } : x))} className="h-4 w-4 rounded text-teal-600" /> I currently work here</label>
+              <Textarea className="mt-2 min-h-[60px]" value={w.description} onChange={(e) => set('workExperience', f.workExperience.map((x, k) => k === i ? { ...x, description: e.target.value } : x))} placeholder="What you did (optional)" />
+            </>
+          )} />
+        )}
+
+        {step === 2 && (
+          <>
+            <Repeater title="Education" items={f.education} onAdd={() => set('education', [...f.education, { ...emptyEdu }])} onRemove={(i) => set('education', f.education.filter((_, x) => x !== i))} render={(ed, i) => (
+              <div className="grid gap-3 sm:grid-cols-3">
+                <Input value={ed.degree} onChange={(e) => set('education', f.education.map((x, k) => k === i ? { ...x, degree: e.target.value } : x))} placeholder="Degree" />
+                <Input value={ed.institution} onChange={(e) => set('education', f.education.map((x, k) => k === i ? { ...x, institution: e.target.value } : x))} placeholder="Institution" />
+                <Input value={ed.year} onChange={(e) => set('education', f.education.map((x, k) => k === i ? { ...x, year: e.target.value } : x))} placeholder="Year" />
+              </div>
+            )} />
+            <TagInput label="Skills" value={f.skills} onChange={(v) => set('skills', v)} placeholder="Type a skill and press Enter" />
+            <TagInput label="Languages" value={f.languages} onChange={(v) => set('languages', v)} placeholder="e.g. English, Arabic, Hindi" />
+          </>
+        )}
+
+        {step === 3 && (
+          <div className="grid gap-5 sm:grid-cols-2">
+            <Fld label="Field / Category">
+              <Select value={f.categorySlug} onChange={(e) => set('categorySlug', e.target.value)}><option value="">Select</option>{CATEGORIES.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}</Select>
+            </Fld>
+            <Fld label="Experience level">
+              <Select value={f.experienceLevel} onChange={(e) => set('experienceLevel', e.target.value)}><option value="">Select</option>{EXPERIENCE_LEVELS.map((l) => <option key={l} value={l} className="capitalize">{l.replace(/-/g, ' ')}</option>)}</Select>
+            </Fld>
+            <Fld label="Visa status">
+              <Select value={f.visaStatus} onChange={(e) => set('visaStatus', e.target.value)}><option value="">Select</option>{VISA_STATUS.map((v) => <option key={v} value={v} className="capitalize">{v.replace(/-/g, ' ')}</option>)}</Select>
+            </Fld>
+            <Fld label="Availability">
+              <Select value={f.availabilityStatus} onChange={(e) => set('availabilityStatus', e.target.value)}>
+                <option value="actively_looking">Actively looking</option><option value="open_to_work">Open to work</option><option value="not_looking">Not looking</option>
+              </Select>
+            </Fld>
+            <Fld label="Expected salary min (AED)"><Input type="number" value={f.expectedSalaryMin} onChange={(e) => set('expectedSalaryMin', e.target.value)} /></Fld>
+            <Fld label="Expected salary max (AED)"><Input type="number" value={f.expectedSalaryMax} onChange={(e) => set('expectedSalaryMax', e.target.value)} /></Fld>
+          </div>
+        )}
+
+        {step === 4 && (
+          <>
+            <CvUpload initialUrl={profile.data?.resumeUrl ?? null} initialName={profile.data?.resumeFilename ?? null} initialAt={profile.data?.resumeUploadedAt ?? null} />
+            <VisibilityToggles />
+          </>
+        )}
+
+        {/* Nav */}
+        <div className="flex items-center justify-between border-t pt-4">
+          <Button variant="outline" onClick={() => setStep((s) => Math.max(0, s - 1))} disabled={step === 0}><ChevronLeft className="h-4 w-4" /> Back</Button>
+          <div className="flex gap-2">
+            <Button variant="ghost" onClick={persist} disabled={save.isPending}>{save.isPending && <Loader2 className="h-4 w-4 animate-spin" />} Save</Button>
+            {step < STEPS.length - 1 ? (
+              <Button onClick={() => setStep((s) => Math.min(STEPS.length - 1, s + 1))}>Next <ChevronRight className="h-4 w-4" /></Button>
+            ) : (
+              <Button onClick={persist} disabled={save.isPending}>{save.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Finish</Button>
+            )}
+          </div>
         </div>
-        <Field label="Skills (comma-separated)">
-          <Input value={skills} onChange={(e) => setSkills(e.target.value)} placeholder="Excel, IFRS, SAP" />
-        </Field>
-        <label className="flex items-center gap-2 text-sm text-navy-700">
-          <input type="checkbox" name="openToWork" defaultChecked={p?.openToWork ?? true} className="h-4 w-4 rounded text-teal-600" />
-          Open to work (visible to employers)
-        </label>
-        <Button type="submit" disabled={upsert.isPending}>
-          {upsert.isPending && <Loader2 className="animate-spin" />} Save profile
-        </Button>
-      </form>
+      </div>
     </div>
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Fld({ label, children }: { label: string; children: React.ReactNode }) {
+  return <div className="space-y-1.5"><Label>{label}</Label>{children}</div>;
+}
+
+function Repeater<T>({ title, items, onAdd, onRemove, render }: { title: string; items: T[]; onAdd: () => void; onRemove: (i: number) => void; render: (item: T, i: number) => React.ReactNode }) {
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between"><Label>{title}</Label><Button size="sm" variant="outline" onClick={onAdd}><Plus className="h-4 w-4" /> Add</Button></div>
+      {items.length === 0 && <p className="rounded-lg border border-dashed p-4 text-center text-sm text-navy-700/50">Nothing added yet.</p>}
+      {items.map((item, i) => (
+        <div key={i} className="relative rounded-lg border bg-navy-50/30 p-4">
+          <button onClick={() => onRemove(i)} className="absolute right-2 top-2 rounded p-1 text-navy-400 hover:bg-white hover:text-red-500" aria-label="Remove"><Trash2 className="h-4 w-4" /></button>
+          {render(item, i)}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function TagInput({ label, value, onChange, placeholder }: { label: string; value: string[]; onChange: (v: string[]) => void; placeholder?: string }) {
+  const [draft, setDraft] = useState('');
+  const add = () => { const t = draft.trim().replace(/,$/, ''); if (t && !value.includes(t)) onChange([...value, t]); setDraft(''); };
   return (
     <div className="space-y-1.5">
       <Label>{label}</Label>
-      {children}
+      <div className="flex flex-wrap gap-1.5 rounded-lg border border-navy-200 p-2">
+        {value.map((t) => (
+          <span key={t} className="inline-flex items-center gap-1 rounded-full bg-teal-50 px-2 py-0.5 text-xs font-medium text-teal-700">{t}<button onClick={() => onChange(value.filter((x) => x !== t))} aria-label={`Remove ${t}`}><X className="h-3 w-3" /></button></span>
+        ))}
+        <input value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); add(); } }} onBlur={add} placeholder={placeholder} className="min-w-[140px] flex-1 bg-transparent px-1 text-sm outline-none" />
+      </div>
+    </div>
+  );
+}
+
+function VisibilityToggles() {
+  const utils = trpc.useUtils();
+  const me = trpc.jobseekers.me.useQuery();
+  const vis = trpc.jobseekers.toggleVisibility.useMutation({ onSuccess: () => utils.jobseekers.me.invalidate() });
+  const otw = trpc.jobseekers.toggleOpenToWork.useMutation({ onSuccess: () => utils.jobseekers.me.invalidate() });
+  const visible = me.data?.visibility !== 'hidden';
+  const open = me.data?.openToWork ?? true;
+  return (
+    <div className="space-y-2 rounded-lg border bg-navy-50/30 p-4">
+      <label className="flex items-center justify-between text-sm text-navy-800">Profile visible to employers
+        <input type="checkbox" checked={visible} onChange={() => vis.mutate()} className="h-4 w-4 rounded text-teal-600" />
+      </label>
+      <label className="flex items-center justify-between text-sm text-navy-800">Open to work
+        <input type="checkbox" checked={open} onChange={() => otw.mutate()} className="h-4 w-4 rounded text-teal-600" />
+      </label>
     </div>
   );
 }

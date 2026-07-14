@@ -154,6 +154,20 @@ export const jobAlertSchema = z
 export type JobAlertInput = z.infer<typeof jobAlertSchema>;
 
 // ─── Profiles ────────────────────────────────────────────
+export const workExperienceSchema = z.object({
+  title: z.string().trim().max(120),
+  company: z.string().trim().max(120),
+  from: z.string().trim().max(20).optional().default(''),
+  to: z.string().trim().max(20).optional().default(''),
+  current: z.boolean().optional().default(false),
+  description: z.string().trim().max(1000).optional().default(''),
+});
+export const educationSchema = z.object({
+  degree: z.string().trim().max(120),
+  institution: z.string().trim().max(160),
+  year: z.string().trim().max(10).optional().default(''),
+});
+
 export const jobseekerProfileSchema = z.object({
   headline: z.string().trim().max(160).optional(),
   bio: z.string().trim().max(4000).optional(),
@@ -166,10 +180,18 @@ export const jobseekerProfileSchema = z.object({
   availabilityStatus: z.enum(['actively_looking', 'open_to_work', 'not_looking']).optional(),
   yearsExperience: z.coerce.number().int().min(0).max(60).optional(),
   skills: z.array(z.string().trim().min(1).max(50)).max(50).default([]),
+  languages: z.array(z.string().trim().min(1).max(40)).max(20).optional(),
+  workExperience: z.array(workExperienceSchema).max(20).optional(),
+  education: z.array(educationSchema).max(15).optional(),
+  expectedSalaryMin: z.coerce.number().int().nonnegative().nullable().optional(),
+  expectedSalaryMax: z.coerce.number().int().nonnegative().nullable().optional(),
+  visibility: z.enum(['public', 'employers_only', 'hidden']).optional(),
   resumeUrl: z.string().url().optional(),
   openToWork: z.boolean().default(true),
 });
 export type JobseekerProfileInput = z.infer<typeof jobseekerProfileSchema>;
+export type WorkExperienceEntry = z.infer<typeof workExperienceSchema>;
+export type EducationEntry = z.infer<typeof educationSchema>;
 
 export const employerProfileSchema = z.object({
   companyName: nonEmpty(160),
