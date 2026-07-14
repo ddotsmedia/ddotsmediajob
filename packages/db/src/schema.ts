@@ -213,6 +213,14 @@ export const jobseekerProfiles = pgTable('jobseeker_profiles', {
   ...timestamps,
 }, (t) => [index('jobseeker_username_idx').on(t.username), index('jobseeker_visibility_idx').on(t.visibility)]);
 
+// ─── CV view logs (employer viewed a candidate) ──────────
+export const cvViewLogs = pgTable('cv_view_logs', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  employerId: uuid('employer_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  profileUserId: uuid('profile_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [index('cv_view_employer_idx').on(t.employerId), index('cv_view_profile_idx').on(t.profileUserId)]);
+
 // ─── Jobs ────────────────────────────────────────────────
 export const jobs = pgTable(
   'jobs',

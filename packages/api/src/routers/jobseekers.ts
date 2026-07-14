@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
-import { jobseekerProfiles, savedJobs, savedJobFolders, jobs, users, eq, and, ne, desc, ilike, sql } from '@ddots/db';
+import { jobseekerProfiles, cvViewLogs, savedJobs, savedJobFolders, jobs, users, eq, and, ne, desc, ilike, gte, sql } from '@ddots/db';
 import { jobseekerProfileSchema, slugify } from '@ddots/shared';
 import { router, protectedProcedure, publicProcedure, employerProcedure } from '../trpc';
 import { presignUpload, deleteObjectByUrl } from '../lib/r2';
@@ -151,6 +151,11 @@ export const jobseekersRouter = router({
       q: z.string().max(120).optional(),
       category: z.string().optional(),
       emirate: z.string().optional(),
+      nationality: z.string().max(100).optional(),
+      visaStatus: z.string().max(30).optional(),
+      skills: z.array(z.string().max(50)).max(10).optional(),
+      salaryMax: z.coerce.number().int().positive().optional(),
+      experienceYears: z.coerce.number().int().min(0).optional(),
       availability: z.enum(['actively_looking', 'open_to_work', 'all']).default('all'),
       page: z.number().min(1).default(1),
     }))
@@ -162,6 +167,11 @@ export const jobseekersRouter = router({
       ];
       if (input.category) conds.push(eq(jobseekerProfiles.categorySlug, input.category));
       if (input.emirate) conds.push(eq(jobseekerProfiles.emirateSlug, input.emirate));
+      if (input.nationality) conds.push(ilike(jobseekerProfiles.nationality, `%${input.nationality}%`));
+      if (input.visaStatus) conds.push(eq(jobseekerProfiles.visaStatus, input.visaStatus as never));
+      if (input.experienceYears) conds.push(gte(jobseekerProfiles.yearsExperience, input.experienceYears));
+      if (input.salaryMax) conds.push(sql`(${jobseekerProfiles.expectedSalaryMin} IS NULL OR ${jobseekerProfiles.expectedSalaryMin} <= ${input.salaryMax})`);
+      if (input.skills?.length) for (const s of input.skills) conds.push(sql`${jobseekerProfiles.skills}::text ILIKE ${'%' + s + '%'}`);
       if (input.availability !== 'all') conds.push(eq(jobseekerProfiles.availabilityStatus, input.availability));
       if (input.q) conds.push(sql`(${jobseekerProfiles.headline} ILIKE ${'%' + input.q + '%'} OR ${jobseekerProfiles.skills}::text ILIKE ${'%' + input.q + '%'})`);
 
@@ -173,6 +183,7 @@ export const jobseekersRouter = router({
         with: { user: { columns: { name: true, image: true } } },
       });
       return rows.map((r) => ({
+        userId: r.userId,
         username: r.username,
         name: r.user?.name ?? 'Candidate',
         image: r.user?.image,
@@ -180,12 +191,24 @@ export const jobseekersRouter = router({
         emirateSlug: r.emirateSlug,
         categorySlug: r.categorySlug,
         visaStatus: r.visaStatus,
-        skills: r.skills.slice(0, 4),
+        nationality: r.nationality,
+        skills: r.skills.slice(0, 6),
         availabilityStatus: r.availabilityStatus,
         yearsExperience: r.yearsExperience,
+        lastActive: r.lastActive,
+        cvUrl: r.resumeUrl,
+        // Contact respects the candidate's own toggles (WhatsApp only if opted in; no raw email).
+        whatsapp: r.showWhatsapp ? r.phone : null,
         salary: r.showSalary ? { min: r.expectedSalaryMin, max: r.expectedSalaryMax } : null,
       }));
     }),
+
+  /** Log that an employer viewed a candidate's CV/profile (for the candidate's view stats). */
+  logCvView: employerProcedure.input(z.object({ profileUserId: z.string().uuid() })).mutation(async ({ ctx, input }) => {
+    if (input.profileUserId === ctx.session.user.id) return { ok: true };
+    await ctx.db.insert(cvViewLogs).values({ employerId: ctx.session.user.id, profileUserId: input.profileUserId });
+    return { ok: true };
+  }),
 
   /** Saved jobs list. */
   savedJobs: protectedProcedure.query(async ({ ctx }) =>
