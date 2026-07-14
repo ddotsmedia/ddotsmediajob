@@ -27,7 +27,8 @@ export default auth((req) => {
     return NextResponse.redirect(new URL('/', req.nextUrl.origin));
   }
 
-  if (pathname.startsWith('/employer') && role !== 'employer' && role !== 'admin') {
+  // Any logged-in user may reach the Post-a-Job page — posting auto-upgrades them to employer.
+  if (pathname.startsWith('/employer') && pathname !== '/employer/post' && role !== 'employer' && role !== 'admin') {
     return NextResponse.redirect(new URL('/dashboard', req.nextUrl.origin));
   }
 

@@ -30,6 +30,8 @@ export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const role = session?.user?.role;
   const dashHref = role === 'admin' ? '/admin' : role === 'employer' ? '/employer' : role === 'volunteer' ? '/volunteer' : '/dashboard';
+  // Any logged-in user can post (auto-upgraded to employer); guests go register first.
+  const postHref = session ? '/employer/post' : '/register';
 
   // Lock background scroll while the mobile menu is open.
   useEffect(() => {
@@ -59,7 +61,7 @@ export function SiteHeader() {
           <div className="hidden items-center gap-3 md:flex">
             <LangToggle />
             <Button asChild variant="accent" size="sm">
-              <Link href="/employer/post"><Briefcase /> {t('nav.postJob')}</Link>
+              <Link href={postHref}><Briefcase /> {t('nav.postJob')}</Link>
             </Button>
             {session ? (
               <>
@@ -104,7 +106,7 @@ export function SiteHeader() {
                 <>
                   <Button asChild variant="accent" className="w-full py-6 text-base"><Link href="/register" onClick={() => setOpen(false)}>Sign up</Link></Button>
                   <Button asChild variant="outline" className="w-full py-6 text-base"><Link href="/login" onClick={() => setOpen(false)}>Log in</Link></Button>
-                  <Button asChild variant="ghost" className="w-full py-6 text-base"><Link href="/employer/post" onClick={() => setOpen(false)}>Post a Job</Link></Button>
+                  <Button asChild variant="ghost" className="w-full py-6 text-base"><Link href={postHref} onClick={() => setOpen(false)}>Post a Job</Link></Button>
                 </>
               )}
             </div>

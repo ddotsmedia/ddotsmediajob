@@ -37,7 +37,7 @@ export function PostJobForm() {
   const [prompt, setPrompt] = useState('');
   const [draft, setDraft] = useState<Draft>(EMPTY);
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setDraft((d) => ({ ...d, [k]: v }));
-  const { data: session } = useSession();
+  const { data: session, update } = useSession();
 
   // Pre-fill the contact email from the logged-in employer's account.
   useEffect(() => {
@@ -50,7 +50,15 @@ export function PostJobForm() {
     onError: (e) => toast.error(e.message),
   });
   const create = trpc.jobs.create.useMutation({
-    onSuccess: () => { toast.success('Job submitted for review!'); router.push('/employer/jobs'); },
+    onSuccess: async () => {
+      toast.success('Job submitted for review!');
+      // First post auto-upgrades non-employers server-side — sync the session role so
+      // middleware doesn't bounce them from /employer. Never downgrade an admin.
+      const role = session?.user?.role;
+      if (role !== 'employer' && role !== 'admin') await update({ role: 'employer' });
+      router.push('/employer/jobs');
+      router.refresh();
+    },
     onError: (e) => toast.error(e.message),
   });
 

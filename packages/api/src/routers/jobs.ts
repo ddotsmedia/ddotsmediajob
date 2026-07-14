@@ -245,9 +245,19 @@ export const jobsRouter = router({
     }),
   ),
 
-  /** Employer: create a job (goes to pending unless admin). */
-  create: employerProcedure.input(jobInputSchema).mutation(async ({ ctx, input }) => {
-    const isAdmin = ctx.session.user.role === 'admin';
+  /** Create a job. Any logged-in user may post — first post auto-upgrades them to employer. */
+  create: protectedProcedure.input(jobInputSchema).mutation(async ({ ctx, input }) => {
+    const role = ctx.session.user.role;
+    const isAdmin = role === 'admin';
+
+    // Free platform: a jobseeker/volunteer who posts a job becomes an employer.
+    if (role !== 'employer' && role !== 'admin') {
+      await ctx.db.update(users).set({ role: 'employer' }).where(eq(users.id, ctx.session.user.id));
+      await ctx.db
+        .insert(employerProfiles)
+        .values({ userId: ctx.session.user.id, companyName: ctx.session.user.name ?? 'My Company' })
+        .onConflictDoNothing();
+    }
 
     const employerProfile = await ctx.db.query.employerProfiles.findFirst({
       where: (p, { eq: e }) => e(p.userId, ctx.session.user.id),
