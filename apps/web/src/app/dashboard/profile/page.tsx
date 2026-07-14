@@ -2,13 +2,14 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { Loader2, Plus, Trash2, X, ChevronLeft, ChevronRight, Check } from 'lucide-react';
+import { Loader2, Plus, Trash2, X, ChevronLeft, ChevronRight, Check, FileText, ExternalLink } from 'lucide-react';
+import '@uploadthing/react/styles.css';
 import { CATEGORIES, EMIRATES, EXPERIENCE_LEVELS, VISA_STATUS } from '@ddots/shared';
 import { trpc } from '@/trpc/react';
 import { Button } from '@/components/ui/button';
 import { Input, Label, Select, Textarea } from '@/components/ui/primitives';
 import { AvatarUpload } from '@/components/avatar-upload';
-import { CvUpload } from '@/components/cv-upload';
+import { UploadButton } from '@/lib/uploadthing-client';
 
 type Work = { title: string; company: string; from: string; to: string; current: boolean; description: string };
 type Edu = { degree: string; institution: string; year: string };
@@ -169,7 +170,27 @@ export default function ProfilePage() {
 
         {step === 4 && (
           <>
-            <CvUpload initialUrl={profile.data?.resumeUrl ?? null} initialName={profile.data?.resumeFilename ?? null} initialAt={profile.data?.resumeUploadedAt ?? null} />
+            <div className="rounded-xl border bg-white p-5">
+              <h2 className="flex items-center gap-2 font-display font-bold text-navy-900"><FileText className="h-4 w-4 text-teal-500" /> Your CV</h2>
+              <p className="mt-1 text-sm text-navy-700/60">Upload your CV (PDF or Word, max 4 MB). Employers see it when you apply.</p>
+              {profile.data?.resumeUrl && (
+                <div className="mt-3 flex flex-wrap items-center gap-3 rounded-lg border bg-navy-50/40 px-4 py-3">
+                  <FileText className="h-7 w-7 shrink-0 text-teal-600" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-navy-900">{profile.data.resumeFilename ?? 'My CV'}</p>
+                    {profile.data.resumeUploadedAt && <p className="text-xs text-navy-700/50">Uploaded {new Date(profile.data.resumeUploadedAt).toLocaleDateString('en-AE', { day: 'numeric', month: 'short', year: 'numeric' })}</p>}
+                  </div>
+                  <a href={profile.data.resumeUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-sm font-medium text-teal-700 hover:bg-white"><ExternalLink className="h-3.5 w-3.5" /> View CV</a>
+                </div>
+              )}
+              <div className="mt-4">
+                <UploadButton
+                  endpoint="cvUploader"
+                  onClientUploadComplete={() => { toast.success('CV uploaded successfully!'); utils.jobseekers.me.invalidate(); }}
+                  onUploadError={(error) => { toast.error(error.message); }}
+                />
+              </div>
+            </div>
             <VisibilityToggles />
           </>
         )}

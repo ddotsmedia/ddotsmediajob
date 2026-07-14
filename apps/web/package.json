@@ -33,6 +33,7 @@
     "@trpc/client": "^11.0.0-rc.660",
     "@trpc/react-query": "^11.0.0-rc.660",
     "@trpc/server": "^11.0.0-rc.660",
+    "@uploadthing/react": "^7.3.3",
     "@use-gesture/react": "^10.3.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -51,6 +52,7 @@
     "sonner": "^1.7.1",
     "superjson": "^2.2.2",
     "tailwind-merge": "^2.6.0",
+    "uploadthing": "^7.7.4",
     "zod": "^3.24.1"
   },
   "devDependencies": {
