@@ -51,6 +51,7 @@ import { ensureVectorSetup, upsertJobEmbedding } from '../lib/embeddings';
 import { blockIp, unblockIp, ipBlockingEnabled } from '../lib/security-log';
 import { getWhapiSettings, invalidateWhapiSettings, evaluateCriteria, SKIP_LABEL } from '../lib/whapi-criteria';
 import { invalidateCategories } from '../lib/categories';
+import { sendAlertEmail } from '../lib/email';
 import { isJobMessage } from '../lib/import';
 
 /** Revalidate ISR pages that render the category list. No-op outside Next request scope. */
@@ -1034,6 +1035,16 @@ export const adminRouter = router({
     }),
 
   // ─── Whapi import settings ─────────────────────────────────────────
+  /** Send a test email (to the requesting admin) to verify Resend is configured. */
+  testEmail: adminProcedure.mutation(async ({ ctx }) => {
+    const to = ctx.session.user.email;
+    if (!to) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Your admin account has no email address.' });
+    const sent = await sendAlertEmail(to, 'DdotsMediaJobs — Email Test', 'If you receive this, Resend is configured correctly.');
+    if (!sent) throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Email not sent — RESEND_API_KEY is missing or the send failed.' });
+    await audit(ctx.session.user.id, 'admin.email.test', 'system', undefined, { to });
+    return { ok: true, to };
+  }),
+
   whapiSettings: adminProcedure.query(() => getWhapiSettings()),
 
   saveWhapiSettings: adminProcedure
