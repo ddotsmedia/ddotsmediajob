@@ -36,18 +36,20 @@ export default function ProfilePage() {
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setF((s) => (s ? { ...s, [k]: v } : s));
 
   useEffect(() => {
+    // Init the form once the query settles — even if the row is missing (brand-new user), fall back to
+    // empty defaults so the page never spins forever waiting on a null profile.
+    if (f || profile.isLoading) return;
     const p = profile.data;
-    if (!p || f) return;
     setF({
-      headline: p.headline ?? '', bio: p.bio ?? '', nationality: p.nationality ?? '', emirateSlug: p.emirateSlug ?? '',
-      categorySlug: p.categorySlug ?? '', experienceLevel: p.experienceLevel ?? '', visaStatus: p.visaStatus ?? '',
-      availabilityStatus: p.availabilityStatus ?? 'actively_looking',
-      expectedSalaryMin: p.expectedSalaryMin ? String(p.expectedSalaryMin) : '', expectedSalaryMax: p.expectedSalaryMax ? String(p.expectedSalaryMax) : '',
-      skills: p.skills ?? [], languages: p.languages ?? [],
-      workExperience: (p.workExperience ?? []).map((w) => ({ title: w.title, company: w.company, from: w.from ?? '', to: w.to ?? '', current: w.current ?? false, description: w.description ?? '' })),
-      education: (p.education ?? []).map((e) => ({ degree: e.degree, institution: e.institution, year: e.year ?? '' })),
+      headline: p?.headline ?? '', bio: p?.bio ?? '', nationality: p?.nationality ?? '', emirateSlug: p?.emirateSlug ?? '',
+      categorySlug: p?.categorySlug ?? '', experienceLevel: p?.experienceLevel ?? '', visaStatus: p?.visaStatus ?? '',
+      availabilityStatus: p?.availabilityStatus ?? 'actively_looking',
+      expectedSalaryMin: p?.expectedSalaryMin ? String(p.expectedSalaryMin) : '', expectedSalaryMax: p?.expectedSalaryMax ? String(p.expectedSalaryMax) : '',
+      skills: p?.skills ?? [], languages: p?.languages ?? [],
+      workExperience: (p?.workExperience ?? []).map((w) => ({ title: w.title, company: w.company, from: w.from ?? '', to: w.to ?? '', current: w.current ?? false, description: w.description ?? '' })),
+      education: (p?.education ?? []).map((e) => ({ degree: e.degree, institution: e.institution, year: e.year ?? '' })),
     });
-  }, [profile.data, f]);
+  }, [profile.data, profile.isLoading, f]);
 
   const pct = useMemo(() => {
     if (!f) return 0;

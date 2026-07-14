@@ -21,12 +21,22 @@ async function ensureUsername(db: typeof import('@ddots/db').db, userId: string,
 }
 
 export const jobseekersRouter = router({
-  /** Current jobseeker profile (creates an empty shell if missing). */
+  /** Current jobseeker profile. Creates an empty shell if missing so the dashboard never hangs on a fresh (e.g. OAuth) signup. */
   me: protectedProcedure.query(async ({ ctx }) => {
-    const profile = await ctx.db.query.jobseekerProfiles.findFirst({
+    const existing = await ctx.db.query.jobseekerProfiles.findFirst({
       where: eq(jobseekerProfiles.userId, ctx.session.user.id),
     });
-    return profile ?? null;
+    if (existing) return existing;
+    // Row absent — insert defaults (visibility employers_only + openToWork via schema defaults) then re-read.
+    await ctx.db
+      .insert(jobseekerProfiles)
+      .values({ userId: ctx.session.user.id })
+      .onConflictDoNothing({ target: jobseekerProfiles.userId });
+    return (
+      (await ctx.db.query.jobseekerProfiles.findFirst({
+        where: eq(jobseekerProfiles.userId, ctx.session.user.id),
+      })) ?? null
+    );
   }),
 
   /** Alias of `me` — get the signed-in user's own profile. */

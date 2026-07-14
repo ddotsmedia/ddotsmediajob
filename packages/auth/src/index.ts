@@ -6,7 +6,7 @@ import LinkedIn from 'next-auth/providers/linkedin';
 import Twitter from 'next-auth/providers/twitter';
 import Credentials from 'next-auth/providers/credentials';
 import { DrizzleAdapter } from '@auth/drizzle-adapter';
-import { db, users, accounts, sessions, verificationTokens, securityLogs, eq } from '@ddots/db';
+import { db, users, accounts, sessions, verificationTokens, securityLogs, jobseekerProfiles, eq } from '@ddots/db';
 import { loginSchema, type UserRole } from '@ddots/shared';
 import { verifyPassword } from './password';
 import { decryptSecret, verifyTotp, consumeBackupCode } from './totp';
@@ -149,6 +149,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (token.id) session.user.id = token.id;
       if (token.role) session.user.role = token.role;
       return session;
+    },
+  },
+  events: {
+    // On any sign-in (esp. first OAuth), ensure a jobseeker profile shell exists so the dashboard never hangs.
+    // Runs only in the Node auth handler, never in edge middleware — safe to touch the DB here.
+    async signIn({ user }) {
+      if (!user?.id) return;
+      await db
+        .insert(jobseekerProfiles)
+        .values({ userId: user.id })
+        .onConflictDoNothing({ target: jobseekerProfiles.userId });
     },
   },
 });
