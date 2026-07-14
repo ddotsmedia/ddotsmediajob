@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
-import { jobseekerProfiles, cvViewLogs, savedJobs, savedJobFolders, jobs, users, eq, and, ne, desc, ilike, gte, sql } from '@ddots/db';
+import { jobseekerProfiles, cvViewLogs, savedJobs, savedJobFolders, jobs, users, eq, and, ne, desc, ilike, gte, count, sql } from '@ddots/db';
 import { jobseekerProfileSchema, slugify } from '@ddots/shared';
 import { router, protectedProcedure, publicProcedure, employerProcedure } from '../trpc';
 import { presignUpload, deleteObjectByUrl } from '../lib/r2';
@@ -143,6 +143,49 @@ export const jobseekersRouter = router({
     const salary = profile.showSalary ? { min: profile.expectedSalaryMin, max: profile.expectedSalaryMax } : null;
     const whatsapp = profile.showWhatsapp ? profile.phone : null;
     return { ...profile, phone: null, expectedSalaryMin: null, expectedSalaryMax: null, salary, whatsapp, isOwner };
+  }),
+
+  /** Public talent browse — ONLY profiles the jobseeker set to `public` (not employers_only). No contact info. */
+  browse: publicProcedure
+    .input(z.object({
+      category: z.string().optional(),
+      emirate: z.string().optional(),
+      visaStatus: z.string().optional(),
+      availability: z.enum(['actively_looking', 'open_to_work', 'all']).default('all'),
+      page: z.number().min(1).default(1),
+    }))
+    .query(async ({ ctx, input }) => {
+      const per = 20;
+      const conds = [
+        eq(jobseekerProfiles.visibility, 'public'),
+        eq(jobseekerProfiles.openToWork, true),
+        sql`${jobseekerProfiles.username} IS NOT NULL`,
+      ];
+      if (input.category) conds.push(eq(jobseekerProfiles.categorySlug, input.category));
+      if (input.emirate) conds.push(eq(jobseekerProfiles.emirateSlug, input.emirate));
+      if (input.visaStatus) conds.push(eq(jobseekerProfiles.visaStatus, input.visaStatus as never));
+      if (input.availability !== 'all') conds.push(eq(jobseekerProfiles.availabilityStatus, input.availability));
+      const where = and(...conds);
+      const [rows, [tot]] = await Promise.all([
+        ctx.db.query.jobseekerProfiles.findMany({ where, orderBy: [desc(jobseekerProfiles.lastActive)], limit: per, offset: (input.page - 1) * per, with: { user: { columns: { name: true, image: true } } } }),
+        ctx.db.select({ n: count() }).from(jobseekerProfiles).where(where),
+      ]);
+      const total = Number(tot?.n ?? 0);
+      return {
+        total, page: input.page, perPage: per, totalPages: Math.ceil(total / per),
+        candidates: rows.map((r) => ({
+          username: r.username, name: r.user?.name ?? 'Candidate', image: r.user?.image ?? null,
+          headline: r.headline, categorySlug: r.categorySlug, emirateSlug: r.emirateSlug,
+          skills: r.skills.slice(0, 3), availabilityStatus: r.availabilityStatus, yearsExperience: r.yearsExperience,
+        })),
+      };
+    }),
+
+  /** Public directory counts for the talent hero. */
+  browseStats: publicProcedure.query(async ({ ctx }) => {
+    const [reg] = await ctx.db.select({ n: count() }).from(jobseekerProfiles).where(sql`${jobseekerProfiles.username} IS NOT NULL`);
+    const [otw] = await ctx.db.select({ n: count() }).from(jobseekerProfiles).where(and(eq(jobseekerProfiles.openToWork, true), sql`${jobseekerProfiles.username} IS NOT NULL`));
+    return { registered: Number(reg?.n ?? 0), openToWork: Number(otw?.n ?? 0) };
   }),
 
   /** Employer talent directory search. */
