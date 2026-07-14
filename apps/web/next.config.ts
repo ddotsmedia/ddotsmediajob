@@ -48,6 +48,12 @@ const nextConfig: NextConfig = {
         ],
       },
       {
+        // HTML/document responses must always revalidate so a deploy's new HTML
+        // (referencing new hashed assets) is never served stale from a browser cache.
+        source: '/((?!_next/static|_next/image|favicon|.*\\.ico).*)',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=0, must-revalidate' }],
+      },
+      {
         // Hashed build assets are immutable — cache hard so browsers fetch the
         // correct JS for each deployment (avoids stale "Failed to find Server Action").
         source: '/_next/static/(.*)',
