@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
-import { jobs, applications, employerProfiles, eq, and, desc, sql } from '@ddots/db';
-import { applySchema, updateApplicationStatusSchema } from '@ddots/shared';
+import { jobs, applications, employerProfiles, eq, and, desc, sql, inArray } from '@ddots/db';
+import { applySchema, updateApplicationStatusSchema, APPLICATION_STATUS } from '@ddots/shared';
 import { router, publicProcedure, protectedProcedure, employerProcedure } from '../trpc';
 import { audit, notify } from '../lib/helpers';
 import { enqueueEmail, enqueueAiScoring } from '../lib/queue';
@@ -194,6 +194,26 @@ export const applicationsRouter = router({
       },
     });
   }),
+
+  /** Employer: every application across all of my jobs, newest first, optional status filter. */
+  allApplications: employerProcedure
+    .input(z.object({ status: z.enum(APPLICATION_STATUS).optional() }).optional())
+    .query(async ({ ctx, input }) => {
+      const myJobs = await ctx.db.query.jobs.findMany({ where: eq(jobs.employerId, ctx.session.user.id), columns: { id: true } });
+      const ids = myJobs.map((j) => j.id);
+      if (!ids.length) return [];
+      const conds = [inArray(applications.jobId, ids)];
+      if (input?.status) conds.push(eq(applications.status, input.status));
+      return ctx.db.query.applications.findMany({
+        where: and(...conds),
+        orderBy: [desc(applications.createdAt)],
+        limit: 300,
+        with: {
+          seeker: { columns: { id: true, name: true, email: true, image: true } },
+          job: { columns: { id: true, title: true, slug: true } },
+        },
+      });
+    }),
 
   /** Employer: move an application along the pipeline. */
   updateStatus: employerProcedure.input(updateApplicationStatusSchema).mutation(async ({ ctx, input }) => {

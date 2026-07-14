@@ -18,7 +18,11 @@ export default async function EmployerDashboard() {
           <h1 className="font-display text-2xl font-bold text-navy-900">Employer Dashboard</h1>
           <p className="text-navy-700/60">Your hiring activity at a glance.</p>
         </div>
-        <Button asChild><Link href="/employer/post"><PlusCircle /> Post a Job</Link></Button>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline"><Link href="/employer/candidates">Search CVs</Link></Button>
+          <Button asChild variant="outline"><Link href="/employer/applications">View Applications</Link></Button>
+          <Button asChild><Link href="/employer/post"><PlusCircle /> Post a Job</Link></Button>
+        </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
