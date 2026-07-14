@@ -56,10 +56,11 @@ export async function generateJobSlug(title: string, emirate?: string | null, co
     slugify(title),
     // slugify first: callers may pass the emirate display name ("Abu Dhabi") not the slug,
     // and a raw space/uppercase here produces an un-findable slug → 404 on the job page.
-    emirate ? slugify(emirate).split('-')[0] : null,
-    company ? slugify(company).slice(0, 15) : null,
+    // Use the FULL emirate slug ("abu-dhabi", not just "abu") so slugs stay descriptive.
+    emirate ? slugify(emirate) : null,
+    company ? slugify(company).slice(0, 20) : null,
   ].filter(Boolean);
-  const base = (parts.join('-').replace(/-+$/g, '').slice(0, 60) || 'job').replace(/-+$/g, '');
+  const base = (parts.join('-').replace(/-+$/g, '').slice(0, 100) || 'job').replace(/-+$/g, '');
   for (let i = 1; i < 50; i++) {
     const candidate = i === 1 ? base : `${base}-${i}`;
     const existing = await db.query.jobs.findFirst({ where: eq(jobs.slug, candidate), columns: { id: true } });

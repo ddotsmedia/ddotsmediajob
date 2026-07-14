@@ -3,7 +3,6 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import DOMPurify from 'isomorphic-dompurify';
 import { MapPin, Briefcase, Banknote, Clock, GraduationCap, BadgeCheck, CheckCircle2 } from 'lucide-react';
-import { TRPCError } from '@trpc/server';
 import {
   formatSalary,
   formatDateTime,
@@ -57,9 +56,10 @@ async function loadJob(slug: string) {
     console.log('[loadJob] found job:', job?.id, job?.status);
     return job;
   } catch (err) {
+    // Any failure (NOT_FOUND, a bad/truncated slug, a transient error) → treat as "not found"
+    // so the page shows the custom 404 instead of the "Something went wrong" error boundary.
     console.error('[loadJob] slug:', slug, 'error:', err);
-    if (err instanceof TRPCError && err.code === 'NOT_FOUND') return null;
-    throw err;
+    return null;
   }
 }
 
