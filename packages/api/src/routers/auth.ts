@@ -70,6 +70,18 @@ export const authRouter = router({
     return { id: user!.id, email: user!.email };
   }),
 
+  /** Self-serve upgrade to employer (onboarding "Hire Talent"). No-op for existing employers/admins. */
+  becomeEmployer: protectedProcedure.mutation(async ({ ctx }) => {
+    const { id, role, name } = ctx.session.user;
+    if (role === 'employer' || role === 'admin') return { role };
+    await ctx.db.update(users).set({ role: 'employer' }).where(eq(users.id, id));
+    await ctx.db
+      .insert(employerProfiles)
+      .values({ userId: id, companyName: name ?? 'My Company' })
+      .onConflictDoNothing();
+    return { role: 'employer' as const };
+  }),
+
   /** Request a password-reset link. Always returns ok (no account enumeration). */
   requestPasswordReset: publicProcedure
     .input(z.object({ email: z.string().email().toLowerCase() }))

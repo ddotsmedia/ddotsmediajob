@@ -29,8 +29,9 @@ export function RegisterForm() {
       await signIn('credentials', { email, password, redirect: false });
       toast.success('Account created!');
       // Honor callbackUrl (same-origin only) — e.g. guest clicked "Post a Job" → /employer/post.
+      // Otherwise send new users through onboarding (role pick + CV upload) before their dashboard.
       const cb = searchParams.get('callbackUrl');
-      const dest = cb && cb.startsWith('/') && !cb.startsWith('//') ? cb : role === 'employer' ? '/employer' : '/dashboard';
+      const dest = cb && cb.startsWith('/') && !cb.startsWith('//') ? cb : '/onboarding';
       router.push(dest);
       router.refresh();
     } catch (err) {

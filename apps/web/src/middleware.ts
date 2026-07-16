@@ -23,6 +23,11 @@ export default auth((req) => {
     return NextResponse.redirect(url);
   }
 
+  // Brand-new users (first Google login etc.) go through onboarding once before any dashboard.
+  if (isAuthed && user?.needsOnboarding && pathname !== '/onboarding') {
+    return NextResponse.redirect(new URL('/onboarding', req.nextUrl.origin));
+  }
+
   if (pathname.startsWith('/admin') && role !== 'admin') {
     return NextResponse.redirect(new URL('/', req.nextUrl.origin));
   }

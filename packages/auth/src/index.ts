@@ -36,10 +36,12 @@ declare module 'next-auth' {
     user: {
       id: string;
       role: UserRole;
+      needsOnboarding?: boolean;
     } & DefaultSession['user'];
   }
   interface User {
     role?: UserRole;
+    createdAt?: Date | string | null;
   }
 }
 
@@ -47,6 +49,7 @@ declare module 'next-auth/jwt' {
   interface JWT {
     id: string;
     role: UserRole;
+    needsOnboarding?: boolean;
   }
 }
 
@@ -133,10 +136,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token.id = user.id as string;
         token.role = (user.role ?? 'jobseeker') as UserRole;
+        // Flag brand-new accounts (OAuth or credentials) so middleware routes them through onboarding once.
+        const createdAt = (user as { createdAt?: Date | string | null }).createdAt;
+        const created = createdAt ? new Date(createdAt).getTime() : 0;
+        if (created && Date.now() - created < 60_000) token.needsOnboarding = true;
       }
       // Allow client-side session.update({ role }) after role changes.
       if (trigger === 'update' && session?.role) {
         token.role = session.role as UserRole;
+      }
+      // Onboarding page calls update({ onboarded: true }) when finished — clear the flag.
+      if (trigger === 'update' && session?.onboarded) {
+        token.needsOnboarding = false;
       }
       // OAuth first sign-in: backfill role from DB.
       if (token.id && !token.role) {
@@ -148,6 +159,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async session({ session, token }) {
       if (token.id) session.user.id = token.id;
       if (token.role) session.user.role = token.role;
+      if (token.needsOnboarding) session.user.needsOnboarding = true;
       return session;
     },
   },
