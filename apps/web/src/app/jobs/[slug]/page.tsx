@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -49,19 +50,24 @@ export function generateStaticParams() {
   return [...roleEmirateStaticParams(), ...rolePageStaticParams()];
 }
 
-async function loadJob(slug: string) {
+// cache() dedupes the call so generateMetadata + the page share one DB query per request.
+const loadJob = cache(async (slug: string) => {
   try {
     const api = await getApi();
-    const job = await api.jobs.bySlug({ slug });
-    console.log('[loadJob] found job:', job?.id, job?.status);
-    return job;
+    return await api.jobs.bySlug({ slug });
   } catch (err) {
     // Any failure (NOT_FOUND, a bad/truncated slug, a transient error) → treat as "not found"
     // so the page shows the custom 404 instead of the "Something went wrong" error boundary.
-    console.error('[loadJob] slug:', slug, 'error:', err);
+    // Missing jobs are routine (bots hit dead slugs) — log those as a quiet one-liner and only
+    // dump a full stack for genuinely unexpected errors.
+    if ((err as { code?: string })?.code === 'NOT_FOUND') {
+      console.warn('[loadJob] not found:', slug);
+    } else {
+      console.error('[loadJob] slug:', slug, 'error:', err);
+    }
     return null;
   }
-}
+});
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
