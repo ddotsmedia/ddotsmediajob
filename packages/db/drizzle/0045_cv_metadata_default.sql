@@ -1,0 +1,2 @@
+ALTER TABLE "users" ALTER COLUMN "cv_metadata" SET DEFAULT '{"skills":[],"experience":0,"location":[],"education":[]}'::jsonb;--> statement-breakpoint
+UPDATE "users" SET "cv_metadata" = '{"skills":[],"experience":0,"location":[],"education":[]}'::jsonb WHERE "cv_metadata" = '{}'::jsonb;

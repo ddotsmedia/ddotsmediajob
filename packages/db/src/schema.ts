@@ -68,8 +68,9 @@ export const users = pgTable(
     // Employer CV search: opt-in flag + AI-extracted resume metadata.
     cvSearchable: boolean('cv_searchable').default(false).notNull(),
     cvMetadata: jsonb('cv_metadata')
+      // Fields kept optional: legacy/partial rows and Postgres jsonb don't guarantee shape.
       .$type<{ skills?: string[]; experience?: number; location?: string[]; education?: string[] }>()
-      .default({})
+      .default({ skills: [], experience: 0, location: [], education: [] })
       .notNull(),
     ...timestamps,
   },
