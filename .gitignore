@@ -35,3 +35,4 @@ coverage/
 .vercel
 .cache/
 drizzle/meta/_journal.json.bak
+apps/web/.env.production*
