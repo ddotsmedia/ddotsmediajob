@@ -309,6 +309,13 @@
       "when": 1784026599564,
       "tag": "0043_ambiguous_hellion",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1784259508679,
+      "tag": "0044_add-cv-searchable",
+      "breakpoints": true
     }
   ]
 }

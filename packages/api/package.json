@@ -8,6 +8,7 @@
     "./client": "./src/client.ts",
     "./lib/typesense": "./src/lib/typesense.ts",
     "./lib/anthropic": "./src/lib/anthropic.ts",
+    "./lib/resume-parser": "./src/lib/resume-parser.ts",
     "./lib/queue": "./src/lib/queue.ts",
     "./lib/helpers": "./src/lib/helpers.ts",
     "./lib/email": "./src/lib/email.ts",

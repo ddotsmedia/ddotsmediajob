@@ -1,7 +1,8 @@
 import { createUploadthing, type FileRouter } from 'uploadthing/next';
 import { UploadThingError } from 'uploadthing/server';
-import { db, jobseekerProfiles, eq } from '@ddots/db';
+import { db, jobseekerProfiles, users, eq } from '@ddots/db';
 import { auth } from '@ddots/auth';
+import { parseResume } from '@ddots/api/lib/resume-parser';
 
 const f = createUploadthing();
 
@@ -24,6 +25,11 @@ export const ourFileRouter = {
         .insert(jobseekerProfiles)
         .values({ userId: metadata.userId, resumeUrl: url, resumeFilename: file.name, resumeUploadedAt: new Date() })
         .onConflictDoUpdate({ target: jobseekerProfiles.userId, set: { resumeUrl: url, resumeFilename: file.name, resumeUploadedAt: new Date() } });
+      // Auto-extract CV metadata in the background for employer CV search (pm2 keeps the
+      // process alive, so fire-and-forget is safe here). parseResume never throws.
+      void parseResume(url).then((meta) =>
+        db.update(users).set({ cvMetadata: meta }).where(eq(users.id, metadata.userId)),
+      ).catch((e) => console.error('[cvUploader] metadata parse failed:', e instanceof Error ? e.message : e));
       return { url, userId: metadata.userId };
     }),
 } satisfies FileRouter;

@@ -252,10 +252,16 @@ function TagInput({ label, value, onChange, placeholder }: { label: string; valu
 function VisibilityToggles() {
   const utils = trpc.useUtils();
   const me = trpc.jobseekers.me.useQuery();
+  const cvStatus = trpc.cvs.myStatus.useQuery();
   const vis = trpc.jobseekers.toggleVisibility.useMutation({ onSuccess: () => utils.jobseekers.me.invalidate() });
   const otw = trpc.jobseekers.toggleOpenToWork.useMutation({ onSuccess: () => utils.jobseekers.me.invalidate() });
+  const cvSearch = trpc.cvs.makeSearchable.useMutation({
+    onSuccess: () => { utils.cvs.myStatus.invalidate(); toast.success('CV search preference saved'); },
+    onError: (e) => toast.error(e.message),
+  });
   const visible = me.data?.visibility !== 'hidden';
   const open = me.data?.openToWork ?? true;
+  const searchable = cvStatus.data?.cvSearchable ?? false;
   return (
     <div className="space-y-2 rounded-lg border bg-navy-50/30 p-4">
       <label className="flex items-center justify-between text-sm text-navy-800">Profile visible to employers
@@ -263,6 +269,9 @@ function VisibilityToggles() {
       </label>
       <label className="flex items-center justify-between text-sm text-navy-800">Open to work
         <input type="checkbox" checked={open} onChange={() => otw.mutate()} className="h-4 w-4 rounded text-teal-600" />
+      </label>
+      <label className="flex items-center justify-between text-sm text-navy-800">CV searchable by employers
+        <input type="checkbox" checked={searchable} disabled={cvSearch.isPending} onChange={() => cvSearch.mutate({ cvSearchable: !searchable })} className="h-4 w-4 rounded text-teal-600" />
       </label>
     </div>
   );

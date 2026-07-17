@@ -65,9 +65,18 @@ export const users = pgTable(
     totpSecret: text('totp_secret'),
     totpEnabled: boolean('totp_enabled').default(false).notNull(),
     totpBackupCodes: jsonb('totp_backup_codes').$type<string[]>().default([]).notNull(),
+    // Employer CV search: opt-in flag + AI-extracted resume metadata.
+    cvSearchable: boolean('cv_searchable').default(false).notNull(),
+    cvMetadata: jsonb('cv_metadata')
+      .$type<{ skills?: string[]; experience?: number; location?: string[]; education?: string[] }>()
+      .default({})
+      .notNull(),
     ...timestamps,
   },
-  (t) => [uniqueIndex('users_email_idx').on(t.email)],
+  (t) => [
+    uniqueIndex('users_email_idx').on(t.email),
+    index('idx_users_cv_searchable').on(t.cvSearchable).where(sql`${t.cvSearchable} = true`),
+  ],
 );
 
 // Auth.js Drizzle adapter tables
