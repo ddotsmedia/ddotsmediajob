@@ -3,6 +3,9 @@ import type { NextConfig } from 'next';
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // Atomic deploys build into a staging dir (NEXT_BUILD_DIR=.next-staging) then swap it in,
+  // so the live .next is never half-written during a build. Defaults to .next everywhere else.
+  distDir: process.env.NEXT_BUILD_DIR || '.next',
   // Transpile workspace packages (they ship raw TS).
   transpilePackages: ['@ddots/api', '@ddots/auth', '@ddots/db', '@ddots/shared', '@ddots/email'],
   experimental: {
