@@ -1,11 +1,8 @@
-import type Anthropic from '@anthropic-ai/sdk';
-import { getAnthropic } from './anthropic';
-
 /**
  * Resume → structured metadata for employer CV search (users.cv_metadata).
- * Goes straight to Anthropic (Claude Haiku) because the Gemini OpenAI-compat layer
- * in ./anthropic cannot ingest PDFs — and CVs are overwhelmingly PDFs.
- * Never throws: any failure (fetch, unsupported type, AI error) returns empty defaults.
+ * Uses the NATIVE Gemini Vision API (generateContent) — not the OpenAI-compat shim in
+ * ./anthropic, which rejects PDFs. Native Gemini ingests PDFs as inline_data, and CVs
+ * are overwhelmingly PDFs. Never throws: any failure returns empty defaults.
  */
 export type CvMetadata = {
   skills: string[];
@@ -16,70 +13,86 @@ export type CvMetadata = {
 
 export const EMPTY_CV_METADATA: CvMetadata = { skills: [], experience: 0, location: [], education: [] };
 
-const MODEL = process.env.CLAUDE_MODEL_FAST ?? 'claude-haiku-4-5';
-const MAX_BYTES = 8 * 1024 * 1024; // Claude document block limit headroom
+const MODEL = process.env.GEMINI_MODEL_FAST ?? 'gemini-2.5-flash';
+const MAX_BYTES = 15 * 1024 * 1024; // Gemini inline_data cap headroom
 
-const TOOL: Anthropic.Tool = {
-  name: 'save_cv_metadata',
-  description: 'Save structured metadata extracted from a CV/resume.',
-  input_schema: {
-    type: 'object',
-    properties: {
-      skills: { type: 'array', items: { type: 'string' }, description: 'Professional skills' },
-      experience: { type: 'number', description: 'Total years of work experience' },
-      location: { type: 'array', items: { type: 'string' }, description: 'Cities/countries the candidate lives or has worked in' },
-      education: { type: 'array', items: { type: 'string' }, description: 'Degrees and schools' },
-    },
-    required: ['skills', 'experience', 'location', 'education'],
+const RESPONSE_SCHEMA = {
+  type: 'OBJECT',
+  properties: {
+    skills: { type: 'ARRAY', items: { type: 'STRING' } },
+    experience: { type: 'NUMBER' },
+    location: { type: 'ARRAY', items: { type: 'STRING' } },
+    education: { type: 'ARRAY', items: { type: 'STRING' } },
   },
-};
+  required: ['skills', 'experience', 'location', 'education'],
+} as const;
+
+const PROMPT =
+  'Extract JSON from this CV/resume with { skills: [array of professional skills], ' +
+  'experience: total years of work experience (number), location: [cities/countries the ' +
+  'candidate lives or has worked in], education: [degrees/schools] }. Do not invent facts ' +
+  'that are not present in the document.';
 
 const strArr = (v: unknown, max: number): string[] =>
-  Array.isArray(v) ? v.filter((s): s is string => typeof s === 'string' && s.trim().length > 0).map((s) => s.trim().slice(0, 80)).slice(0, max) : [];
+  Array.isArray(v)
+    ? v.filter((s): s is string => typeof s === 'string' && s.trim().length > 0).map((s) => s.trim().slice(0, 80)).slice(0, max)
+    : [];
+
+function mediaTypeFor(url: string, contentType: string): string | null {
+  const ct = contentType.toLowerCase();
+  const lower = url.toLowerCase();
+  if (ct.includes('pdf') || lower.includes('.pdf')) return 'application/pdf';
+  if (ct.includes('png') || lower.endsWith('.png')) return 'image/png';
+  if (ct.includes('jpeg') || ct.includes('jpg') || /\.jpe?g$/.test(lower)) return 'image/jpeg';
+  if (ct.includes('webp') || lower.endsWith('.webp')) return 'image/webp';
+  return null; // doc/docx etc. — not directly ingestible
+}
 
 export async function parseResume(pdfUrl: string): Promise<CvMetadata> {
   try {
-    const res = await fetch(pdfUrl, { signal: AbortSignal.timeout(15_000) });
-    if (!res.ok) return EMPTY_CV_METADATA;
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) return EMPTY_CV_METADATA;
 
-    const ct = (res.headers.get('content-type') ?? '').toLowerCase();
-    const lower = pdfUrl.toLowerCase();
-    const mediaType = ct.includes('pdf') || lower.includes('.pdf')
-      ? 'application/pdf'
-      : ct.includes('png') || lower.endsWith('.png')
-        ? 'image/png'
-        : ct.includes('jpeg') || ct.includes('jpg') || /\.jpe?g$/.test(lower)
-          ? 'image/jpeg'
-          : null;
-    if (!mediaType) return EMPTY_CV_METADATA; // doc/docx etc. — Claude document blocks are PDF-only
+    const file = await fetch(pdfUrl, { signal: AbortSignal.timeout(15_000) });
+    if (!file.ok) return EMPTY_CV_METADATA;
 
-    const buf = Buffer.from(await res.arrayBuffer());
+    const mimeType = mediaTypeFor(pdfUrl, file.headers.get('content-type') ?? '');
+    if (!mimeType) return EMPTY_CV_METADATA;
+
+    const buf = Buffer.from(await file.arrayBuffer());
     if (buf.length === 0 || buf.length > MAX_BYTES) return EMPTY_CV_METADATA;
 
-    const fileBlock =
-      mediaType === 'application/pdf'
-        ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: buf.toString('base64') } }
-        : { type: 'image', source: { type: 'base64', media_type: mediaType, data: buf.toString('base64') } };
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        signal: AbortSignal.timeout(30_000),
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                { inline_data: { mime_type: mimeType, data: buf.toString('base64') } },
+                { text: PROMPT },
+              ],
+            },
+          ],
+          generationConfig: { responseMimeType: 'application/json', responseSchema: RESPONSE_SCHEMA },
+        }),
+      },
+    );
+    if (!res.ok) {
+      console.error('[resume-parser] gemini HTTP', res.status);
+      return EMPTY_CV_METADATA;
+    }
 
-    const msg = await getAnthropic().messages.create({
-      model: MODEL,
-      max_tokens: 1500,
-      system: 'You extract structured data from CVs/resumes. Always use the tool. Do not invent facts that are not in the document.',
-      tools: [TOOL],
-      tool_choice: { type: 'tool', name: TOOL.name },
-      messages: [
-        {
-          role: 'user',
-          content: [
-            fileBlock,
-            { type: 'text', text: 'Extract from this CV: skills (array), total experience in years (number), location (cities/countries array), education (degrees/schools array).' },
-          ] as unknown as Anthropic.MessageParam['content'],
-        },
-      ],
-    });
+    const json = (await res.json()) as {
+      candidates?: { content?: { parts?: { text?: string }[] } }[];
+    };
+    const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) return EMPTY_CV_METADATA;
 
-    const block = msg.content.find((b): b is Anthropic.ToolUseBlock => b.type === 'tool_use');
-    const raw = (block?.input ?? {}) as Partial<Record<keyof CvMetadata, unknown>>;
+    const raw = JSON.parse(text) as Partial<Record<keyof CvMetadata, unknown>>;
     return {
       skills: strArr(raw.skills, 50),
       experience: typeof raw.experience === 'number' && Number.isFinite(raw.experience) ? Math.min(Math.max(raw.experience, 0), 60) : 0,
