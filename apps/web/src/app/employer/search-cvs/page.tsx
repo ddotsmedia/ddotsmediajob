@@ -1,26 +1,44 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { EMIRATES } from '@ddots/shared';
 import { Search, FileText, MessageCircle, MapPin, Briefcase, GraduationCap, Loader2, X, UserRound } from 'lucide-react';
 import { trpc } from '@/trpc/react';
 import { Button } from '@/components/ui/button';
-import { Input, Label } from '@/components/ui/primitives';
+import { Label, Select } from '@/components/ui/primitives';
 
 type Filters = { skills: string[]; location: string; experience: number };
 const NO_FILTERS: Filters = { skills: [], location: '', experience: 0 };
 
 export default function SearchCvsPage() {
+  const router = useRouter();
+  const { data: session, status } = useSession();
   const [draft, setDraft] = useState<Filters>(NO_FILTERS);
   const [skillInput, setSkillInput] = useState('');
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
 
-  const results = trpc.cvs.search.useQuery({
-    skills: filters.skills.length ? filters.skills : undefined,
-    location: filters.location || undefined,
-    experience: filters.experience || undefined,
-    limit: 30,
-  });
+  // Employer-only. Middleware already gates /employer/*, but guard client-side too.
+  const isEmployer = session?.user?.role === 'employer' || session?.user?.role === 'admin';
+  useEffect(() => {
+    if (status === 'authenticated' && !isEmployer) router.replace('/onboarding');
+  }, [status, isEmployer, router]);
+
+  const results = trpc.cvs.search.useQuery(
+    {
+      skills: filters.skills.length ? filters.skills : undefined,
+      location: filters.location || undefined,
+      experience: filters.experience || undefined,
+      limit: 24,
+    },
+    { enabled: isEmployer },
+  );
+
+  if (status === 'loading' || !isEmployer) {
+    return <div className="flex min-h-[60vh] items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-teal-500" /></div>;
+  }
 
   const addSkill = () => {
     const s = skillInput.trim().replace(/,$/, '');
@@ -60,7 +78,10 @@ export default function SearchCvsPage() {
           </div>
           <div className="space-y-1.5">
             <Label>Location</Label>
-            <Input value={draft.location} onChange={(e) => setDraft((d) => ({ ...d, location: e.target.value }))} placeholder="e.g. Dubai" />
+            <Select value={draft.location} onChange={(e) => setDraft((d) => ({ ...d, location: e.target.value }))}>
+              <option value="">All emirates</option>
+              {EMIRATES.map((em) => <option key={em.slug} value={em.name}>{em.name}</option>)}
+            </Select>
           </div>
           <div className="space-y-1.5">
             <Label>Min experience: <span className="font-bold text-teal-700">{draft.experience} yrs</span></Label>
@@ -85,8 +106,8 @@ export default function SearchCvsPage() {
       ) : !results.data?.length ? (
         <div className="mt-6 rounded-2xl border border-dashed bg-white p-10 text-center">
           <UserRound className="mx-auto h-10 w-10 text-navy-300" />
-          <p className="mt-3 font-semibold text-navy-900">No candidates yet.</p>
-          <p className="text-sm text-navy-700/60">Share your job to find matches.</p>
+          <p className="mt-3 font-semibold text-navy-900">No candidates match.</p>
+          <p className="text-sm text-navy-700/60">Adjust filters or check back.</p>
         </div>
       ) : (
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

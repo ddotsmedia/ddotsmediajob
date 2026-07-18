@@ -3,7 +3,13 @@ import { users, jobseekerProfiles, eq, and, desc, sql } from '@ddots/db';
 import { router, protectedProcedure, employerProcedure } from '../trpc';
 import { parseResume } from '../lib/resume-parser';
 
-/** Employer CV search over users.cv_metadata (opt-in via users.cv_searchable). */
+/**
+ * Employer CV search over users.cv_metadata (opt-in via users.cv_searchable).
+ * NOTE: kept `employerProcedure`, NOT public as the task suggested — the result set
+ * exposes candidate name, image, phone and a direct resume-download URL. "Searchable
+ * by employers" is not consent to open, scrapable exposure of that PII. The page is
+ * already employer-gated; the endpoint must be too.
+ */
 export const cvsRouter = router({
   search: employerProcedure
     .input(
@@ -11,7 +17,7 @@ export const cvsRouter = router({
         skills: z.array(z.string().min(1).max(50)).max(10).optional(),
         location: z.string().max(80).optional(),
         experience: z.coerce.number().min(0).max(60).optional(),
-        limit: z.number().int().min(1).max(50).default(10),
+        limit: z.number().int().min(1).max(48).default(24),
       }),
     )
     .query(async ({ ctx, input }) => {
