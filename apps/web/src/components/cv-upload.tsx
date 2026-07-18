@@ -22,8 +22,10 @@ export function CvUpload({
   const [name, setName] = useState<string | null>(initialName);
   const [at, setAt] = useState<string | Date | null>(initialAt);
   const [busy, setBusy] = useState(false);
+  const [parsing, setParsing] = useState(false);
   const presign = trpc.jobseekers.presignResume.useMutation();
   const save = trpc.jobseekers.setResume.useMutation();
+  const parseCv = trpc.cvs.parseCv.useMutation();
 
   async function upload(file: File) {
     if (!OK_EXT.test(file.name)) return toast.error('CV must be a PDF, DOC or DOCX');
@@ -38,6 +40,10 @@ export function CvUpload({
       setName(file.name);
       setAt(new Date());
       toast.success('CV uploaded');
+      // Extract skills/experience/location into cv_metadata for employer search.
+      setParsing(true);
+      try { await parseCv.mutateAsync(); } catch { /* best-effort; makeSearchable re-parses later */ }
+      finally { setParsing(false); }
     } catch {
       toast.error('Upload failed — please try again');
     } finally {
@@ -69,8 +75,8 @@ export function CvUpload({
         </div>
       ) : (
         <label className="mt-3 flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed border-navy-200 px-4 py-8 text-center hover:border-teal-400 hover:bg-teal-50/30">
-          {busy ? <Loader2 className="h-6 w-6 animate-spin text-teal-500" /> : <Upload className="h-6 w-6 text-navy-400" />}
-          <span className="text-sm font-medium text-navy-700">{busy ? 'Uploading…' : 'Upload your CV'}</span>
+          {busy || parsing ? <Loader2 className="h-6 w-6 animate-spin text-teal-500" /> : <Upload className="h-6 w-6 text-navy-400" />}
+          <span className="text-sm font-medium text-navy-700">{parsing ? 'Parsing CV…' : busy ? 'Uploading…' : 'Upload your CV'}</span>
           <span className="text-xs text-navy-700/50">PDF, DOC or DOCX · max 5 MB</span>
           <input type="file" accept={ACCEPT} className="hidden" disabled={busy} onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} />
         </label>

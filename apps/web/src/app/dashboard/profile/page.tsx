@@ -31,6 +31,13 @@ export default function ProfilePage() {
     onSuccess: () => { toast.success('Profile saved'); utils.jobseekers.me.invalidate(); },
     onError: (e) => toast.error(e.message),
   });
+  const parseCv = trpc.cvs.parseCv.useMutation();
+  // On a new CV, extract its metadata (skills/experience/…) for employer search, with a loader.
+  async function onCvUploaded() {
+    toast.success('CV uploaded successfully!');
+    utils.jobseekers.me.invalidate();
+    try { await parseCv.mutateAsync(); } catch { /* best-effort; makeSearchable re-parses later */ }
+  }
   const [step, setStep] = useState(0);
   const [f, setF] = useState<Form | null>(null);
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setF((s) => (s ? { ...s, [k]: v } : s));
@@ -186,11 +193,15 @@ export default function ProfilePage() {
                 </div>
               )}
               <div className="mt-4">
-                <UploadButton
-                  endpoint="cvUploader"
-                  onClientUploadComplete={() => { toast.success('CV uploaded successfully!'); utils.jobseekers.me.invalidate(); }}
-                  onUploadError={(error) => { toast.error(error.message); }}
-                />
+                {parseCv.isPending ? (
+                  <p className="flex items-center gap-2 text-sm font-medium text-teal-700"><Loader2 className="h-4 w-4 animate-spin" /> Parsing CV…</p>
+                ) : (
+                  <UploadButton
+                    endpoint="cvUploader"
+                    onClientUploadComplete={onCvUploaded}
+                    onUploadError={(error) => { toast.error(error.message); }}
+                  />
+                )}
               </div>
             </div>
             <VisibilityToggles />

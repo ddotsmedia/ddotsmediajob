@@ -23,6 +23,14 @@ export default function OnboardingPage() {
   const [intent, setIntent] = useState<Intent | null>(null);
   const [finishing, setFinishing] = useState(false);
   const becomeEmployer = trpc.auth.becomeEmployer.useMutation();
+  const parseCv = trpc.cvs.parseCv.useMutation();
+
+  // After a CV lands, extract its metadata (skills/experience/…) with a visible loader.
+  async function onCvUploaded() {
+    toast.success('CV uploaded!');
+    try { await parseCv.mutateAsync(); } catch { /* parse is best-effort; makeSearchable re-parses later */ }
+    setStep(2);
+  }
 
   // Onboarding needs a signed-in user.
   useEffect(() => {
@@ -107,12 +115,16 @@ export default function OnboardingPage() {
           <h1 className="mt-4 font-display text-2xl font-bold text-navy-900">Upload your CV to get noticed by employers</h1>
           <p className="mt-2 text-navy-700/60">Employers search our CV database daily. PDF or Word, max 4&nbsp;MB.</p>
           <div className="mt-8 flex flex-col items-center gap-4 rounded-2xl border bg-white p-8">
-            <UploadButton
-              endpoint="cvUploader"
-              onClientUploadComplete={() => { toast.success('CV uploaded!'); setStep(2); }}
-              onUploadError={(err) => { toast.error(err.message); }}
-            />
-            <p className="text-xs text-navy-700/50">We save it to your profile automatically.</p>
+            {parseCv.isPending ? (
+              <p className="flex items-center gap-2 text-sm font-medium text-teal-700"><Loader2 className="h-4 w-4 animate-spin" /> Parsing CV…</p>
+            ) : (
+              <UploadButton
+                endpoint="cvUploader"
+                onClientUploadComplete={onCvUploaded}
+                onUploadError={(err) => { toast.error(err.message); }}
+              />
+            )}
+            <p className="text-xs text-navy-700/50">We extract your skills automatically.</p>
           </div>
           <button onClick={() => setStep(2)} className="mt-6 inline-flex items-center gap-1 text-sm font-semibold text-navy-700/70 hover:text-teal-600">
             Skip for now <ArrowRight className="h-4 w-4" />

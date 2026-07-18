@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { users, jobseekerProfiles, eq, and, desc, sql } from '@ddots/db';
 import { router, protectedProcedure, employerProcedure } from '../trpc';
-import { parseResume } from '../lib/resume-parser';
+import { parseResume, EMPTY_CV_METADATA } from '../lib/resume-parser';
 
 /**
  * Employer CV search over users.cv_metadata (opt-in via users.cv_searchable).
@@ -51,6 +51,23 @@ export const cvsRouter = router({
         .orderBy(desc(users.createdAt))
         .limit(input.limit);
     }),
+
+  /**
+   * (Re)parse the signed-in user's CV into users.cv_metadata. Upload UIs call this right
+   * after a CV lands so the extraction is explicit + observable ("Parsing CV…"), not a
+   * silent background job. Reads resumeUrl server-side (never trusts a client-supplied URL).
+   */
+  parseCv: protectedProcedure.mutation(async ({ ctx }) => {
+    const userId = ctx.session.user.id;
+    const profile = await ctx.db.query.jobseekerProfiles.findFirst({
+      where: eq(jobseekerProfiles.userId, userId),
+      columns: { resumeUrl: true },
+    });
+    if (!profile?.resumeUrl) return { parsed: false, metadata: EMPTY_CV_METADATA };
+    const metadata = await parseResume(profile.resumeUrl); // never throws
+    await ctx.db.update(users).set({ cvMetadata: metadata }).where(eq(users.id, userId));
+    return { parsed: true, metadata };
+  }),
 
   /** Current user's opt-in status (drives the profile toggle). */
   myStatus: protectedProcedure.query(async ({ ctx }) => {
