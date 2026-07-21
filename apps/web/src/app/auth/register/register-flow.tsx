@@ -16,10 +16,9 @@ type Role = 'jobseeker' | 'employer';
 // Mirror the server passwordSchema exactly (jobs-shared/validators) so the client checklist
 // can never pass a password the API will reject.
 const RULES: { label: string; test: (p: string) => boolean }[] = [
-  { label: 'At least 10 characters', test: (p) => p.length >= 10 },
+  { label: 'At least 8 characters', test: (p) => p.length >= 8 },
   { label: 'One uppercase letter', test: (p) => /[A-Z]/.test(p) },
   { label: 'One number', test: (p) => /[0-9]/.test(p) },
-  { label: 'One symbol', test: (p) => /[^A-Za-z0-9]/.test(p) },
 ];
 
 export function RegisterFlow() {
@@ -132,7 +131,7 @@ export function RegisterFlow() {
               </button>
             </div>
             {/* Real-time requirement checklist */}
-            <ul className="mt-2 grid grid-cols-1 gap-1 sm:grid-cols-2">
+            <ul className="mt-2 grid grid-cols-1 gap-1">
               {RULES.map((r) => {
                 const ok = r.test(password);
                 return (

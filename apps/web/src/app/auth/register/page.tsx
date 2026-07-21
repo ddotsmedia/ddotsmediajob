@@ -6,7 +6,7 @@ export const metadata: Metadata = { title: 'Create Account', robots: { index: fa
 
 export default function AuthRegisterPage() {
   return (
-    <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center bg-navy-50/40 px-4 py-10">
+    <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center bg-gradient-to-br from-teal-50 via-white to-navy-100 px-4 py-10">
       <Suspense>
         <RegisterFlow />
       </Suspense>

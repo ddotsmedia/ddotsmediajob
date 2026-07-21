@@ -14,13 +14,14 @@ import {
 const nonEmpty = (max: number) => z.string().trim().min(1).max(max);
 
 // ─── Auth ────────────────────────────────────────────────
+// 8+ chars, one uppercase, one number. (Breached passwords are additionally blocked at
+// register via isPwnedPassword.) Client checklists mirror these exact three rules.
 export const passwordSchema = z
   .string()
-  .min(10, 'Password must be at least 10 characters')
+  .min(8, 'Password must be at least 8 characters')
   .max(100)
   .regex(/[A-Z]/, 'Include at least one uppercase letter')
-  .regex(/[0-9]/, 'Include at least one number')
-  .regex(/[^A-Za-z0-9]/, 'Include at least one symbol');
+  .regex(/[0-9]/, 'Include at least one number');
 
 export const registerSchema = z.object({
   name: nonEmpty(120),
