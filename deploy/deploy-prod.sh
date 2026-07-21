@@ -9,7 +9,7 @@
 set -Eeuo pipefail
 
 APP_DIR="${APP_DIR:-/opt/ddotsmediajobs}"
-PORT="${PORT:-3050}"
+PORT="${PORT:-3200}"
 cd "$APP_DIR"
 
 # Env lives at apps/web/.env on the VPS. Load it if present; warn (don't abort)
@@ -27,14 +27,11 @@ export DATABASE_URL="$(grep -E '^DATABASE_URL=' "$ENV_FILE" 2>/dev/null | head -
 echo "▶ install"; pnpm install --frozen-lockfile
 echo "▶ privacy guard"; node scripts/check-public-email.mjs
 echo "▶ migrate"; pnpm db:migrate
-echo "▶ build";   pnpm build
 
-echo "▶ (re)start web"
-if pm2 describe ddots-web >/dev/null 2>&1; then
-  pm2 restart ddots-web --update-env
-else
-  ( cd apps/web && pm2 start node_modules/next/dist/bin/next --name ddots-web --update-env -- start -H 127.0.0.1 -p "$PORT" )
-fi
+# Atomic build + swap + web restart + health, serialized by flock (kills the .next race).
+# A concurrent CI/manual deploy exits 17 ("deploy already in progress") — treat as success.
+echo "▶ atomic web deploy"
+bash "$APP_DIR/deploy-atomic.sh" || { rc=$?; [ "$rc" = "17" ] && { echo "another deploy is finishing it — ok"; exit 0; }; exit "$rc"; }
 
 echo "▶ (re)start worker"
 if pm2 describe ddots-worker >/dev/null 2>&1; then
@@ -43,11 +40,3 @@ else
   ( cd packages/api && pm2 start node_modules/.bin/tsx --name ddots-worker --update-env -- src/worker.ts )
 fi
 pm2 save >/dev/null 2>&1 || true
-
-echo "▶ health check :$PORT"
-for i in $(seq 1 12); do
-  C=$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:${PORT}/" || echo 000)
-  if [ "$C" = "200" ]; then echo "✓ healthy (HTTP 200) — $(git rev-parse --short HEAD)"; exit 0; fi
-  sleep 2
-done
-echo "✗ not healthy"; pm2 logs ddots-web --lines 30 --nostream || true; exit 1
