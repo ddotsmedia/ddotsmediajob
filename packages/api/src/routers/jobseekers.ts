@@ -6,6 +6,7 @@ import { router, protectedProcedure, publicProcedure, employerProcedure } from '
 import { presignUpload, deleteObjectByUrl } from '../lib/r2';
 import { notify } from '../lib/helpers';
 import { assertUploadType, enforceRateLimit } from '../lib/security';
+import { parseResume } from '../lib/resume-parser';
 
 /** Generate a unique username from a display name (firstname.lastname[.n]). */
 async function ensureUsername(db: typeof import('@ddots/db').db, userId: string, name: string | null): Promise<string | null> {
@@ -379,6 +380,10 @@ export const jobseekersRouter = router({
       if (prev?.resumeUrl && prev.resumeUrl !== input.url) {
         await deleteObjectByUrl(prev.resumeUrl).catch(() => {});
       }
+      // Auto-extract CV metadata for employer search and opt the CV in. parseResume never
+      // throws (empty defaults on failure). Users can opt back out via the profile toggle.
+      const metadata = await parseResume(input.url);
+      await ctx.db.update(users).set({ cvMetadata: metadata, cvSearchable: true }).where(eq(users.id, ctx.session.user.id));
       return { ok: true };
     }),
 });

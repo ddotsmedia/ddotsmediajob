@@ -80,7 +80,8 @@ export const cvsRouter = router({
     });
     if (!profile?.resumeUrl) return { parsed: false, metadata: EMPTY_CV_METADATA };
     const metadata = await parseResume(profile.resumeUrl); // never throws
-    await ctx.db.update(users).set({ cvMetadata: metadata }).where(eq(users.id, userId));
+    // Store metadata and opt the CV into employer search (users can opt out via the profile toggle).
+    await ctx.db.update(users).set({ cvMetadata: metadata, cvSearchable: true }).where(eq(users.id, userId));
     return { parsed: true, metadata };
   }),
 
