@@ -18,6 +18,7 @@ export const cvsRouter = router({
         location: z.string().max(80).optional(),
         experience: z.coerce.number().min(0).max(60).optional(),
         limit: z.number().int().min(1).max(48).default(24),
+        page: z.number().int().min(1).default(1),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -49,8 +50,22 @@ export const cvsRouter = router({
         .leftJoin(jobseekerProfiles, eq(jobseekerProfiles.userId, users.id))
         .where(and(...conds))
         .orderBy(desc(users.createdAt))
-        .limit(input.limit);
+        .limit(input.limit)
+        .offset((input.page - 1) * input.limit);
     }),
+
+  /** Distinct skills across searchable CVs — powers the skills autocomplete on the search page. */
+  skillOptions: employerProcedure.query(async ({ ctx }) => {
+    const rows = await ctx.db.execute<{ skill: string }>(sql`
+      SELECT DISTINCT trim(both '"' from skill) AS skill
+      FROM ${users}, jsonb_array_elements_text(${users.cvMetadata} -> 'skills') AS skill
+      WHERE ${users.cvSearchable} = true AND length(trim(skill)) > 0
+      ORDER BY skill
+      LIMIT 200
+    `);
+    const list = (rows as unknown as { rows?: { skill: string }[] }).rows ?? (rows as unknown as { skill: string }[]);
+    return list.map((r) => r.skill).filter(Boolean);
+  }),
 
   /**
    * (Re)parse the signed-in user's CV into users.cv_metadata. Upload UIs call this right

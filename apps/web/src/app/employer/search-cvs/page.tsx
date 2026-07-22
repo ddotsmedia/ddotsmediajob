@@ -36,6 +36,9 @@ export default function SearchCvsPage() {
     { enabled: isEmployer },
   );
 
+  // Real skills from opted-in CVs, for the skills autocomplete.
+  const skillOptions = trpc.cvs.skillOptions.useQuery(undefined, { enabled: isEmployer }).data ?? [];
+
   if (status === 'loading' || !isEmployer) {
     return <div className="flex min-h-[60vh] items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-teal-500" /></div>;
   }
@@ -67,6 +70,7 @@ export default function SearchCvsPage() {
                 </span>
               ))}
               <input
+                list="cv-skill-options"
                 value={skillInput}
                 onChange={(e) => setSkillInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addSkill(); } }}
@@ -74,6 +78,9 @@ export default function SearchCvsPage() {
                 placeholder={draft.skills.length ? '' : 'e.g. Photoshop, Excel'}
                 className="min-w-[100px] flex-1 bg-transparent px-1 text-sm outline-none"
               />
+              <datalist id="cv-skill-options">
+                {skillOptions.filter((s) => !draft.skills.includes(s)).map((s) => <option key={s} value={s} />)}
+              </datalist>
             </div>
           </div>
           <div className="space-y-1.5">
@@ -107,7 +114,7 @@ export default function SearchCvsPage() {
         <div className="mt-6 rounded-2xl border border-dashed bg-white p-10 text-center">
           <UserRound className="mx-auto h-10 w-10 text-navy-300" />
           <p className="mt-3 font-semibold text-navy-900">No candidates match.</p>
-          <p className="text-sm text-navy-700/60">Adjust filters or check back.</p>
+          <p className="text-sm text-navy-700/60">Adjust filters or check back later.</p>
         </div>
       ) : (
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
