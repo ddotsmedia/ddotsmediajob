@@ -5,7 +5,7 @@ import { IntentJobsView, type IntentConfig } from '@/components/seo/intent-jobs-
 
 export const revalidate = 3600;
 export const metadata: Metadata = {
-  title: 'Jobs for Indians in UAE 2026 — Latest Indian Expat Vacancies | DdotsMediaJobs',
+  title: { absolute: 'Jobs for Indians in UAE 2026 — Latest Indian Expat Vacancies | DdotsMediaJobs' },
   description: 'Jobs in UAE for Indian nationals. Visa provided, accommodation. Top companies hiring Indians across Dubai, Abu Dhabi and all emirates.',
   alternates: { canonical: `${SITE.url}/jobs/jobs-for-indians-in-uae` },
 };

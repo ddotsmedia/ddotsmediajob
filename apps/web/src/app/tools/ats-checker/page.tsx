@@ -4,7 +4,7 @@ import { ToolLandingView, type ToolConfig } from '@/components/seo/tool-landing-
 
 export const revalidate = 3600;
 export const metadata: Metadata = {
-  title: 'Free ATS Resume Checker for UAE Jobs | DdotsMediaJobs',
+  title: { absolute: 'Free ATS Resume Checker for UAE Jobs | DdotsMediaJobs' },
   description: 'Check your CV against ATS for free. AI scores your resume, finds missing keywords and gives improvements for UAE jobs.',
   alternates: { canonical: `${SITE.url}/tools/ats-checker` },
 };

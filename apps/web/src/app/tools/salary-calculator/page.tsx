@@ -4,7 +4,7 @@ import { ToolLandingView, type ToolConfig } from '@/components/seo/tool-landing-
 
 export const revalidate = 3600;
 export const metadata: Metadata = {
-  title: 'UAE Salary Calculator 2026 — Net Take Home Pay | DdotsMediaJobs',
+  title: { absolute: 'UAE Salary Calculator 2026 — Net Take Home Pay | DdotsMediaJobs' },
   description: 'Calculate your UAE take home salary. WPS breakdown, gratuity, allowances. Free salary calculator — UAE has 0% income tax.',
   alternates: { canonical: `${SITE.url}/tools/salary-calculator` },
 };

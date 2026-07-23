@@ -9,7 +9,7 @@ import { WhatsappApplyButton } from '@/components/whatsapp-apply-button';
 export const revalidate = 300;
 
 export const metadata: Metadata = {
-  title: 'Walk-in Interviews UAE Today 2026 | DdotsMediaJobs',
+  title: { absolute: 'Walk-in Interviews UAE Today 2026 | DdotsMediaJobs' },
   description:
     'Find walk-in interviews in Dubai, Abu Dhabi, Sharjah today. No appointment needed. Date, time and venue listed clearly — show up and get hired.',
   alternates: { canonical: '/walk-in-interviews' },

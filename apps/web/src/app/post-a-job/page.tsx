@@ -4,7 +4,7 @@ import { Building2 } from 'lucide-react';
 import { PostAJobForm } from './post-a-job-form';
 
 export const metadata: Metadata = {
-  title: 'Post a Job in the UAE — Free | DdotsMediaJobs',
+  title: { absolute: 'Post a Job in the UAE — Free | DdotsMediaJobs' },
   description:
     'Share a job opportunity on DdotsMediaJobs. Know someone hiring? Post it free — reviewed within 24 hours and seen by thousands of UAE jobseekers.',
   alternates: { canonical: '/post-a-job' },

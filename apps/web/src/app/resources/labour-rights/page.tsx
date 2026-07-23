@@ -4,7 +4,7 @@ import { SITE } from '@ddots/shared';
 import { LabourForm } from './labour-form';
 
 export const metadata: Metadata = {
-  title: 'UAE Labour Rights & Complaint Guide — Free | DdotsMediaJobs',
+  title: { absolute: 'UAE Labour Rights & Complaint Guide — Free | DdotsMediaJobs' },
   description: 'Know your rights as a worker in the UAE. Get a free step-by-step action plan for unpaid salary, wrongful termination, gratuity, visa bans and more — with MOHRE contacts.',
   alternates: { canonical: `${SITE.url}/resources/labour-rights` },
 };

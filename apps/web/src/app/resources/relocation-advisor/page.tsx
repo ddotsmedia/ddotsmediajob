@@ -4,7 +4,7 @@ import { SITE } from '@ddots/shared';
 import { RelocationForm } from './relocation-form';
 
 export const metadata: Metadata = {
-  title: 'UAE Relocation Advisor — Free AI Planner | DdotsMediaJobs',
+  title: { absolute: 'UAE Relocation Advisor — Free AI Planner | DdotsMediaJobs' },
   description: 'Planning to move to the UAE for work? Get a free AI relocation plan: best emirate, visa route, cost of living, net savings and a 30-day action plan.',
   alternates: { canonical: `${SITE.url}/resources/relocation-advisor` },
 };

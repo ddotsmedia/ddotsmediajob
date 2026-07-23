@@ -6,7 +6,7 @@ import { getApi } from '@/trpc/server';
 export const revalidate = 300;
 
 export const metadata: Metadata = {
-  title: 'Success Stories — Hired in the UAE | DdotsMediaJobs',
+  title: { absolute: 'Success Stories — Hired in the UAE | DdotsMediaJobs' },
   description: 'Real jobseekers who landed roles across the UAE through DdotsMediaJobs. See how they did it, how long it took, and their tips for getting hired.',
   alternates: { canonical: `${SITE.url}/success-stories` },
 };

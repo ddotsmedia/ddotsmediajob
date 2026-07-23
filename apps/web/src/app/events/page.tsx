@@ -7,7 +7,7 @@ import { AddToCalendar } from '@/components/events/add-to-calendar';
 export const revalidate = 120;
 
 export const metadata: Metadata = {
-  title: 'Virtual Hiring Events — UAE | DdotsMediaJobs',
+  title: { absolute: 'Virtual Hiring Events — UAE | DdotsMediaJobs' },
   description: 'Join upcoming virtual hiring events from UAE employers. Meet recruiters online, learn about open roles, and get hired faster.',
   alternates: { canonical: `${SITE.url}/events` },
 };

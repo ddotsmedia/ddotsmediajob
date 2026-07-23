@@ -8,7 +8,7 @@ import { HBars } from '@/components/admin/mini-bar';
 export const revalidate = 600;
 
 export const metadata: Metadata = {
-  title: 'UAE Jobs Market Insights 2026 — Trends & Demand | DdotsMediaJobs',
+  title: { absolute: 'UAE Jobs Market Insights 2026 — Trends & Demand | DdotsMediaJobs' },
   description: 'Live UAE job market insights: most in-demand skills by industry, hiring demand by emirate and category, and where the vacancies are right now.',
   alternates: { canonical: `${SITE.url}/market-insights` },
 };

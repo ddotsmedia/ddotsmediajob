@@ -4,7 +4,7 @@ import { IntentJobsView, type IntentConfig } from '@/components/seo/intent-jobs-
 
 export const revalidate = 3600;
 export const metadata: Metadata = {
-  title: 'Fresher Jobs in UAE 2026 — No Experience Required | DdotsMediaJobs',
+  title: { absolute: 'Fresher Jobs in UAE 2026 — No Experience Required | DdotsMediaJobs' },
   description: 'Entry level jobs UAE for freshers. No experience required. Driver, sales, admin, hospitality and retail jobs across Dubai, Abu Dhabi and all emirates.',
   alternates: { canonical: `${SITE.url}/jobs/fresher-jobs-uae` },
 };

@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { SalaryComparisonClient } from './client';
 
 export const metadata: Metadata = {
-  title: 'UAE Salary Comparison Tool — Are You Paid Fairly? | DdotsMediaJobs',
+  title: { absolute: 'UAE Salary Comparison Tool — Are You Paid Fairly? | DdotsMediaJobs' },
   description: 'Compare your salary against the UAE market by role, emirate and experience. See if you are paid below, at, or above market — and find jobs paying more.',
 };
 

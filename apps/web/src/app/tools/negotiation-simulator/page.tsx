@@ -4,7 +4,7 @@ import { SITE } from '@ddots/shared';
 import { NegotiationSim } from './negotiation-sim';
 
 export const metadata: Metadata = {
-  title: 'Salary Negotiation Simulator — UAE | DdotsMediaJobs',
+  title: { absolute: 'Salary Negotiation Simulator — UAE | DdotsMediaJobs' },
   description: 'Practice negotiating your UAE salary against an AI hiring manager. Get realistic pushback and instant coaching to land a better offer in AED.',
   alternates: { canonical: `${SITE.url}/tools/negotiation-simulator` },
 };

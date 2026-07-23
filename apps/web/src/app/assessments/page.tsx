@@ -7,7 +7,7 @@ import { getApi } from '@/trpc/server';
 export const revalidate = 120;
 
 export const metadata: Metadata = {
-  title: 'Skill Assessments — Earn Verified Badges | DdotsMediaJobs',
+  title: { absolute: 'Skill Assessments — Earn Verified Badges | DdotsMediaJobs' },
   description: 'Take free timed skill assessments, earn verified badges, and stand out to UAE employers. Browse tests by category and climb the weekly leaderboard.',
   alternates: { canonical: `${SITE.url}/assessments` },
 };

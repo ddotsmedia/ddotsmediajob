@@ -4,7 +4,7 @@ import { SITE } from '@ddots/shared';
 import { TransitionForm } from './transition-form';
 
 export const metadata: Metadata = {
-  title: 'Career Transition Planner — UAE | DdotsMediaJobs',
+  title: { absolute: 'Career Transition Planner — UAE | DdotsMediaJobs' },
   description: 'Switching careers in the UAE? Get a free month-by-month transition plan: skills to learn, certifications, portfolio and networking to move into your target role.',
   alternates: { canonical: `${SITE.url}/tools/career-transition` },
 };

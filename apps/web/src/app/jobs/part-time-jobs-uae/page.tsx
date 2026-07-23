@@ -4,7 +4,7 @@ import { IntentJobsView, type IntentConfig } from '@/components/seo/intent-jobs-
 
 export const revalidate = 3600;
 export const metadata: Metadata = {
-  title: 'Part Time Jobs in UAE 2026 — Flexible Work | DdotsMediaJobs',
+  title: { absolute: 'Part Time Jobs in UAE 2026 — Flexible Work | DdotsMediaJobs' },
   description: 'Part-time and flexible jobs in the UAE. Evening, weekend and hourly roles in Dubai, Abu Dhabi and Sharjah. Apply free.',
   alternates: { canonical: `${SITE.url}/jobs/part-time-jobs-uae` },
 };

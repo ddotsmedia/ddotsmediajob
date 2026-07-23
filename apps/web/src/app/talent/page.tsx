@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Find Talent in UAE — Free | DdotsMediaJobs',
+  title: { absolute: 'Find Talent in UAE — Free | DdotsMediaJobs' },
   description: 'Browse CVs from professionals across all 7 emirates. Free for employers, contact directly via WhatsApp. Filter by role, emirate, visa status and availability.',
   // Employer-gated directory of candidate profiles — must not be indexed publicly.
   robots: { index: false },

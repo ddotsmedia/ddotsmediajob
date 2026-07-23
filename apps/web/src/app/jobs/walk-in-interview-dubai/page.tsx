@@ -4,7 +4,7 @@ import { IntentJobsView, type IntentConfig } from '@/components/seo/intent-jobs-
 
 export const revalidate = 3600;
 export const metadata: Metadata = {
-  title: 'Walk In Interview Dubai 2026 — Latest Walk-in Jobs | DdotsMediaJobs',
+  title: { absolute: 'Walk In Interview Dubai 2026 — Latest Walk-in Jobs | DdotsMediaJobs' },
   description: "Find today's walk-in interviews in Dubai. No appointment needed. Latest urgent vacancies hiring on the spot across Dubai.",
   alternates: { canonical: `${SITE.url}/jobs/walk-in-interview-dubai` },
 };

@@ -4,7 +4,7 @@ import { ToolLandingView, type ToolConfig } from '@/components/seo/tool-landing-
 
 export const revalidate = 3600;
 export const metadata: Metadata = {
-  title: 'Free AI Resume Builder for UAE Jobs | DdotsMediaJobs',
+  title: { absolute: 'Free AI Resume Builder for UAE Jobs | DdotsMediaJobs' },
   description: 'Build a free ATS-optimised CV for UAE jobs with AI. Claude AI writes your resume, checks ATS score and suggests improvements.',
   alternates: { canonical: `${SITE.url}/tools/ai-resume-builder` },
 };

@@ -81,7 +81,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const company = job.company?.name ?? 'Direct Employer';
   // Don't produce "UAE, UAE" when the emirate is already UAE / ends with UAE.
   const locationStr = /uae$/i.test(emirate.trim()) ? emirate : `${emirate}, UAE`;
-  const title = `${job.title} at ${company} in ${locationStr} | DdotsMediaJobs`;
+  // Clean title — the root metadata template appends "| DdotsMediaJobs"; adding it here too
+  // produced "… | DdotsMediaJobs | DdotsMediaJobs" (audit C6). OG title carries brand itself.
+  const title = `${job.title} at ${company} in ${locationStr}`;
   const pay = formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod, job.salaryHidden, job.salaryNegotiable);
   const posted = formatJobDate(job.publishedAt ?? job.createdAt);
   // Drop the job title if the description repeats it at the start, then cap length.
@@ -94,7 +96,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     description,
     openGraph: {
       type: 'article',
-      title,
+      title: `${title} | ${SITE.name}`,
       description,
       url: `${SITE.url}/jobs/${job.slug}`,
       images: [ogImage],
