@@ -24,6 +24,7 @@ import {
   FilePen,
   Tags,
   Inbox,
+  DollarSign,
 } from 'lucide-react';
 import Link from 'next/link';
 import { DashboardSidebar, MobileTabs, type NavItem } from '@/components/dashboard/sidebar';
@@ -32,6 +33,7 @@ import { trpc } from '@/trpc/react';
 const NAV: NavItem[] = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/analytics', label: 'Analytics', icon: TrendingUp },
+  { href: '/admin/cv-analytics', label: 'CV Costs', icon: DollarSign },
   { href: '/admin/jobs/add', label: 'Add Job', icon: PlusCircle },
   { href: '/admin/quick-import', label: 'Quick Import', icon: Sparkles },
   { href: '/admin/tools/bulk-import', label: 'Bulk Import', icon: Layers },
