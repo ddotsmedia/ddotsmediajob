@@ -63,6 +63,7 @@ export const searchRouter = router({
         min_experience: z.coerce.number().min(0).max(60).optional(),
         job_description: z.string().max(5000).optional(),
         limit: z.number().int().min(1).max(48).default(24),
+        page: z.number().int().min(1).default(1),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -85,7 +86,8 @@ export const searchRouter = router({
         .from(users)
         .leftJoin(jobseekerProfiles, eq(jobseekerProfiles.userId, users.id))
         .where(and(...conds))
-        .limit(input.limit);
+        .limit(input.limit)
+        .offset((input.page - 1) * input.limit);
 
       const jd = input.job_description?.trim();
       const hash = jd ? createHash('sha256').update(jd).digest('hex') : null;

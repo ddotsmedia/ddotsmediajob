@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { EMIRATES } from '@ddots/shared';
-import { Search, FileText, MessageCircle, MapPin, Briefcase, GraduationCap, Loader2, X, UserRound } from 'lucide-react';
+import { Search, FileText, MessageCircle, MapPin, Briefcase, GraduationCap, Loader2, X, UserRound, SlidersHorizontal, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { trpc } from '@/trpc/react';
 import { Button } from '@/components/ui/button';
 import { Label, Select } from '@/components/ui/primitives';
@@ -19,6 +19,11 @@ export default function SearchCvsPage() {
   const [draft, setDraft] = useState<Filters>(NO_FILTERS);
   const [skillInput, setSkillInput] = useState('');
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
+  const [page, setPage] = useState(1);
+  const [showFilters, setShowFilters] = useState(false); // mobile: collapsed by default
+
+  const LIMIT = 24;
+  const applySearch = () => { setFilters(draft); setPage(1); };
 
   // Employer-only. Middleware already gates /employer/*, but guard client-side too.
   const isEmployer = session?.user?.role === 'employer' || session?.user?.role === 'admin';
@@ -33,7 +38,8 @@ export default function SearchCvsPage() {
       location: filters.location || undefined,
       min_experience: filters.experience || undefined,
       job_description: filters.jobDescription.trim() || undefined,
-      limit: 24,
+      limit: LIMIT,
+      page,
     },
     { enabled: isEmployer },
   );
@@ -60,9 +66,17 @@ export default function SearchCvsPage() {
         <p className="mt-1 text-sm text-white/70">AI-parsed CVs from candidates who opted into employer search.</p>
       </div>
 
-      {/* Filters */}
+      {/* Filters — collapsed by default on mobile */}
       <div className="mt-4 rounded-2xl border bg-white p-4 sm:p-6">
-        <div className="grid gap-4 sm:grid-cols-3">
+        <button
+          type="button"
+          onClick={() => setShowFilters((v) => !v)}
+          className="mb-3 flex w-full items-center justify-between text-sm font-semibold text-navy-800 sm:hidden"
+        >
+          <span className="inline-flex items-center gap-1.5"><SlidersHorizontal className="h-4 w-4 text-teal-600" /> Filters</span>
+          {showFilters ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        </button>
+        <div className={`${showFilters ? 'grid' : 'hidden'} gap-4 sm:grid sm:grid-cols-3`}>
           <div className="space-y-1.5">
             <Label>Skills</Label>
             <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-navy-200 p-2">
@@ -113,10 +127,10 @@ export default function SearchCvsPage() {
           />
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
-          <Button onClick={() => setFilters(draft)} disabled={results.isFetching}>
+          <Button onClick={applySearch} disabled={results.isFetching}>
             {results.isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />} Search
           </Button>
-          <Button variant="ghost" onClick={() => { setDraft(NO_FILTERS); setFilters(NO_FILTERS); setSkillInput(''); }}>Clear</Button>
+          <Button variant="ghost" onClick={() => { setDraft(NO_FILTERS); setFilters(NO_FILTERS); setSkillInput(''); setPage(1); }}>Clear</Button>
         </div>
       </div>
 
@@ -127,7 +141,7 @@ export default function SearchCvsPage() {
         <div className="mt-6 rounded-2xl border border-dashed bg-white p-10 text-center">
           <UserRound className="mx-auto h-10 w-10 text-navy-300" />
           <p className="mt-3 font-semibold text-navy-900">No candidates match.</p>
-          <p className="text-sm text-navy-700/60">Adjust filters or check back later.</p>
+          <p className="text-sm text-navy-700/60">Try broader filters or check back later.</p>
         </div>
       ) : (
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -149,7 +163,7 @@ export default function SearchCvsPage() {
                   </div>
                   {scored && (
                     <span
-                      className={`shrink-0 rounded-full px-2 py-1 text-xs font-bold ${c.ats_score >= 70 ? 'bg-green-100 text-green-700' : c.ats_score >= 40 ? 'bg-yellow-100 text-navy-800' : 'bg-navy-100 text-navy-600'}`}
+                      className={`shrink-0 rounded-full px-2 py-1 text-xs font-bold ${c.ats_score >= 80 ? 'bg-green-100 text-green-700' : c.ats_score >= 60 ? 'bg-yellow-100 text-navy-800' : 'bg-navy-100 text-navy-600'}`}
                       title={`Keyword ${c.keyword_match}% · Experience ${c.experience_match}%`}
                     >
                       {c.ats_score}% match
@@ -187,6 +201,19 @@ export default function SearchCvsPage() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Pagination — no total count from the API, so Next is offered while the page is full. */}
+      {!!results.data?.length && (page > 1 || results.data.length === LIMIT) && (
+        <div className="mt-6 flex items-center justify-center gap-3">
+          <Button variant="outline" size="sm" disabled={page === 1 || results.isFetching} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+            <ChevronLeft className="h-4 w-4" /> Prev
+          </Button>
+          <span className="text-sm text-navy-700/60">Page {page}</span>
+          <Button variant="outline" size="sm" disabled={results.data.length < LIMIT || results.isFetching} onClick={() => setPage((p) => p + 1)}>
+            Next <ChevronRight className="h-4 w-4" />
+          </Button>
         </div>
       )}
     </div>
