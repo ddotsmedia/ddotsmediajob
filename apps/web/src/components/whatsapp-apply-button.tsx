@@ -1,8 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import { MessageCircle } from 'lucide-react';
 import { track as umamiTrack } from '@/lib/analytics';
 import { cn } from '@/lib/utils';
+import { ExternalWarning } from '@/components/external-warning';
 
 const ADMIN_WA = process.env.NEXT_PUBLIC_ADMIN_WHATSAPP ?? '971501234567';
 
@@ -28,6 +30,8 @@ export function WhatsappApplyButton({
   const msg = `Hi, I am interested in the ${title} position${company ? ` at ${company}` : ''} listed on DdotsMediaJobs.com.\nReference: ddotsmediajobs.com/jobs/${slug}`;
   const href = `https://wa.me/${number}?text=${encodeURIComponent(msg)}`;
 
+  const [warn, setWarn] = useState(false);
+
   function track() {
     umamiTrack('apply-click', { jobId: slug, source: 'whatsapp' });
     try {
@@ -39,19 +43,25 @@ export function WhatsappApplyButton({
     }
   }
 
+  function proceed() {
+    track();
+    setWarn(false);
+    window.open(href, '_blank', 'noopener,noreferrer');
+  }
+
   return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      onClick={track}
-      onAuxClick={track}
-      className={cn(
-        'inline-flex items-center justify-center gap-2 rounded-lg bg-[#25D366] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#1da851]',
-        className,
-      )}
-    >
-      <MessageCircle className="h-4 w-4" /> {label}
-    </a>
+    <>
+      <button
+        type="button"
+        onClick={() => setWarn(true)}
+        className={cn(
+          'inline-flex items-center justify-center gap-2 rounded-lg bg-[#25D366] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#1da851]',
+          className,
+        )}
+      >
+        <MessageCircle className="h-4 w-4" /> {label}
+      </button>
+      {warn && <ExternalWarning channel="WhatsApp" onConfirm={proceed} onCancel={() => setWarn(false)} />}
+    </>
   );
 }

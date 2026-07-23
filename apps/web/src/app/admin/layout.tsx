@@ -25,6 +25,7 @@ import {
   Tags,
   Inbox,
   DollarSign,
+  ShieldAlert,
 } from 'lucide-react';
 import Link from 'next/link';
 import { DashboardSidebar, MobileTabs, type NavItem } from '@/components/dashboard/sidebar';
@@ -56,6 +57,7 @@ const NAV: NavItem[] = [
   { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/blog', label: 'Blog Editor', icon: FileEdit },
   { href: '/admin/feedback', label: 'Feedback', icon: Inbox },
+  { href: '/admin/reports', label: 'Job Reports', icon: ShieldAlert },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
   { href: '/admin/audit', label: 'Audit Log', icon: ScrollText },
 ];

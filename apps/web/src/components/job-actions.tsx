@@ -8,6 +8,7 @@ import { Bookmark, Send, Loader2, Upload, Sparkles, Mail } from 'lucide-react';
 import { trpc } from '@/trpc/react';
 import { Button } from '@/components/ui/button';
 import { Input, Textarea } from '@/components/ui/primitives';
+import { ReportJobButton } from '@/components/report-job-button';
 import { WhatsappApplyButton } from '@/components/whatsapp-apply-button';
 
 export function JobActions({
@@ -138,6 +139,10 @@ export function JobActions({
         <Bookmark className={isSaved.data?.saved ? 'fill-teal-500 text-teal-500' : ''} />
         {isSaved.data?.saved ? 'Saved' : 'Save Job'}
       </Button>
+
+      <div className="flex justify-center pt-1">
+        <ReportJobButton jobId={jobId} />
+      </div>
     </div>
   );
 }

@@ -14,6 +14,7 @@ import { reviewsRouter } from './routers/reviews';
 import { candidatesRouter } from './routers/candidates';
 import { cvsRouter } from './routers/cvs';
 import { cvMetricsRouter } from './routers/cv-metrics';
+import { reportsRouter } from './routers/reports';
 import { billingRouter } from './routers/billing';
 import { notificationsRouter } from './routers/notifications';
 import { linksRouter } from './routers/links';
@@ -49,6 +50,7 @@ export const appRouter = router({
   candidates: candidatesRouter,
   cvs: cvsRouter,
   cvMetrics: cvMetricsRouter,
+  reports: reportsRouter,
   billing: billingRouter,
   notifications: notificationsRouter,
   links: linksRouter,

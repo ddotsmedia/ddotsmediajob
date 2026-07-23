@@ -1652,3 +1652,20 @@ export const cvScores = pgTable(
   },
   (t) => [uniqueIndex('cv_scores_cv_job_idx').on(t.cvId, t.jobDescriptionHash)],
 );
+
+// User-submitted job/employer reports for the admin moderation queue (audit Phase 9).
+// reporterId is nullable (guests) and NEVER exposed to the employer.
+export const jobReports = pgTable(
+  'job_reports',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    jobId: uuid('job_id').notNull().references(() => jobs.id, { onDelete: 'cascade' }),
+    reporterId: uuid('reporter_id').references(() => users.id, { onDelete: 'set null' }),
+    reason: varchar('reason', { length: 40 }).notNull(),
+    details: text('details'),
+    status: varchar('status', { length: 20 }).default('open').notNull(), // open|under_review|actioned|dismissed
+    reporterIp: varchar('reporter_ip', { length: 64 }), // abuse tracking only — not shown to employer
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index('job_reports_status_idx').on(t.status), index('job_reports_job_idx').on(t.jobId)],
+);

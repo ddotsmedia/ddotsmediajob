@@ -161,3 +161,25 @@ export function emirateBySlug(slug: string) {
 export function categoryBySlug(slug: string) {
   return CATEGORIES.find((c) => c.slug === slug);
 }
+
+// User-submitted job/employer report reasons + moderation statuses (audit Phase 9).
+export const REPORT_REASONS = [
+  'requests_payment', 'fake_job', 'suspicious_contact', 'discrimination',
+  'spam', 'duplicate', 'incorrect_info', 'expired_filled', 'other',
+] as const;
+export type ReportReason = (typeof REPORT_REASONS)[number];
+
+export const REPORT_REASON_LABELS: Record<ReportReason, string> = {
+  requests_payment: 'Requests payment',
+  fake_job: 'Fake or misleading job',
+  suspicious_contact: 'Suspicious WhatsApp or email',
+  discrimination: 'Discrimination',
+  spam: 'Spam',
+  duplicate: 'Duplicate job',
+  incorrect_info: 'Incorrect information',
+  expired_filled: 'Expired or filled',
+  other: 'Other',
+};
+
+export const REPORT_STATUSES = ['open', 'under_review', 'actioned', 'dismissed'] as const;
+export type ReportStatus = (typeof REPORT_STATUSES)[number];
