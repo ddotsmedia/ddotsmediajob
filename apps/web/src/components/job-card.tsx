@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { MapPin, Clock, Banknote, Zap, BadgeCheck, CalendarClock, Footprints } from 'lucide-react';
-import { formatSalary, formatJobDate, isNew, emirateBySlug, categoryBySlug, expiryDaysLeft, matchBadge, getJobEmoji } from '@ddots/shared';
+import { formatSalary, salaryBadge, formatJobDate, isNew, emirateBySlug, categoryBySlug, expiryDaysLeft, matchBadge, getJobEmoji } from '@ddots/shared';
 import { Badge } from './ui/primitives';
 import { WhatsappApplyButton } from './whatsapp-apply-button';
 import { QuickApplyButton } from './quick-apply-button';
@@ -139,7 +139,7 @@ export function JobCard({ job }: { job: JobCardData }) {
             ) : (
               <Badge variant="outline" className="border-teal-200 bg-teal-50 text-teal-700">Direct Employer</Badge>
             )}
-            <Badge variant={job.salaryHidden ? 'muted' : 'success'}>{job.salaryHidden ? 'Apply to see salary' : 'Salary shown'}</Badge>
+            {(() => { const sb = salaryBadge(job.salaryMin, job.salaryMax, job.salaryHidden, job.salaryNegotiable); return <Badge variant={sb.tone}>{sb.label}</Badge>; })()}
             {job.freeZone && <Badge variant="default">{job.freeZoneName || 'Free Zone'}</Badge>}
             {job.isRemote && <Badge variant="success">Remote</Badge>}
             {job.isFresher && <Badge variant="outline">Fresher</Badge>}

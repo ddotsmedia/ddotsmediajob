@@ -72,6 +72,35 @@ export function formatSalary(
   return `Up to ${fmt(hi as number)}${suffix}`;
 }
 
+/** Discrete salary disclosure state — the single source of truth for salary UI (audit Phase 6). */
+export type SalaryState = 'DISCLOSED_RANGE' | 'DISCLOSED_FIXED' | 'NEGOTIABLE' | 'ON_APPLICATION' | 'NOT_DISCLOSED';
+
+export function salaryState(min?: number | null, max?: number | null, hidden = false, negotiable = false): SalaryState {
+  // hidden wins: the employer deliberately withheld the figure even if numbers exist.
+  if (hidden) return 'ON_APPLICATION';
+  const lo = min && min > 0 ? min : null; // treat 0/null as "no figure"
+  const hi = max && max > 0 ? max : null;
+  if (lo != null && hi != null) return lo === hi ? 'DISCLOSED_FIXED' : 'DISCLOSED_RANGE';
+  if (lo != null || hi != null) return 'DISCLOSED_FIXED';
+  if (negotiable) return 'NEGOTIABLE';
+  return 'NOT_DISCLOSED';
+}
+
+/** Badge label + tone. 'success' ("Salary shown") only when a real figure exists — never a lie. */
+export function salaryBadge(min?: number | null, max?: number | null, hidden = false, negotiable = false): { label: string; tone: 'success' | 'muted' | 'default' } {
+  switch (salaryState(min, max, hidden, negotiable)) {
+    case 'DISCLOSED_RANGE':
+    case 'DISCLOSED_FIXED':
+      return { label: 'Salary shown', tone: 'success' };
+    case 'NEGOTIABLE':
+      return { label: 'Negotiable', tone: 'default' };
+    case 'ON_APPLICATION':
+      return { label: 'Apply to see salary', tone: 'muted' };
+    case 'NOT_DISCLOSED':
+      return { label: 'Salary not disclosed', tone: 'muted' };
+  }
+}
+
 /** Relative "time ago" string. */
 export function timeAgo(date: Date | string): string {
   const d = typeof date === 'string' ? new Date(date) : date;
