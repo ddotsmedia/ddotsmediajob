@@ -10,8 +10,8 @@ import { trpc } from '@/trpc/react';
 import { Button } from '@/components/ui/button';
 import { Label, Select } from '@/components/ui/primitives';
 
-type Filters = { skills: string[]; location: string; experience: number };
-const NO_FILTERS: Filters = { skills: [], location: '', experience: 0 };
+type Filters = { skills: string[]; location: string; experience: number; jobDescription: string };
+const NO_FILTERS: Filters = { skills: [], location: '', experience: 0, jobDescription: '' };
 
 export default function SearchCvsPage() {
   const router = useRouter();
@@ -26,15 +26,18 @@ export default function SearchCvsPage() {
     if (status === 'authenticated' && !isEmployer) router.replace('/onboarding');
   }, [status, isEmployer, router]);
 
-  const results = trpc.cvs.search.useQuery(
+  // Deterministic ATS scoring: ranks results, and against a job description when provided.
+  const results = trpc.search.searchCVsWithScoring.useQuery(
     {
       skills: filters.skills.length ? filters.skills : undefined,
       location: filters.location || undefined,
-      experience: filters.experience || undefined,
+      min_experience: filters.experience || undefined,
+      job_description: filters.jobDescription.trim() || undefined,
       limit: 24,
     },
     { enabled: isEmployer },
   );
+  const scored = Boolean(filters.jobDescription.trim());
 
   // Real skills from opted-in CVs, for the skills autocomplete.
   const skillOptions = trpc.cvs.skillOptions.useQuery(undefined, { enabled: isEmployer }).data ?? [];
@@ -99,6 +102,16 @@ export default function SearchCvsPage() {
             />
           </div>
         </div>
+        <div className="mt-4 space-y-1.5">
+          <Label>Job description (optional) — paste to rank candidates by ATS match</Label>
+          <textarea
+            value={draft.jobDescription}
+            onChange={(e) => setDraft((d) => ({ ...d, jobDescription: e.target.value }))}
+            rows={3}
+            placeholder="e.g. React, TypeScript, Node.js, 3 years experience"
+            className="w-full rounded-lg border border-navy-200 px-3 py-2 text-sm outline-none focus:border-teal-400"
+          />
+        </div>
         <div className="mt-4 flex flex-wrap gap-2">
           <Button onClick={() => setFilters(draft)} disabled={results.isFetching}>
             {results.isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />} Search
@@ -130,10 +143,18 @@ export default function SearchCvsPage() {
                       {(c.name ?? '?').slice(0, 1).toUpperCase()}
                     </span>
                   )}
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className="truncate font-display font-bold text-navy-900">{c.name ?? 'Candidate'}</p>
                     {c.headline && <p className="truncate text-xs text-navy-700/60">{c.headline}</p>}
                   </div>
+                  {scored && (
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-1 text-xs font-bold ${c.ats_score >= 70 ? 'bg-green-100 text-green-700' : c.ats_score >= 40 ? 'bg-yellow-100 text-navy-800' : 'bg-navy-100 text-navy-600'}`}
+                      title={`Keyword ${c.keyword_match}% · Experience ${c.experience_match}%`}
+                    >
+                      {c.ats_score}% match
+                    </span>
+                  )}
                 </div>
 
                 <div className="mt-3 space-y-1.5 text-xs text-navy-700/80">

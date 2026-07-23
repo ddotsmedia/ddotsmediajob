@@ -1620,3 +1620,20 @@ export const cvAiMetrics = pgTable(
   },
   (t) => [index('cv_ai_metrics_created_idx').on(t.createdAt)],
 );
+
+// Deterministic ATS scores, cached per (CV, job description) to avoid re-scoring (Phase 2A).
+export const cvScores = pgTable(
+  'cv_scores',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    cvId: uuid('cv_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    jobDescriptionHash: varchar('job_description_hash', { length: 64 }).notNull(),
+    keywordMatchPct: integer('keyword_match_pct').default(0).notNull(),
+    experienceMatchPct: integer('experience_match_pct').default(0).notNull(),
+    combinedScore: integer('combined_score').default(0).notNull(),
+    matchedSkills: jsonb('matched_skills').$type<string[]>().default([]).notNull(),
+    missingSkills: jsonb('missing_skills').$type<string[]>().default([]).notNull(),
+    scoredAt: timestamp('scored_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex('cv_scores_cv_job_idx').on(t.cvId, t.jobDescriptionHash)],
+);

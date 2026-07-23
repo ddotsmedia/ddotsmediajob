@@ -330,6 +330,13 @@
       "when": 1784770404947,
       "tag": "0046_cv_ai_metrics",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1784773256359,
+      "tag": "0047_cv_scores",
+      "breakpoints": true
     }
   ]
 }
