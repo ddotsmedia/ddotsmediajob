@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { emirateBySlug, SITE } from '@ddots/shared';
+import { emirateBySlug, employerName, SITE } from '@ddots/shared';
 import { getApi } from '@/trpc/server';
 import { JobCard } from '@/components/job-card';
 
@@ -130,7 +130,7 @@ export async function RolePageView({ page }: { page: RolePage }) {
       description: stripHtml(j.description ?? j.title).slice(0, 300) || j.title,
       datePosted: new Date(j.publishedAt ?? j.createdAt ?? Date.now()).toISOString(),
       employmentType: EMPLOYMENT[j.jobType ?? 'full-time'] ?? 'FULL_TIME',
-      hiringOrganization: { '@type': 'Organization', name: j.company?.name ?? 'Direct Employer' },
+      hiringOrganization: { '@type': 'Organization', name: employerName(j) },
       jobLocation: { '@type': 'Place', address: { '@type': 'PostalAddress', addressRegion: emirateBySlug(j.emirateSlug)?.name ?? 'UAE', addressCountry: 'AE' } },
       ...(j.salaryMin ? { baseSalary: { '@type': 'MonetaryAmount', currency: 'AED', value: { '@type': 'QuantitativeValue', minValue: j.salaryMin, maxValue: j.salaryMax ?? j.salaryMin, unitText: 'MONTH' } } } : {}),
       url: `${SITE.url}/jobs/${j.slug}`,

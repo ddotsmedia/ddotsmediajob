@@ -6,6 +6,7 @@ import DOMPurify from 'isomorphic-dompurify';
 import { MapPin, Briefcase, Banknote, Clock, GraduationCap, BadgeCheck, CheckCircle2 } from 'lucide-react';
 import {
   formatSalary,
+  employerName,
   formatDateTime,
   formatRelative,
   isExpired,
@@ -78,7 +79,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const job = await loadJob(slug);
   if (!job) return { title: 'Job not found' };
   const emirate = emirateBySlug(job.emirateSlug)?.name ?? 'UAE';
-  const company = job.company?.name ?? 'Direct Employer';
+  const company = employerName(job);
   // Don't produce "UAE, UAE" when the emirate is already UAE / ends with UAE.
   const locationStr = /uae$/i.test(emirate.trim()) ? emirate : `${emirate}, UAE`;
   // Clean title — the root metadata template appends "| DdotsMediaJobs"; adding it here too
@@ -126,6 +127,7 @@ export default async function JobDetailPage({ params }: Props) {
 
   const emirate = emirateBySlug(job.emirateSlug);
   const category = categoryBySlug(job.categorySlug);
+  const employer = employerName(job); // confidential-safe display name (audit Phase 6)
   const expired = (!!job.expiresAt && isExpired(job.expiresAt)) || job.status !== 'active';
 
   // Google for Jobs structured data
@@ -140,7 +142,7 @@ export default async function JobDetailPage({ params }: Props) {
     employmentType: GTAG_EMPLOYMENT[job.jobType] ?? 'FULL_TIME',
     hiringOrganization: {
       '@type': 'Organization',
-      name: job.company?.name ?? 'Direct Employer',
+      name: employer,
       logo: job.company?.logoUrl ?? undefined,
       ...(job.company?.website ? { sameAs: job.company.website } : {}),
     },
@@ -253,7 +255,7 @@ export default async function JobDetailPage({ params }: Props) {
                       {job.viewCount > 50 && <Badge variant="urgent">🔥 Popular</Badge>}
                     </div>
                     <p className="mt-1 flex flex-wrap items-center gap-1.5 text-navy-700">
-                      {job.isAnonymous ? `Confidential Company · ${categoryBySlug(job.categorySlug)?.name ?? ''}` : (job.company?.name ?? 'Direct Employer')}
+                      {job.isAnonymous ? `Confidential Company · ${categoryBySlug(job.categorySlug)?.name ?? ''}` : employer}
                       {!job.isAnonymous && job.company?.isVerified && <BadgeCheck className="h-4 w-4 text-teal-500" />}
                       {(() => {
                         const b = responseBadge(job.employerResponseHours);
@@ -331,7 +333,7 @@ export default async function JobDetailPage({ params }: Props) {
             <SocialShareBar
               title={job.title}
               url={`${SITE.url}/jobs/${job.slug}`}
-              company={job.isAnonymous ? 'Confidential Company' : (job.company?.name ?? 'Direct Employer')}
+              company={employer}
               walkIn={job.walkIn}
               walkInDate={job.walkInDate}
               walkInTimeStart={job.walkInTimeStart}
@@ -452,7 +454,7 @@ export default async function JobDetailPage({ params }: Props) {
                     )}
                     <div className="min-w-0 flex-1">
                       <p className="flex items-center gap-1.5 font-semibold text-navy-900">
-                        {job.company?.name ?? 'Direct Employer'}
+                        {employer}
                         {job.company?.isVerified && <BadgeCheck className="h-4 w-4 text-teal-500" />}
                       </p>
                       <p className="text-sm text-navy-700/60">📍 {emirate?.name ?? 'UAE'} · {job.employerActiveJobs} active job{job.employerActiveJobs === 1 ? '' : 's'}</p>

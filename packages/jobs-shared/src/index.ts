@@ -72,6 +72,16 @@ export function formatSalary(
   return `Up to ${fmt(hi as number)}${suffix}`;
 }
 
+/**
+ * Canonical employer display name for a job — the single source of truth (audit Phase 6/11).
+ * Confidential jobs never leak the real name (also in structured data); direct-posted jobs with
+ * no company profile use a neutral label. Keep display and JSON-LD consistent by using this.
+ */
+export function employerName(job: { isAnonymous?: boolean | null; company?: { name?: string | null } | null }): string {
+  if (job.isAnonymous) return 'Confidential Company';
+  return job.company?.name?.trim() || 'Direct Employer';
+}
+
 /** Discrete salary disclosure state — the single source of truth for salary UI (audit Phase 6). */
 export type SalaryState = 'DISCLOSED_RANGE' | 'DISCLOSED_FIXED' | 'NEGOTIABLE' | 'ON_APPLICATION' | 'NOT_DISCLOSED';
 

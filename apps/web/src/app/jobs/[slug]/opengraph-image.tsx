@@ -1,5 +1,5 @@
 import { ImageResponse } from 'next/og';
-import { formatSalary, emirateBySlug } from '@ddots/shared';
+import { formatSalary, emirateBySlug, employerName } from '@ddots/shared';
 import { getApi } from '@/trpc/server';
 
 export const runtime = 'nodejs';
@@ -22,7 +22,7 @@ export default async function Image({ params }: { params: { slug: string } }) {
     const j = await api.jobs.bySlug({ slug: params.slug });
     job = {
       title: j.title,
-      companyName: j.company?.name ?? 'Direct Employer',
+      companyName: employerName(j),
       location: j.location ?? emirateBySlug(j.emirateSlug)?.name ?? 'UAE',
       salary: j.walkIn && j.walkInDate
         ? `🚶 Walk-in: ${ogDate(j.walkInDate)}`

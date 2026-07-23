@@ -6,7 +6,8 @@ import { track as umamiTrack } from '@/lib/analytics';
 import { cn } from '@/lib/utils';
 import { ExternalWarning } from '@/components/external-warning';
 
-const ADMIN_WA = process.env.NEXT_PUBLIC_ADMIN_WHATSAPP ?? '971501234567';
+// Real DdotsMediaJobs WhatsApp — never a placeholder (audit: fake 971501234567 removed).
+const ADMIN_WA = process.env.NEXT_PUBLIC_ADMIN_WHATSAPP ?? '971509379212';
 
 /** Builds the wa.me apply link and fires a fire-and-forget tracking beacon. */
 export function WhatsappApplyButton({
