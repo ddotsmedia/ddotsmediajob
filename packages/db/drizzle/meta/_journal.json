@@ -337,6 +337,20 @@
       "when": 1784773256359,
       "tag": "0047_cv_scores",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1784827001253,
+      "tag": "0048_uae_candidate_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1784827023959,
+      "tag": "0049_job_extraction",
+      "breakpoints": true
     }
   ]
 }

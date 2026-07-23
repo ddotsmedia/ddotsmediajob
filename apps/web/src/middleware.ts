@@ -14,6 +14,7 @@ export default auth((req) => {
 
   const needsAuth =
     pathname.startsWith('/dashboard') ||
+    pathname.startsWith('/jobseeker') ||
     pathname.startsWith('/employer') ||
     pathname.startsWith('/admin');
 
@@ -47,5 +48,5 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/employer/:path*', '/admin/:path*'],
+  matcher: ['/dashboard/:path*', '/jobseeker/:path*', '/employer/:path*', '/admin/:path*'],
 };

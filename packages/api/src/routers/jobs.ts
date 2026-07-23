@@ -24,6 +24,7 @@ import {
 import { jobFilterSchema, jobInputSchema, jobFieldsSchema, aiQuickPostSchema, communityPostSchema } from '@ddots/shared';
 import { router, publicProcedure, employerProcedure, protectedProcedure } from '../trpc';
 import { uniqueJobSlug, generateJobSlug, audit, jobExpiry } from '../lib/helpers';
+import { parseJobDescription } from '../lib/job-description-parser';
 import { enqueueSearchSync, enqueueJobEvent } from '../lib/queue';
 import { generateJobFromPrompt } from '../lib/anthropic';
 import { isSearchConfigured, searchJobs, suggest as meiliSuggest } from '../lib/meili';
@@ -263,6 +264,7 @@ export const jobsRouter = router({
       where: (p, { eq: e }) => e(p.userId, ctx.session.user.id),
     });
     const slug = await generateJobSlug(input.title, input.emirateSlug, employerProfile?.companyName);
+    const ex = parseJobDescription(input.description);
 
     const [job] = await ctx.db
       .insert(jobs)
@@ -274,6 +276,10 @@ export const jobsRouter = router({
         status: isAdmin ? 'active' : 'pending',
         publishedAt: isAdmin ? new Date() : null,
         expiresAt: jobExpiry(),
+        extractedSkills: ex.required_skills,
+        extractedYears: ex.years_required,
+        extractedLocations: ex.preferred_locations,
+        extractedSalaryRange: ex.salary_range,
       })
       .returning();
 

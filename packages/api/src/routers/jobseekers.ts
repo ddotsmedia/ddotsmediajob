@@ -46,6 +46,39 @@ export const jobseekersRouter = router({
     return (await ctx.db.query.jobseekerProfiles.findFirst({ where: eq(jobseekerProfiles.userId, ctx.session.user.id) })) ?? null;
   }),
 
+  /** UAE candidate preferences (Phase 3A): visa, preferred locations, salary range. */
+  getSettings: protectedProcedure.query(async ({ ctx }) => {
+    const u = await ctx.db.query.users.findFirst({
+      where: eq(users.id, ctx.session.user.id),
+      columns: { visaSponsorshipNeeded: true, preferredLocations: true, salaryExpectationsAed: true },
+    });
+    return {
+      visaSponsorshipNeeded: u?.visaSponsorshipNeeded ?? null,
+      preferredLocations: u?.preferredLocations ?? [],
+      salaryExpectationsAed: u?.salaryExpectationsAed ?? null,
+    };
+  }),
+
+  updateSettings: protectedProcedure
+    .input(
+      z.object({
+        visaSponsorshipNeeded: z.boolean().nullable(),
+        preferredLocations: z.array(z.string().min(1).max(40)).max(7),
+        salaryExpectationsAed: z.tuple([z.number().int().min(0).max(1_000_000), z.number().int().min(0).max(1_000_000)]).nullable(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db
+        .update(users)
+        .set({
+          visaSponsorshipNeeded: input.visaSponsorshipNeeded,
+          preferredLocations: input.preferredLocations,
+          salaryExpectationsAed: input.salaryExpectationsAed ?? null,
+        })
+        .where(eq(users.id, ctx.session.user.id));
+      return { ok: true };
+    }),
+
   upsertProfile: protectedProcedure.input(jobseekerProfileSchema).mutation(async ({ ctx, input }) => {
     const username = await ensureUsername(ctx.db, ctx.session.user.id, ctx.session.user.name ?? null);
     // Stamp completion once the core sections are filled in (never cleared afterwards).

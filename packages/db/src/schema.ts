@@ -72,6 +72,10 @@ export const users = pgTable(
       .$type<{ skills?: string[]; experience?: number; location?: string[]; education?: string[] }>()
       .default({ skills: [], experience: 0, location: [], education: [] })
       .notNull(),
+    // UAE candidate preferences (Phase 3A). visa null = no preference.
+    visaSponsorshipNeeded: boolean('visa_sponsorship_needed'),
+    preferredLocations: text('preferred_locations').array().default(sql`'{}'::text[]`).notNull(),
+    salaryExpectationsAed: integer('salary_expectations_aed').array(), // [min, max], null = unset
     ...timestamps,
   },
   (t) => [
@@ -269,6 +273,11 @@ export const jobs = pgTable(
     accommodationProvided: boolean('accommodation_provided').default(false).notNull(),
     skills: jsonb('skills').$type<string[]>().default([]).notNull(),
     benefits: jsonb('benefits').$type<string[]>().default([]).notNull(),
+    // Deterministic extraction from the description at post time (Phase 3A).
+    extractedSkills: jsonb('extracted_skills').$type<string[]>().default([]).notNull(),
+    extractedYears: integer('extracted_years'),
+    extractedLocations: jsonb('extracted_locations').$type<string[]>().default([]).notNull(),
+    extractedSalaryRange: jsonb('extracted_salary_range').$type<{ min: number; max: number } | null>(),
     applyEmail: varchar('apply_email', { length: 255 }),
     applyUrl: text('apply_url'),
     status: jobStatusEnum('status').default('pending').notNull(),
