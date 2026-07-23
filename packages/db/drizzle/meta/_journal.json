@@ -323,6 +323,13 @@
       "when": 1784285718926,
       "tag": "0045_cv_metadata_default",
       "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1784770404947,
+      "tag": "0046_cv_ai_metrics",
+      "breakpoints": true
     }
   ]
 }

@@ -23,12 +23,24 @@ export default function OnboardingPage() {
   const [intent, setIntent] = useState<Intent | null>(null);
   const [finishing, setFinishing] = useState(false);
   const becomeEmployer = trpc.auth.becomeEmployer.useMutation();
-  const parseCv = trpc.cvs.parseCv.useMutation();
+  const uploadResume = trpc.jobseekers.uploadResume.useMutation();
 
-  // After a CV lands, extract its metadata (skills/experience/…) with a visible loader.
-  async function onCvUploaded() {
-    toast.success('CV uploaded!');
-    try { await parseCv.mutateAsync(); } catch { /* parse is best-effort; makeSearchable re-parses later */ }
+  // After a CV lands, parse it via the AI provider cascade and surface a rich summary.
+  async function onCvUploaded(res: { ufsUrl?: string; url?: string; name?: string }[]) {
+    const file = res?.[0];
+    const url = file?.ufsUrl ?? file?.url;
+    if (!url) { toast.error('Upload failed. Please try again or contact support.'); return; }
+    try {
+      const r = await uploadResume.mutateAsync({ resumeUrl: url, filename: file?.name ?? 'cv.pdf' });
+      if (r.parsed) {
+        const loc = r.location[0] ? `, ${r.location[0]}` : '';
+        toast.success(`CV analyzed! ${r.skills_detected} skills detected, ${r.experience_years} years experience${loc}. Employers can now find you in AI CV Search.`);
+      } else {
+        toast.message("We're reviewing your CV manually. Check back in 24h.");
+      }
+    } catch {
+      toast.error('Upload failed. Please try again or contact support.');
+    }
     setStep(2);
   }
 
@@ -115,8 +127,8 @@ export default function OnboardingPage() {
           <h1 className="mt-4 font-display text-2xl font-bold text-navy-900">Upload your CV to get noticed by employers</h1>
           <p className="mt-2 text-navy-700/60">Employers search our CV database daily. PDF or Word, max 4&nbsp;MB.</p>
           <div className="mt-8 flex flex-col items-center gap-4 rounded-2xl border bg-white p-8">
-            {parseCv.isPending ? (
-              <p className="flex items-center gap-2 text-sm font-medium text-teal-700"><Loader2 className="h-4 w-4 animate-spin" /> Parsing CV…</p>
+            {uploadResume.isPending ? (
+              <p className="flex items-center gap-2 text-sm font-medium text-teal-700"><Loader2 className="h-4 w-4 animate-spin" /> Analyzing your CV…</p>
             ) : (
               <UploadButton
                 endpoint="cvUploader"

@@ -1603,3 +1603,20 @@ export const scamReports = pgTable(
   },
   (t) => [index('scam_status_idx').on(t.status)],
 );
+
+// AI parse cost/latency telemetry — one row per resume-parse attempt (Phase 0).
+export const cvAiMetrics = pgTable(
+  'cv_ai_metrics',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    model: varchar('model', { length: 20 }).notNull(), // gemini | anthropic | pdf-fallback
+    promptVersion: varchar('prompt_version', { length: 20 }).default('v1').notNull(),
+    tokensIn: integer('tokens_in').default(0).notNull(),
+    tokensOut: integer('tokens_out').default(0).notNull(),
+    costUsd: real('cost_usd').default(0).notNull(),
+    latencyMs: integer('latency_ms').default(0).notNull(),
+    errorType: varchar('error_type', { length: 60 }), // nullable — set on failure/fallback
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index('cv_ai_metrics_created_idx').on(t.createdAt)],
+);

@@ -7,6 +7,7 @@ import { presignUpload, deleteObjectByUrl } from '../lib/r2';
 import { notify } from '../lib/helpers';
 import { assertUploadType, enforceRateLimit } from '../lib/security';
 import { parseResume } from '../lib/resume-parser';
+import { parseResume as parseResumeAI } from '../lib/ai-provider';
 
 /** Generate a unique username from a display name (firstname.lastname[.n]). */
 async function ensureUsername(db: typeof import('@ddots/db').db, userId: string, name: string | null): Promise<string | null> {
@@ -385,5 +386,47 @@ export const jobseekersRouter = router({
       const metadata = await parseResume(input.url);
       await ctx.db.update(users).set({ cvMetadata: metadata, cvSearchable: true }).where(eq(users.id, ctx.session.user.id));
       return { ok: true };
+    }),
+
+  /**
+   * Phase 1 onboarding: save the uploaded resume, parse it through the AI provider cascade
+   * (Gemini → Anthropic → local pdf), store cv_metadata, opt into employer search, and return
+   * a rich summary for the success message. The file is saved before parsing, so a parse
+   * failure still keeps the CV (flagged for manual review by the empty metadata).
+   */
+  uploadResume: protectedProcedure
+    .input(z.object({ resumeUrl: z.string().url(), filename: z.string().trim().min(1).max(255) }))
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+      const username = await ensureUsername(ctx.db, userId, ctx.session.user.name ?? null);
+      const set = { resumeUrl: input.resumeUrl, resumeFilename: input.filename, resumeUploadedAt: new Date() };
+      await ctx.db.insert(jobseekerProfiles).values({ userId, username, ...set }).onConflictDoUpdate({ target: jobseekerProfiles.userId, set });
+
+      let meta = { skills: [] as string[], experience: 0, location: [] as string[], education: [] as string[] };
+      let confidence = 0;
+      let model = 'none';
+      try {
+        const res = await fetch(input.resumeUrl, { signal: AbortSignal.timeout(20_000) });
+        if (res.ok) {
+          const buf = Buffer.from(await res.arrayBuffer());
+          const r = await parseResumeAI(buf, input.filename, res.headers.get('content-type') ?? '');
+          meta = { skills: r.skills, experience: r.experience_years, location: r.location, education: r.education };
+          confidence = r.confidence;
+          model = r.model_used;
+        }
+      } catch (e) {
+        console.error('[uploadResume] fetch/parse failed:', e instanceof Error ? e.message : e);
+      }
+
+      await ctx.db.update(users).set({ cvMetadata: meta, cvSearchable: true }).where(eq(users.id, userId));
+      return {
+        success: true,
+        parsed: meta.skills.length > 0 || meta.experience > 0,
+        skills_detected: meta.skills.length,
+        experience_years: meta.experience,
+        location: meta.location,
+        confidence,
+        model,
+      };
     }),
 });
