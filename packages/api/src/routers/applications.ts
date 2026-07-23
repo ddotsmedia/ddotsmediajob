@@ -4,6 +4,7 @@ import { jobs, applications, employerProfiles, eq, and, desc, sql, inArray } fro
 import { applySchema, updateApplicationStatusSchema, APPLICATION_STATUS } from '@ddots/shared';
 import { router, publicProcedure, protectedProcedure, employerProcedure } from '../trpc';
 import { audit, notify } from '../lib/helpers';
+import { assertJobOwner, assertAppOwner } from '../lib/authz';
 import { enqueueEmail, enqueueAiScoring } from '../lib/queue';
 import { presignUpload } from '../lib/r2';
 import { enforceRateLimit, assertUploadType } from '../lib/security';
@@ -183,9 +184,7 @@ export const applicationsRouter = router({
   forJob: employerProcedure.input(z.object({ jobId: z.string().uuid() })).query(async ({ ctx, input }) => {
     const job = await ctx.db.query.jobs.findFirst({ where: eq(jobs.id, input.jobId) });
     if (!job) throw new TRPCError({ code: 'NOT_FOUND' });
-    if (job.employerId !== ctx.session.user.id && ctx.session.user.role !== 'admin') {
-      throw new TRPCError({ code: 'FORBIDDEN' });
-    }
+    assertJobOwner(job, ctx.session.user);
     return ctx.db.query.applications.findMany({
       where: eq(applications.jobId, input.jobId),
       orderBy: [desc(applications.createdAt)],
@@ -222,9 +221,7 @@ export const applicationsRouter = router({
       with: { job: { columns: { employerId: true, title: true, slug: true } } },
     });
     if (!app) throw new TRPCError({ code: 'NOT_FOUND' });
-    if (app.job.employerId !== ctx.session.user.id && ctx.session.user.role !== 'admin') {
-      throw new TRPCError({ code: 'FORBIDDEN' });
-    }
+    assertAppOwner(app, ctx.session.user);
     // Stamp first response time (any status off the inbound states) for the response-time badge.
     const isResponse = input.status !== 'applied' && input.status !== 'quick_apply';
     const [updated] = await ctx.db

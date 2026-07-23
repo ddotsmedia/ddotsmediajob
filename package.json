@@ -13,6 +13,7 @@
     "start": "turbo run start",
     "lint": "turbo run lint --filter=@ddots/web",
     "typecheck": "turbo run typecheck",
+    "test": "vitest run",
     "check:privacy": "node scripts/check-public-email.mjs",
     "db:generate": "pnpm --filter @ddots/db db:generate",
     "db:migrate": "pnpm --filter @ddots/db db:migrate",
@@ -28,6 +29,7 @@
   "devDependencies": {
     "prettier": "^3.4.2",
     "turbo": "^2.3.3",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.9"
   }
 }

@@ -24,6 +24,7 @@ import {
 import { jobFilterSchema, jobInputSchema, jobFieldsSchema, aiQuickPostSchema, communityPostSchema } from '@ddots/shared';
 import { router, publicProcedure, employerProcedure, protectedProcedure } from '../trpc';
 import { uniqueJobSlug, generateJobSlug, audit, jobExpiry } from '../lib/helpers';
+import { assertJobOwner } from '../lib/authz';
 import { parseJobDescription } from '../lib/job-description-parser';
 import { enqueueSearchSync, enqueueJobEvent } from '../lib/queue';
 import { generateJobFromPrompt } from '../lib/anthropic';
@@ -304,9 +305,7 @@ export const jobsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const existing = await ctx.db.query.jobs.findFirst({ where: eq(jobs.id, input.id) });
       if (!existing) throw new TRPCError({ code: 'NOT_FOUND' });
-      if (existing.employerId !== ctx.session.user.id && ctx.session.user.role !== 'admin') {
-        throw new TRPCError({ code: 'FORBIDDEN' });
-      }
+      assertJobOwner(existing, ctx.session.user);
       const [updated] = await ctx.db
         .update(jobs)
         .set(input.data)
@@ -321,9 +320,7 @@ export const jobsRouter = router({
   close: employerProcedure.input(z.object({ id: z.string().uuid() })).mutation(async ({ ctx, input }) => {
     const existing = await ctx.db.query.jobs.findFirst({ where: eq(jobs.id, input.id) });
     if (!existing) throw new TRPCError({ code: 'NOT_FOUND' });
-    if (existing.employerId !== ctx.session.user.id && ctx.session.user.role !== 'admin') {
-      throw new TRPCError({ code: 'FORBIDDEN' });
-    }
+    assertJobOwner(existing, ctx.session.user);
     await ctx.db.update(jobs).set({ status: 'closed' }).where(eq(jobs.id, input.id));
     await enqueueSearchSync({ type: 'delete', jobId: input.id });
     await audit(ctx.session.user.id, 'job.close', 'job', input.id);
@@ -334,9 +331,7 @@ export const jobsRouter = router({
   deleteOwn: employerProcedure.input(z.object({ id: z.string().uuid() })).mutation(async ({ ctx, input }) => {
     const existing = await ctx.db.query.jobs.findFirst({ where: eq(jobs.id, input.id) });
     if (!existing) throw new TRPCError({ code: 'NOT_FOUND' });
-    if (existing.employerId !== ctx.session.user.id && ctx.session.user.role !== 'admin') {
-      throw new TRPCError({ code: 'FORBIDDEN' });
-    }
+    assertJobOwner(existing, ctx.session.user);
     await ctx.db.delete(jobs).where(eq(jobs.id, input.id));
     await enqueueSearchSync({ type: 'delete', jobId: input.id });
     await audit(ctx.session.user.id, 'job.delete', 'job', input.id);
@@ -347,9 +342,7 @@ export const jobsRouter = router({
   byId: employerProcedure.input(z.object({ id: z.string().uuid() })).query(async ({ ctx, input }) => {
     const job = await ctx.db.query.jobs.findFirst({ where: eq(jobs.id, input.id) });
     if (!job) throw new TRPCError({ code: 'NOT_FOUND' });
-    if (job.employerId !== ctx.session.user.id && ctx.session.user.role !== 'admin') {
-      throw new TRPCError({ code: 'FORBIDDEN' });
-    }
+    assertJobOwner(job, ctx.session.user);
     return job;
   }),
 
@@ -357,9 +350,7 @@ export const jobsRouter = router({
   renew: employerProcedure.input(z.object({ id: z.string().uuid() })).mutation(async ({ ctx, input }) => {
     const existing = await ctx.db.query.jobs.findFirst({ where: eq(jobs.id, input.id) });
     if (!existing) throw new TRPCError({ code: 'NOT_FOUND' });
-    if (existing.employerId !== ctx.session.user.id && ctx.session.user.role !== 'admin') {
-      throw new TRPCError({ code: 'FORBIDDEN' });
-    }
+    assertJobOwner(existing, ctx.session.user);
     const [updated] = await ctx.db
       .update(jobs)
       .set({ status: 'active', publishedAt: new Date(), expiresAt: new Date(Date.now() + 30 * 86_400_000) })
