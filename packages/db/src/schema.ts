@@ -76,6 +76,12 @@ export const users = pgTable(
     visaSponsorshipNeeded: boolean('visa_sponsorship_needed'),
     preferredLocations: text('preferred_locations').array().default(sql`'{}'::text[]`).notNull(),
     salaryExpectationsAed: integer('salary_expectations_aed').array(), // [min, max], null = unset
+    // Legal consent capture (audit Phase 1). Mandatory terms/privacy vs optional marketing.
+    termsAcceptedAt: timestamp('terms_accepted_at', { withTimezone: true }),
+    privacyAcceptedAt: timestamp('privacy_accepted_at', { withTimezone: true }),
+    acceptedTermsVersion: varchar('accepted_terms_version', { length: 20 }),
+    acceptedPrivacyVersion: varchar('accepted_privacy_version', { length: 20 }),
+    marketingOptIn: boolean('marketing_opt_in').default(false).notNull(),
     ...timestamps,
   },
   (t) => [

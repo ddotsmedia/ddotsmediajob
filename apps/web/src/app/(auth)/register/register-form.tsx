@@ -21,10 +21,12 @@ export function RegisterForm() {
     const form = new FormData(e.currentTarget);
     const email = String(form.get('email'));
     const password = String(form.get('password'));
+    if (password !== String(form.get('confirm'))) return toast.error('Passwords do not match');
+    if (form.get('acceptedTerms') !== 'on') return toast.error('Please accept the Terms and Privacy Policy');
     try {
       let ref = searchParams.get('ref') ?? undefined;
       if (!ref && typeof window !== 'undefined') { try { ref = localStorage.getItem('ddots-ref') ?? undefined; } catch { /* ignore */ } }
-      await register.mutateAsync({ name: String(form.get('name')), email, password, role, ref });
+      await register.mutateAsync({ name: String(form.get('name')), email, password, role, ref, acceptedTerms: true, marketingOptIn: form.get('marketingOptIn') === 'on' });
       if (typeof window !== 'undefined') { try { localStorage.removeItem('ddots-ref'); } catch { /* ignore */ } }
       await signIn('credentials', { email, password, redirect: false });
       toast.success('Account created!');
@@ -69,6 +71,19 @@ export function RegisterForm() {
         <Label htmlFor="password">Password</Label>
         <Input id="password" name="password" type="password" required minLength={8} placeholder="At least 8 characters" autoComplete="new-password" />
       </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="confirm">Confirm password</Label>
+        <Input id="confirm" name="confirm" type="password" required minLength={8} placeholder="Re-enter your password" autoComplete="new-password" />
+      </div>
+
+      <label className="flex items-start gap-2 text-sm text-navy-700">
+        <input type="checkbox" name="acceptedTerms" required className="mt-0.5 h-4 w-4 rounded text-teal-600" />
+        <span>I accept the <a href="/terms" target="_blank" className="font-semibold text-teal-600 hover:underline">Terms</a> and <a href="/privacy" target="_blank" className="font-semibold text-teal-600 hover:underline">Privacy Policy</a>.</span>
+      </label>
+      <label className="flex items-start gap-2 text-sm text-navy-700/70">
+        <input type="checkbox" name="marketingOptIn" className="mt-0.5 h-4 w-4 rounded text-teal-600" />
+        <span>Send me job tips and updates (optional).</span>
+      </label>
 
       <Button type="submit" className="w-full" disabled={register.isPending}>
         {register.isPending && <Loader2 className="animate-spin" />} Create account

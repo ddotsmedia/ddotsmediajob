@@ -2,7 +2,7 @@ import { randomBytes, createHash } from 'node:crypto';
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { users, employerProfiles, jobseekerProfiles, verificationTokens, sessions, referralCodes, referrals, eq, and, sql } from '@ddots/db';
-import { registerSchema, passwordSchema } from '@ddots/shared';
+import { registerSchema, passwordSchema, TERMS_VERSION, PRIVACY_VERSION } from '@ddots/shared';
 import { hashPassword } from '@ddots/auth/password';
 import { router, publicProcedure, protectedProcedure } from '../trpc';
 import { enqueueEmail } from '../lib/queue';
@@ -27,9 +27,21 @@ export const authRouter = router({
     }
 
     const passwordHash = await hashPassword(input.password);
+    const now = new Date();
     const [user] = await ctx.db
       .insert(users)
-      .values({ name: input.name, email: input.email, passwordHash, role: input.role })
+      .values({
+        name: input.name,
+        email: input.email,
+        passwordHash,
+        role: input.role,
+        // Capture mandatory legal consent + optional marketing opt-in (audit Phase 1).
+        termsAcceptedAt: now,
+        privacyAcceptedAt: now,
+        acceptedTermsVersion: TERMS_VERSION,
+        acceptedPrivacyVersion: PRIVACY_VERSION,
+        marketingOptIn: input.marketingOptIn ?? false,
+      })
       .returning();
 
     if (input.role === 'employer') {

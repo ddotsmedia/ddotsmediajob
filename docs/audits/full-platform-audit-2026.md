@@ -2,6 +2,10 @@
 
 Status: **Phase 0 — Discovery & Baseline complete.** Remediation (Phases 1–22) is a multi-session program executed in small, separately-committed, additive phases. This document is the baseline; it will be updated as phases land.
 
+**Working rules (enforced on EVERY phase):** no `pnpm db:seed`; additive migrations only; never touch other VPS projects; build + commit + push + deploy after each phase; mobile-first; TypeScript strict; Haiku default AI; one feature per commit; VPS deploys go through `deploy-atomic.sh` (staging-dir swap replaces the old manual `rm -rf .next`).
+
+**Progress:** C1 (registration consent + confirm-password) — DONE, migration 0050. Consent model = **opt-out** (owner decision 2026-07-23): keep auto-employer-on-post + auto-searchable-on-upload; capture consent records without gating. OAuth-created users don't hit the register form → their consent capture is a documented follow-up (capture at onboarding).
+
 ## 1. Architecture discovered
 
 | Layer | Technology |

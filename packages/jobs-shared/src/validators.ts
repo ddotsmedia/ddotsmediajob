@@ -23,12 +23,19 @@ export const passwordSchema = z
   .regex(/[A-Z]/, 'Include at least one uppercase letter')
   .regex(/[0-9]/, 'Include at least one number');
 
+// Current legal document versions — bump when Terms/Privacy change to force re-consent.
+export const TERMS_VERSION = '2026-01';
+export const PRIVACY_VERSION = '2026-01';
+
 export const registerSchema = z.object({
   name: nonEmpty(120),
   email: z.string().trim().toLowerCase().email(),
   password: passwordSchema,
   role: z.enum(['jobseeker', 'employer']),
   ref: z.string().trim().max(20).optional(), // referral code
+  // Mandatory legal consent — must be true to register (audit Phase 1).
+  acceptedTerms: z.literal(true, { errorMap: () => ({ message: 'You must accept the Terms and Privacy Policy' }) }),
+  marketingOptIn: z.boolean().optional().default(false), // optional, separate from legal consent
 });
 export type RegisterInput = z.infer<typeof registerSchema>;
 

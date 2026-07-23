@@ -31,9 +31,14 @@ export function RegisterFlow() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
   const [showPw, setShowPw] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
 
   const pwValid = RULES.every((r) => r.test(password));
+  const confirmMatches = confirm.length > 0 && confirm === password;
+  const canSubmit = pwValid && confirmMatches && acceptedTerms;
 
   function pick(r: Role) {
     setRole(r);
@@ -44,10 +49,12 @@ export function RegisterFlow() {
     e.preventDefault();
     if (!name.trim() || !email.trim()) return toast.error('Fill in your name and email');
     if (!pwValid) return toast.error('Password does not meet all requirements');
+    if (!confirmMatches) return toast.error('Passwords do not match');
+    if (!acceptedTerms) return toast.error('Please accept the Terms and Privacy Policy');
     try {
       let ref = searchParams.get('ref') ?? undefined;
       if (!ref && typeof window !== 'undefined') { try { ref = localStorage.getItem('ddots-ref') ?? undefined; } catch { /* ignore */ } }
-      await register.mutateAsync({ name: name.trim(), email: email.trim(), password, role, ref });
+      await register.mutateAsync({ name: name.trim(), email: email.trim(), password, role, ref, acceptedTerms: true, marketingOptIn });
       if (typeof window !== 'undefined') { try { localStorage.removeItem('ddots-ref'); } catch { /* ignore */ } }
       await signIn('credentials', { email: email.trim(), password, redirect: false });
       toast.success('Account created!');
@@ -144,7 +151,30 @@ export function RegisterFlow() {
             </ul>
           </div>
 
-          <Button type="submit" className="w-full" disabled={register.isPending || !pwValid}>
+          <div className="space-y-1.5">
+            <Label htmlFor="confirm">Confirm password</Label>
+            <Input
+              id="confirm"
+              type={showPw ? 'text' : 'password'}
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              required
+              placeholder="Re-enter your password"
+              autoComplete="new-password"
+            />
+            {confirm.length > 0 && !confirmMatches && <p className="text-xs text-red-600">Passwords do not match</p>}
+          </div>
+
+          <label className="flex items-start gap-2 text-sm text-navy-700">
+            <input type="checkbox" checked={acceptedTerms} onChange={(e) => setAcceptedTerms(e.target.checked)} className="mt-0.5 h-4 w-4 rounded text-teal-600" />
+            <span>I accept the <a href="/terms" target="_blank" className="font-semibold text-teal-600 hover:underline">Terms of Service</a> and <a href="/privacy" target="_blank" className="font-semibold text-teal-600 hover:underline">Privacy Policy</a>.</span>
+          </label>
+          <label className="flex items-start gap-2 text-sm text-navy-700/70">
+            <input type="checkbox" checked={marketingOptIn} onChange={(e) => setMarketingOptIn(e.target.checked)} className="mt-0.5 h-4 w-4 rounded text-teal-600" />
+            <span>Send me job tips and updates (optional).</span>
+          </label>
+
+          <Button type="submit" className="w-full" disabled={register.isPending || !canSubmit}>
             {register.isPending && <Loader2 className="animate-spin" />} Create account
           </Button>
         </form>
