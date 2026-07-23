@@ -6,6 +6,7 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import type { LucideIcon } from 'lucide-react';
 import { LayoutGrid, Footprints, Zap, ShieldCheck, Sparkles, Clock, FileText, BarChart3, ShieldAlert, Calculator, MessageCircle, ChevronDown } from 'lucide-react';
 import { categoryBySlug } from '@ddots/shared';
+import { groupCount, membersLabel } from '@/config/platform-stats';
 import { trpc } from '@/trpc/react';
 import { CategoryIcon } from '@/components/category-icon';
 import { cn } from '@/lib/utils';
@@ -132,8 +133,8 @@ export function HomeSidebar() {
       </nav>
 
       <div className="mt-4 rounded-lg bg-[#e8f8ee] p-3">
-        <p className="text-sm font-bold text-navy-900">80,000+ members</p>
-        <p className="text-xs text-navy-700/70">76 groups · Post jobs free</p>
+        <p className="text-sm font-bold text-navy-900">{membersLabel}</p>
+        <p className="text-xs text-navy-700/70">{groupCount} groups · Post jobs free</p>
         <Link href="/whatsapp-groups" className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-[#25D366] px-3 py-2 text-xs font-semibold text-white hover:bg-[#1da851]">
           <MessageCircle className="h-4 w-4" /> Join community
         </Link>

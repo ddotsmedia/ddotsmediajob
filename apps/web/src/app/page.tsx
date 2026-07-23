@@ -10,6 +10,7 @@ import { JobCard, formatWalkinDate } from '@/components/job-card';
 import { JobTicker } from '@/components/job-ticker';
 import { FeatureCards } from '@/components/home/feature-cards';
 import { CategoryGrid } from '@/components/home/category-grid';
+import { groupCount, membersLabel } from '@/config/platform-stats';
 import { EmployerCTA } from '@/components/home/employer-cta';
 import { WhatsAppSection } from '@/components/home/whatsapp-section';
 import { EmailAlerts } from '@/components/home/email-alerts';
@@ -102,7 +103,7 @@ export default async function HomePage() {
             Find Your Next Job in the <span className="text-[#2E8E97]">UAE</span>
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-base text-[#64748B] md:text-lg">
-            76 groups · 120,000+ members · Free to apply
+            {groupCount} groups · {membersLabel} · Free to apply
           </p>
           <div className="mx-auto mt-7 max-w-3xl rounded-2xl border border-[#E5EEF0] bg-white/80 p-2 shadow-lg backdrop-blur">
             <JobSearchBar />
@@ -134,8 +135,8 @@ export default async function HomePage() {
           <div className="flex items-center gap-3">
             <MessageCircle className="h-8 w-8 shrink-0" />
             <div>
-              <p className="font-display font-bold">Join 76+ UAE Job Groups on WhatsApp</p>
-              <p className="text-sm text-white/80">120,000+ members · All professions · All emirates</p>
+              <p className="font-display font-bold">Join {groupCount}+ UAE Job Groups on WhatsApp</p>
+              <p className="text-sm text-white/80">{membersLabel} · All professions · All emirates</p>
             </div>
           </div>
           <Link href="/whatsapp-groups" className="w-full rounded-full bg-white px-5 py-2.5 text-center text-sm font-bold text-[#1da851] hover:bg-white/90 sm:w-auto">
