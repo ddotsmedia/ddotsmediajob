@@ -25,6 +25,7 @@ import {
   APPLICATION_STATUS,
   USER_ROLES,
   ALERT_FREQUENCY,
+  COMPANY_VERIFICATION_TIERS,
 } from '@ddots/shared/constants';
 
 // ─── Enums ───────────────────────────────────────────────
@@ -37,6 +38,7 @@ export const jobStatusEnum = pgEnum('job_status', JOB_STATUS);
 export const applicationStatusEnum = pgEnum('application_status', APPLICATION_STATUS);
 export const alertFrequencyEnum = pgEnum('alert_frequency', ALERT_FREQUENCY);
 export const companySizeEnum = pgEnum('company_size', ['1-10', '11-50', '51-200', '201-500', '500-1000', '1000-plus']);
+export const companyVerificationTierEnum = pgEnum('company_verification_tier', COMPANY_VERIFICATION_TIERS);
 
 const timestamps = {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
@@ -143,12 +145,23 @@ export const companies = pgTable(
     industry: varchar('industry', { length: 120 }),
     emirateSlug: varchar('emirate_slug', { length: 40 }),
     size: companySizeEnum('size'),
+    // NOTE: is_verified KEPT (not renamed to legacy_verified) — additive-migration rule + ~8
+    // code sites read it. verification_tier is the new source of truth; is_verified is backfilled.
     isVerified: boolean('is_verified').default(false).notNull(),
     ratingAvg: real('rating_avg').default(0).notNull(),
     ratingCount: integer('rating_count').default(0).notNull(),
+    // Employer verification tiers (audit Phase 4A).
+    verificationTier: companyVerificationTierEnum('verification_tier').default('unverified').notNull(),
+    verificationStatus: jsonb('verification_status')
+      .$type<{ tier?: string; verifiedAt?: string; documents?: string[]; reviewNotes?: string; nextTierEligibleAt?: string }>()
+      .default({})
+      .notNull(),
+    companyLegalName: varchar('company_legal_name', { length: 200 }),
+    companyRegistrationNumber: varchar('company_registration_number', { length: 100 }),
+    companyWebsiteVerified: boolean('company_website_verified').default(false).notNull(),
     ...timestamps,
   },
-  (t) => [uniqueIndex('companies_slug_idx').on(t.slug)],
+  (t) => [uniqueIndex('companies_slug_idx').on(t.slug), index('companies_verification_tier_idx').on(t.verificationTier)],
 );
 
 // ─── Employer profiles ───────────────────────────────────

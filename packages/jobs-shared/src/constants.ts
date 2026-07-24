@@ -183,3 +183,7 @@ export const REPORT_REASON_LABELS: Record<ReportReason, string> = {
 
 export const REPORT_STATUSES = ['open', 'under_review', 'actioned', 'dismissed'] as const;
 export type ReportStatus = (typeof REPORT_STATUSES)[number];
+
+// Employer verification tiers (audit Phase 4). Ordered least→most trusted.
+export const COMPANY_VERIFICATION_TIERS = ['unverified', 'pending', 'basic', 'enhanced', 'pro'] as const;
+export type CompanyVerificationTier = (typeof COMPANY_VERIFICATION_TIERS)[number];
