@@ -372,6 +372,13 @@
       "when": 1784865358758,
       "tag": "0052_employer_verification_tiers",
       "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1784876740580,
+      "tag": "0053_job_lifecycle",
+      "breakpoints": true
     }
   ]
 }

@@ -25,6 +25,8 @@ import { jobFilterSchema, jobInputSchema, jobFieldsSchema, aiQuickPostSchema, co
 import { router, publicProcedure, employerProcedure, protectedProcedure } from '../trpc';
 import { uniqueJobSlug, generateJobSlug, audit, jobExpiry } from '../lib/helpers';
 import { assertJobOwner } from '../lib/authz';
+import { canTransition } from '../lib/job-state-machine';
+import type { JobStatus } from '@ddots/shared';
 import { parseJobDescription } from '../lib/job-description-parser';
 import { enqueueSearchSync, enqueueJobEvent } from '../lib/queue';
 import { generateJobFromPrompt } from '../lib/anthropic';
@@ -345,6 +347,28 @@ export const jobsRouter = router({
     assertJobOwner(job, ctx.session.user);
     return job;
   }),
+
+  /** Employer: lifecycle transition (pause / resume / mark filled / archive). Phase 5A. */
+  updateJobStatus: employerProcedure
+    .input(z.object({ jobId: z.string().uuid(), newStatus: z.enum(['active', 'paused', 'filled', 'archived']) }))
+    .mutation(async ({ ctx, input }) => {
+      const job = await ctx.db.query.jobs.findFirst({ where: eq(jobs.id, input.jobId) });
+      if (!job) throw new TRPCError({ code: 'NOT_FOUND' });
+      assertJobOwner(job, ctx.session.user);
+      if (!canTransition(job.status as JobStatus, input.newStatus)) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: `Cannot move a ${job.status} job to ${input.newStatus}.` });
+      }
+      const patch: { status: JobStatus; pausedAt?: Date | null; filledAt?: Date; archivedAt?: Date } = { status: input.newStatus };
+      if (input.newStatus === 'paused') patch.pausedAt = new Date();
+      else if (input.newStatus === 'filled') patch.filledAt = new Date();
+      else if (input.newStatus === 'archived') patch.archivedAt = new Date();
+      else if (input.newStatus === 'active') patch.pausedAt = null; // resume clears the pause stamp
+      await ctx.db.update(jobs).set(patch).where(eq(jobs.id, input.jobId));
+      // Only 'active' jobs are searchable — pause/fill/archive removes it from the index.
+      await enqueueSearchSync({ type: input.newStatus === 'active' ? 'upsert' : 'delete', jobId: input.jobId });
+      await audit(ctx.session.user.id, 'job.status', 'job', input.jobId, { from: job.status, to: input.newStatus });
+      return { success: true, status: input.newStatus, message: `Job ${input.newStatus}.` };
+    }),
 
   /** Employer: renew an expired/closed job for another 30 days. */
   renew: employerProcedure.input(z.object({ id: z.string().uuid() })).mutation(async ({ ctx, input }) => {

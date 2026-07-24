@@ -300,6 +300,10 @@ export const jobs = pgTable(
     applyEmail: varchar('apply_email', { length: 255 }),
     applyUrl: text('apply_url'),
     status: jobStatusEnum('status').default('pending').notNull(),
+    // Lifecycle timestamps (Phase 5A) — set when the employer pauses/fills/archives.
+    pausedAt: timestamp('paused_at', { withTimezone: true }),
+    filledAt: timestamp('filled_at', { withTimezone: true }),
+    archivedAt: timestamp('archived_at', { withTimezone: true }),
     source: varchar('source', { length: 50 }).default('manual').notNull(), // paste|whatsapp|whapi|telegram|email|csv|quick|url|manual|community|whatsapp_bot|quick_post|admin_web
     sourceMetadata: jsonb('source_metadata').$type<Record<string, unknown>>(), // original message, sender, etc.
     relation: varchar('relation', { length: 20 }), // community referral: work_there|friend_referred|other

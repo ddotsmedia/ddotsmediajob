@@ -114,7 +114,8 @@ export function inferExperienceLevel(text: string | null | undefined): Experienc
 export const SALARY_PERIODS = ['monthly', 'yearly', 'hourly', 'daily'] as const;
 export type SalaryPeriod = (typeof SALARY_PERIODS)[number];
 
-export const JOB_STATUS = ['draft', 'pending', 'active', 'rejected', 'expired', 'closed', 'filled'] as const;
+// Lifecycle states. 'paused'/'archived' added Phase 5A (employer job lifecycle).
+export const JOB_STATUS = ['draft', 'pending', 'active', 'rejected', 'expired', 'closed', 'filled', 'paused', 'archived'] as const;
 export type JobStatus = (typeof JOB_STATUS)[number];
 
 export const APPLICATION_STATUS = ['applied', 'quick_apply', 'reviewing', 'shortlisted', 'interview', 'offered', 'hired', 'rejected', 'withdrawn'] as const;
