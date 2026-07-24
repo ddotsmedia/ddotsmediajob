@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { salarySubmissions, salaryAggregates, sql } from '@ddots/db';
+import { salarySubmissions, salaryAggregates, eq, and, desc, sql } from '@ddots/db';
 import { router, publicProcedure } from '../trpc';
 import { normalizeJobTitle, type ExperienceLevel } from '../lib/salary-normalizer';
 import { enforceRateLimit } from '../lib/security';
@@ -36,6 +36,46 @@ async function refreshAggregate(db: typeof import('@ddots/db').db, normalizedTit
 }
 
 export const salaryRouter = router({
+  /** Aggregates for a role (optionally an emirate/level) + total submissions behind them. */
+  getAggregates: publicProcedure
+    .input(z.object({ title: z.string().max(160).optional(), emirate: z.string().max(40).optional(), experienceLevel: z.string().max(20).optional() }))
+    .query(async ({ ctx, input }) => {
+      const conds = [];
+      if (input.title) conds.push(eq(salaryAggregates.normalizedJobTitle, input.title));
+      if (input.emirate) conds.push(eq(salaryAggregates.emirate, input.emirate));
+      if (input.experienceLevel) conds.push(eq(salaryAggregates.experienceLevel, input.experienceLevel));
+      const aggregates = await ctx.db
+        .select()
+        .from(salaryAggregates)
+        .where(conds.length ? and(...conds) : undefined)
+        .orderBy(desc(salaryAggregates.count));
+      const totalCount = aggregates.reduce((a, r) => a + r.count, 0);
+      return { aggregates, totalCount };
+    }),
+
+  /** Most-submitted roles for the /salaries index. */
+  topRoles: publicProcedure.query(async ({ ctx }) => {
+    const res = await ctx.db.execute(sql`
+      SELECT normalized_job_title AS title, SUM("count")::int AS total
+      FROM salary_aggregates GROUP BY 1 ORDER BY 2 DESC LIMIT 40`);
+    return ((res as unknown as { rows?: { title: string; total: number }[] }).rows ?? (res as unknown as { title: string; total: number }[]));
+  }),
+
+  /** Recently submitted salaries — anonymized (no user identity). */
+  recent: publicProcedure.query(async ({ ctx }) =>
+    ctx.db
+      .select({
+        jobTitle: salarySubmissions.jobTitle,
+        emirate: salarySubmissions.emirate,
+        experienceLevel: salarySubmissions.experienceLevel,
+        monthlySalaryAed: salarySubmissions.monthlySalaryAed,
+        createdAt: salarySubmissions.createdAt,
+      })
+      .from(salarySubmissions)
+      .orderBy(desc(salarySubmissions.createdAt))
+      .limit(20),
+  ),
+
   submitSalary: publicProcedure
     .input(
       z.object({
