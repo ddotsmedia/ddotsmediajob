@@ -1699,3 +1699,54 @@ export const featureFlags = pgTable('feature_flags', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
+
+// Richer crowd-sourced salary data (Phase 6A) — parallel to the older salary_reports.
+// Level fields kept as varchar (validated at the API) to avoid enum-type proliferation.
+export const salarySubmissions = pgTable(
+  'salary_submissions',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    jobTitle: varchar('job_title', { length: 160 }).notNull(),
+    normalizedTitle: varchar('normalized_title', { length: 160 }).notNull(),
+    industry: varchar('industry', { length: 120 }),
+    emirate: varchar('emirate', { length: 40 }),
+    city: varchar('city', { length: 80 }),
+    experienceLevel: varchar('experience_level', { length: 20 }).notNull(), // junior|mid|senior|lead|executive
+    educationLevel: varchar('education_level', { length: 20 }), // high_school|diploma|bachelor|master|phd
+    employmentType: varchar('employment_type', { length: 20 }), // full_time|part_time|contract|freelance
+    monthlySalaryAed: integer('monthly_salary_aed').notNull(),
+    annualSalaryAed: integer('annual_salary_aed'),
+    currency: varchar('currency', { length: 3 }).default('aed').notNull(),
+    benefits: jsonb('benefits').$type<{ health?: boolean; transport?: boolean; bonus?: boolean; leaveDays?: number }>().default({}).notNull(),
+    submittedById: uuid('submitted_by_id').references(() => users.id, { onDelete: 'set null' }),
+    dataSource: varchar('data_source', { length: 20 }).default('jobseeker').notNull(), // jobseeker|employer|external
+    verified: boolean('verified').default(false).notNull(),
+    ...timestamps,
+  },
+  (t) => [
+    index('salary_sub_emirate_idx').on(t.emirate),
+    index('salary_sub_title_idx').on(t.normalizedTitle),
+    index('salary_sub_exp_idx').on(t.experienceLevel),
+    index('salary_sub_created_idx').on(t.createdAt),
+  ],
+);
+
+// Cached percentile aggregates per (title, emirate, level) — refreshed on submit + hourly cron.
+export const salaryAggregates = pgTable(
+  'salary_aggregates',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    normalizedJobTitle: varchar('normalized_job_title', { length: 160 }).notNull(),
+    emirate: varchar('emirate', { length: 40 }).default('unknown').notNull(),
+    experienceLevel: varchar('experience_level', { length: 20 }).notNull(),
+    count: integer('count').default(0).notNull(),
+    medianAed: integer('median_aed'),
+    averageAed: integer('average_aed'),
+    minAed: integer('min_aed'),
+    maxAed: integer('max_aed'),
+    percentile25: integer('percentile_25'),
+    percentile75: integer('percentile_75'),
+    lastUpdatedAt: timestamp('last_updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex('salary_agg_bucket_idx').on(t.normalizedJobTitle, t.emirate, t.experienceLevel)],
+);
