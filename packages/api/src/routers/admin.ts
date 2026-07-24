@@ -29,6 +29,7 @@ import {
   ilike,
 } from '@ddots/db';
 import { slugify, APPLICANT_LOCATIONS } from '@ddots/shared';
+import { tierAtLeast } from '../lib/verification-rules';
 import {
   generateTotpSecret,
   encryptSecret,
@@ -516,6 +517,65 @@ export const adminRouter = router({
     .mutation(async ({ ctx, input }) => {
       await ctx.db.update(companies).set({ isVerified: input.verified }).where(eq(companies.id, input.id));
       return { ok: true };
+    }),
+
+  // ── Verification tier review (Phase 4C) ──────────────────
+  /** Companies awaiting Enhanced/Pro review (tier = pending). */
+  verificationQueue: adminProcedure.query(async ({ ctx }) =>
+    ctx.db
+      .select({
+        id: companies.id,
+        name: companies.name,
+        slug: companies.slug,
+        legalName: companies.companyLegalName,
+        registrationNumber: companies.companyRegistrationNumber,
+        website: companies.website,
+        tier: companies.verificationTier,
+        status: companies.verificationStatus,
+        createdAt: companies.createdAt,
+      })
+      .from(companies)
+      .where(eq(companies.verificationTier, 'pending'))
+      .orderBy(desc(companies.createdAt))
+      .limit(100),
+  ),
+
+  /** Promote (never demote) a company's verification tier with a required review note. */
+  updateVerificationTier: adminProcedure
+    .input(
+      z.object({
+        companyId: z.string().uuid(),
+        newTier: z.enum(['basic', 'enhanced', 'pro']),
+        reviewNotes: z.string().trim().min(3).max(1000),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const co = await ctx.db.query.companies.findFirst({
+        where: eq(companies.id, input.companyId),
+        columns: { verificationTier: true, verificationStatus: true },
+      });
+      if (!co) throw new TRPCError({ code: 'NOT_FOUND' });
+      // Forward-only: never demote below the current tier (audit Phase 4C).
+      if (!tierAtLeast(input.newTier, co.verificationTier)) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Cannot move a company to a lower tier.' });
+      }
+      const now = new Date().toISOString();
+      const prev = (co.verificationStatus ?? {}) as Record<string, unknown> & { history?: unknown[] };
+      const history = Array.isArray(prev.history) ? prev.history : [];
+      const newStatus = {
+        ...prev,
+        tier: input.newTier,
+        verifiedAt: now,
+        reviewNotes: input.reviewNotes,
+        promotedBy: ctx.session.user.id,
+        history: [...history, { from: co.verificationTier, to: input.newTier, at: now, by: ctx.session.user.id, notes: input.reviewNotes }],
+      };
+      await ctx.db
+        .update(companies)
+        .set({ verificationTier: input.newTier, verificationStatus: newStatus, isVerified: true })
+        .where(eq(companies.id, input.companyId));
+      await audit(ctx.session.user.id, 'company.verification', 'company', input.companyId, { from: co.verificationTier, to: input.newTier, notes: input.reviewNotes });
+      return { success: true, tier: input.newTier };
     }),
 
   /** Delete a company. Jobs/profiles keep working (company_id set null); reviews cascade. */
