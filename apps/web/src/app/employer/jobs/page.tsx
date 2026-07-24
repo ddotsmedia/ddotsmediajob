@@ -1,22 +1,25 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { toast } from 'sonner';
-import { Eye, Users, Loader2, ExternalLink, Pencil, RefreshCw, Trash2, Clock, CalendarClock } from 'lucide-react';
+import { Eye, Users, Loader2, ExternalLink, Pencil, RefreshCw, Clock, CalendarClock, Pause, Play, CheckCircle2, Archive } from 'lucide-react';
 import { formatSalary, formatShort, timeUntilExpiry } from '@ddots/shared';
 import { trpc } from '@/trpc/react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/primitives';
 import { SocialShare } from '@/components/ai/social-share';
 
-const STATUS: Record<string, 'success' | 'default' | 'urgent' | 'muted'> = {
-  active: 'success',
-  pending: 'default',
-  rejected: 'urgent',
-  closed: 'muted',
-  draft: 'muted',
-  expired: 'muted',
-  filled: 'muted',
+// Exact lifecycle colors (audit Phase 5B): active=green, paused=amber, filled=blue, archived=gray, draft=slate.
+const STATUS_CLS: Record<string, string> = {
+  active: 'bg-green-100 text-green-700',
+  paused: 'bg-amber-100 text-amber-700',
+  filled: 'bg-blue-100 text-blue-700',
+  archived: 'bg-navy-100 text-navy-500',
+  draft: 'bg-slate-100 text-slate-600',
+  pending: 'bg-slate-100 text-slate-600',
+  rejected: 'bg-red-100 text-red-700',
+  closed: 'bg-navy-100 text-navy-500',
+  expired: 'bg-navy-100 text-navy-500',
 };
 
 export default function ManageJobsPage() {
@@ -36,13 +39,12 @@ export default function ManageJobsPage() {
     },
     onError: (e) => toast.error(e.message),
   });
-  const del = trpc.jobs.deleteOwn.useMutation({
-    onSuccess: () => {
-      utils.jobs.mine.invalidate();
-      toast.success('Job deleted successfully');
-    },
+  const setStatus = trpc.jobs.updateJobStatus.useMutation({
+    onSuccess: (r) => { utils.jobs.mine.invalidate(); toast.success(`Job ${r.status}`); },
     onError: (e) => toast.error(e.message),
   });
+  const [hideArchived, setHideArchived] = useState(true);
+  const visible = (jobs.data ?? []).filter((j) => !(hideArchived && j.status === 'archived'));
 
   return (
     <div>
@@ -50,21 +52,25 @@ export default function ManageJobsPage() {
         <h1 className="font-display text-2xl font-bold text-navy-900">Manage Jobs</h1>
         <Button asChild><Link href="/employer/post">Post a Job</Link></Button>
       </div>
+      <label className="mt-3 inline-flex items-center gap-2 text-sm text-navy-700">
+        <input type="checkbox" checked={hideArchived} onChange={(e) => setHideArchived(e.target.checked)} className="h-4 w-4 rounded text-teal-600" />
+        Hide archived
+      </label>
 
       {jobs.isLoading && <Loader2 className="mt-6 animate-spin text-teal-500" />}
 
       <div className="mt-6 space-y-3">
-        {jobs.data?.length === 0 && (
+        {!jobs.isLoading && visible.length === 0 && (
           <p className="rounded-xl border bg-white p-12 text-center text-navy-700/60">
-            No jobs yet. <Link href="/employer/post" className="font-semibold text-teal-600 hover:underline">Post your first job</Link>.
+            No jobs to show. <Link href="/employer/post" className="font-semibold text-teal-600 hover:underline">Post a job</Link>.
           </p>
         )}
-        {jobs.data?.map((job) => (
+        {visible.map((job) => (
           <div key={job.id} className="flex flex-wrap items-center justify-between gap-4 rounded-xl border bg-white p-5">
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <h3 className="font-display font-bold text-navy-900">{job.title}</h3>
-                <Badge variant={STATUS[job.status] ?? 'muted'} className="capitalize">{job.status}</Badge>
+                <span className={`rounded-full px-2 py-0.5 text-xs font-bold capitalize ${STATUS_CLS[job.status] ?? 'bg-navy-100 text-navy-500'}`}>{job.status}</span>
               </div>
               <p className="text-sm text-navy-700/60">
                 {formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod, job.salaryHidden, job.salaryNegotiable)}
@@ -106,9 +112,21 @@ export default function ManageJobsPage() {
                   Close
                 </Button>
               )}
-              <Button variant="ghost" size="icon" title="Delete" onClick={() => { if (confirm('Are you sure you want to delete this job? This cannot be undone.')) del.mutate({ id: job.id }); }} disabled={del.isPending}>
-                <Trash2 className="text-red-500" />
-              </Button>
+              {/* Lifecycle actions (Phase 5B) */}
+              {job.status === 'active' && (
+                <Button variant="ghost" size="sm" title="Pause" onClick={() => setStatus.mutate({ jobId: job.id, newStatus: 'paused' })} disabled={setStatus.isPending}><Pause /> Pause</Button>
+              )}
+              {job.status === 'paused' && (
+                <Button variant="ghost" size="sm" title="Resume" onClick={() => setStatus.mutate({ jobId: job.id, newStatus: 'active' })} disabled={setStatus.isPending}><Play /> Resume</Button>
+              )}
+              {(job.status === 'active' || job.status === 'paused') && (
+                <Button variant="ghost" size="sm" title="Mark filled" onClick={() => setStatus.mutate({ jobId: job.id, newStatus: 'filled' })} disabled={setStatus.isPending}><CheckCircle2 /> Filled</Button>
+              )}
+              {job.status !== 'archived' && (
+                <Button variant="ghost" size="icon" title="Archive" onClick={() => { if (confirm('Archive this job? It will be hidden from search. This cannot be undone.')) setStatus.mutate({ jobId: job.id, newStatus: 'archived' }); }} disabled={setStatus.isPending}>
+                  <Archive className="text-navy-500" />
+                </Button>
+              )}
             </div>
           </div>
         ))}
