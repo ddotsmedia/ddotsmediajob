@@ -15,6 +15,7 @@ import { candidatesRouter } from './routers/candidates';
 import { cvsRouter } from './routers/cvs';
 import { cvMetricsRouter } from './routers/cv-metrics';
 import { reportsRouter } from './routers/reports';
+import { featureFlagsRouter } from './routers/feature-flags';
 import { billingRouter } from './routers/billing';
 import { notificationsRouter } from './routers/notifications';
 import { linksRouter } from './routers/links';
@@ -51,6 +52,7 @@ export const appRouter = router({
   cvs: cvsRouter,
   cvMetrics: cvMetricsRouter,
   reports: reportsRouter,
+  featureFlags: featureFlagsRouter,
   billing: billingRouter,
   notifications: notificationsRouter,
   links: linksRouter,

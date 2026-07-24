@@ -1686,3 +1686,16 @@ export const jobReports = pgTable(
   },
   (t) => [index('job_reports_status_idx').on(t.status), index('job_reports_job_idx').on(t.jobId)],
 );
+
+// Feature flags — runtime toggles + percentage rollout (keyed on user id hash).
+export const featureFlags = pgTable('feature_flags', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  key: varchar('key', { length: 60 }).notNull().unique(),
+  name: varchar('name', { length: 120 }).notNull(),
+  description: text('description'),
+  enabled: boolean('enabled').default(false).notNull(),
+  rolloutPercent: integer('rollout_percent').default(0).notNull(),
+  createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});
