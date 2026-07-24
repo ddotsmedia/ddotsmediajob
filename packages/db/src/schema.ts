@@ -1750,3 +1750,33 @@ export const salaryAggregates = pgTable(
   },
   (t) => [uniqueIndex('salary_agg_bucket_idx').on(t.normalizedJobTitle, t.emirate, t.experienceLevel)],
 );
+
+// AI Copilot chat (Phase 1A). Per-user conversations + messages with token/cost tracking.
+export const copilotConversations = pgTable(
+  'copilot_conversations',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    contextType: varchar('context_type', { length: 20 }).default('jobseeker').notNull(), // jobseeker|employer|admin
+    startedAt: timestamp('started_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+    lastMessageAt: timestamp('last_message_at', { withTimezone: true }),
+  },
+  (t) => [index('copilot_conv_user_idx').on(t.userId)],
+);
+
+export const copilotMessages = pgTable(
+  'copilot_messages',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    conversationId: uuid('conversation_id').notNull().references(() => copilotConversations.id, { onDelete: 'cascade' }),
+    role: varchar('role', { length: 12 }).notNull(), // user|assistant
+    content: text('content').notNull(),
+    tokensIn: integer('tokens_in').default(0).notNull(),
+    tokensOut: integer('tokens_out').default(0).notNull(),
+    costUsd: real('cost_usd').default(0).notNull(),
+    modelUsed: varchar('model_used', { length: 40 }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index('copilot_msg_conv_idx').on(t.conversationId), index('copilot_msg_created_idx').on(t.createdAt)],
+);

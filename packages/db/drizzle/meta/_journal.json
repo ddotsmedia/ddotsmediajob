@@ -393,6 +393,13 @@
       "when": 1784891613379,
       "tag": "0055_salary_data",
       "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "7",
+      "when": 1784898819130,
+      "tag": "0056_copilot_chat",
+      "breakpoints": true
     }
   ]
 }
