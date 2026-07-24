@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { employerProfiles, jobs, applications, eq, and, count, desc, sql, inArray } from '@ddots/db';
-import { employerProfileSchema } from '@ddots/shared';
+import { employerProfiles, companies, jobs, applications, eq, and, count, desc, sql, inArray } from '@ddots/db';
+import { employerProfileSchema, slugify } from '@ddots/shared';
 import { router, employerProcedure } from '../trpc';
 import { presignUpload } from '../lib/r2';
 import { audit } from '../lib/helpers';
@@ -13,6 +13,91 @@ export const employersRouter = router({
       })) ?? null
     );
   }),
+
+  /** Employer verification state for the dashboard card + badge (Phase 4B). */
+  verification: employerProcedure.query(async ({ ctx }) => {
+    const prof = await ctx.db.query.employerProfiles.findFirst({
+      where: eq(employerProfiles.userId, ctx.session.user.id),
+      columns: { companyId: true, companyName: true },
+    });
+    if (!prof?.companyId) {
+      return { tier: 'unverified' as const, companyName: prof?.companyName ?? null, hasLegal: false, hasWebsite: false };
+    }
+    const c = await ctx.db.query.companies.findFirst({
+      where: eq(companies.id, prof.companyId),
+      columns: { verificationTier: true, companyLegalName: true, companyRegistrationNumber: true, website: true },
+    });
+    return {
+      tier: c?.verificationTier ?? ('unverified' as const),
+      companyName: prof.companyName,
+      hasLegal: Boolean(c?.companyLegalName || c?.companyRegistrationNumber),
+      hasWebsite: Boolean(c?.website),
+    };
+  }),
+
+  /**
+   * Phase 4B onboarding: ensure a company row exists, save details, set the verification tier.
+   * Company name → BASIC; adding legal details or a website → PENDING (manual review to ENHANCED).
+   */
+  completeOnboarding: employerProcedure
+    .input(
+      z.object({
+        companyName: z.string().trim().min(2).max(160),
+        industry: z.string().trim().max(120).optional(),
+        size: z.enum(['1-10', '11-50', '51-200', '201-500', '500-1000', '1000-plus']).optional(),
+        emirateSlug: z.string().trim().max(40).optional(),
+        legalName: z.string().trim().max(200).optional(),
+        registrationNumber: z.string().trim().max(100).optional(),
+        website: z.union([z.string().trim().url().max(300), z.literal('')]).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+      const website = input.website && input.website.length ? input.website : undefined;
+      const hasEnhancedData = Boolean(input.legalName || input.registrationNumber || website);
+      const tier = hasEnhancedData ? ('pending' as const) : ('basic' as const);
+
+      const shared = {
+        name: input.companyName,
+        industry: input.industry,
+        emirateSlug: input.emirateSlug,
+        website,
+        size: input.size,
+        companyLegalName: input.legalName,
+        companyRegistrationNumber: input.registrationNumber,
+        verificationTier: tier,
+        verificationStatus: { tier, verifiedAt: tier === 'basic' ? new Date().toISOString() : undefined },
+      };
+
+      const prof = await ctx.db.query.employerProfiles.findFirst({ where: eq(employerProfiles.userId, userId), columns: { companyId: true } });
+      let companyId = prof?.companyId ?? null;
+
+      if (companyId) {
+        await ctx.db.update(companies).set(shared).where(eq(companies.id, companyId));
+      } else {
+        // Unique slug from the company name.
+        const base = (slugify(input.companyName) || 'company').slice(0, 100);
+        let slug = base;
+        for (let i = 2; i < 12; i++) {
+          const clash = await ctx.db.query.companies.findFirst({ where: eq(companies.slug, slug), columns: { id: true } });
+          if (!clash) break;
+          slug = `${base}-${i}`;
+        }
+        const [c] = await ctx.db.insert(companies).values({ slug, ...shared }).returning({ id: companies.id });
+        companyId = c!.id;
+        await ctx.db
+          .update(employerProfiles)
+          .set({ companyId, companyName: input.companyName, industry: input.industry, website, emirateSlug: input.emirateSlug })
+          .where(eq(employerProfiles.userId, userId));
+      }
+
+      await audit(userId, 'employer.onboarding', 'company', companyId);
+      return {
+        success: true,
+        tier,
+        message: tier === 'pending' ? 'Submitted for Enhanced verification review.' : 'Basic verification complete.',
+      };
+    }),
 
   upsertProfile: employerProcedure.input(employerProfileSchema).mutation(async ({ ctx, input }) => {
     const [profile] = await ctx.db
