@@ -22,6 +22,7 @@ import {
 } from '@ddots/shared';
 import { getApi } from '@/trpc/server';
 import { JobActions } from '@/components/job-actions';
+import { WhatsappApplyButton } from '@/components/whatsapp-apply-button';
 import { JobViewTracker } from '@/components/job-view-tracker';
 import { QuickApplyButton } from '@/components/quick-apply-button';
 import { CvQuickApply } from '@/components/cv-quick-apply';
@@ -392,20 +393,13 @@ export default async function JobDetailPage({ params }: Props) {
               const email = job.applyEmail;
               if (!wa && !email && !job.applyUrl) return null;
               const fmtWa = wa.startsWith('971') && wa.length === 12 ? `+971 ${wa.slice(3, 5)} ${wa.slice(5, 8)} ${wa.slice(8)}` : `+${wa}`;
-              // Pre-filled WhatsApp application with the fields employers ask for first.
-              const company = job.isAnonymous ? 'your company' : (job.company?.name ?? 'your company');
-              const waText = encodeURIComponent(
-                `Hi, I'm interested in the *${job.title}* position at *${company}* advertised on DdotsMediaJobs.\n\nName: \nNationality: \nCurrent Location: \nExperience: \nNotice Period/Availability: `,
-              );
               return (
                 <Card>
                   <CardContent className="p-6">
                     <h2 className="font-display text-lg font-bold text-navy-900">How to apply</h2>
                     <div className="mt-3 space-y-2">
                       {wa ? (
-                        <a href={`https://wa.me/${wa}?text=${waText}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 rounded-lg bg-[#25D366] px-4 py-3 text-sm font-bold text-white hover:bg-[#1da851]">
-                          📲 Apply via WhatsApp
-                        </a>
+                        <WhatsappApplyButton jobId={job.id} slug={job.slug} title={job.title} company={employer} applyWhatsapp={job.applyWhatsapp} contactWhatsapp={job.contactWhatsapp} label="Apply via WhatsApp" className="w-full" />
                       ) : (
                         <p className="rounded-lg border bg-navy-50/50 px-4 py-3 text-sm text-navy-700/70">Contact the employer via the details below.</p>
                       )}
@@ -505,9 +499,7 @@ export default async function JobDetailPage({ params }: Props) {
                           </a>
                         )}
                         {wa && (
-                          <a href={`https://wa.me/${wa}?text=${encodeURIComponent(`Hi, I'm interested in the ${job.title} walk-in interview`)}`} target="_blank" rel="noopener noreferrer" className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#25D366] py-3 text-sm font-semibold text-white active:scale-95">
-                            💬 Contact on WhatsApp
-                          </a>
+                          <WhatsappApplyButton jobId={job.id} slug={job.slug} title={job.title} company={employer} applyWhatsapp={job.walkInContactPhone || job.applyWhatsapp} contactWhatsapp={job.contactWhatsapp} label="Contact on WhatsApp" className="w-full" />
                         )}
                       </div>
                     );
