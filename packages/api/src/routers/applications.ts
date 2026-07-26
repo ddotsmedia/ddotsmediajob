@@ -5,6 +5,8 @@ import { applySchema, updateApplicationStatusSchema, APPLICATION_STATUS } from '
 import { router, publicProcedure, protectedProcedure, employerProcedure } from '../trpc';
 import { audit, notify } from '../lib/helpers';
 import { assertJobOwner, assertAppOwner } from '../lib/authz';
+import { recordConversion } from '../lib/cta-tracker';
+import { CONVERSION_TYPES } from '../lib/cta-linking';
 import { enqueueEmail, enqueueAiScoring } from '../lib/queue';
 import { presignUpload } from '../lib/r2';
 import { enforceRateLimit, assertUploadType } from '../lib/security';
@@ -13,6 +15,14 @@ import { sendWhapiText } from '../lib/import';
 const ipOf = (ctx: { headers?: Headers }) => ctx.headers?.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
 
 export const applicationsRouter = router({
+  /** Record a funnel conversion (application started/completed, interview). Links to prior CTA. */
+  recordConversion: protectedProcedure
+    .input(z.object({ jobId: z.string().uuid(), conversionType: z.enum(CONVERSION_TYPES) }))
+    .mutation(async ({ ctx, input }) => {
+      await recordConversion(ctx.session.user.id, input.jobId, input.conversionType);
+      return { ok: true };
+    }),
+
   /** No-login Quick Apply: name + WhatsApp; notifies employer via Whapi. */
   quickApply: publicProcedure
     .input(

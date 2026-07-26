@@ -1780,3 +1780,31 @@ export const copilotMessages = pgTable(
   },
   (t) => [index('copilot_msg_conv_idx').on(t.conversationId), index('copilot_msg_created_idx').on(t.createdAt)],
 );
+
+// External-CTA click + conversion tracking (audit Phase 7). Enum-like fields as varchar,
+// validated at the API. Clicks (external channel taps) are NOT completed applications.
+export const ctaClicks = pgTable(
+  'cta_clicks',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }), // nullable — anon clicks
+    jobId: uuid('job_id').notNull().references(() => jobs.id, { onDelete: 'cascade' }),
+    ctaType: varchar('cta_type', { length: 20 }).notNull(), // whatsapp|email|external_link|apply_button
+    sourcePage: varchar('source_page', { length: 20 }), // job_detail|search|email|push
+    clickedAt: timestamp('clicked_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index('cta_clicks_user_idx').on(t.userId), index('cta_clicks_job_idx').on(t.jobId), index('cta_clicks_clicked_idx').on(t.clickedAt)],
+);
+
+export const ctaConversions = pgTable(
+  'cta_conversions',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+    jobId: uuid('job_id').notNull().references(() => jobs.id, { onDelete: 'cascade' }),
+    conversionType: varchar('conversion_type', { length: 30 }).notNull(), // application_started|application_completed|interview_scheduled
+    fromCtaType: varchar('from_cta_type', { length: 20 }), // nullable — the cta_type they came from
+    convertedAt: timestamp('converted_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index('cta_conv_user_idx').on(t.userId), index('cta_conv_job_idx').on(t.jobId), index('cta_conv_converted_idx').on(t.convertedAt)],
+);

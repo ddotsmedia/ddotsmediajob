@@ -26,6 +26,8 @@ import { router, publicProcedure, employerProcedure, protectedProcedure } from '
 import { uniqueJobSlug, generateJobSlug, audit, jobExpiry } from '../lib/helpers';
 import { assertJobOwner } from '../lib/authz';
 import { canTransition } from '../lib/job-state-machine';
+import { recordClick } from '../lib/cta-tracker';
+import { CTA_TYPES, SOURCE_PAGES } from '../lib/cta-linking';
 import type { JobStatus } from '@ddots/shared';
 import { parseJobDescription } from '../lib/job-description-parser';
 import { enqueueSearchSync, enqueueJobEvent } from '../lib/queue';
@@ -250,6 +252,14 @@ export const jobsRouter = router({
   ),
 
   /** Create a job. Any logged-in user may post — first post auto-upgrades them to employer. */
+  /** Track an external-CTA click (WhatsApp/email/external/apply). Public — pixel-safe. */
+  recordCtaClick: publicProcedure
+    .input(z.object({ jobId: z.string().uuid(), ctaType: z.enum(CTA_TYPES), sourcePage: z.enum(SOURCE_PAGES).optional() }))
+    .mutation(async ({ ctx, input }) => {
+      await recordClick(ctx.session?.user?.id ?? null, input.jobId, input.ctaType, input.sourcePage);
+      return { ok: true };
+    }),
+
   create: protectedProcedure.input(jobInputSchema).mutation(async ({ ctx, input }) => {
     const role = ctx.session.user.role;
     const isAdmin = role === 'admin';
