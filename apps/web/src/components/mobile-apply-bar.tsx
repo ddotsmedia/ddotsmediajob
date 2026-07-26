@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Share2, Link2, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { trpc } from '@/trpc/react';
 
 type Props = {
   title: string;
@@ -11,11 +12,16 @@ type Props = {
   applyHref: string;
   applyLabel?: string;
   expired?: boolean;
+  jobId?: string;
 };
 
 /** Sticky mobile bottom bar (<lg) — WhatsApp + Apply/Directions + Share, or expired notice. */
-export function MobileApplyBar({ title, url, waHref, applyHref, applyLabel = 'Apply Now', expired }: Props) {
+export function MobileApplyBar({ title, url, waHref, applyHref, applyLabel = 'Apply Now', expired, jobId }: Props) {
   const [sheet, setSheet] = useState(false);
+  const recordCta = trpc.jobs.recordCtaClick.useMutation();
+  function waTap() {
+    if (jobId) recordCta.mutate({ jobId, ctaType: 'whatsapp', sourcePage: 'mobile_apply_bar' });
+  }
 
   const wrap = 'fixed inset-x-0 z-50 border-t bg-white shadow-[0_-2px_10px_rgba(0,0,0,0.1)] lg:hidden';
   const pos = { bottom: 'calc(3.25rem + env(safe-area-inset-bottom))' } as const;
@@ -48,7 +54,7 @@ export function MobileApplyBar({ title, url, waHref, applyHref, applyLabel = 'Ap
       <div style={pos} className={wrap}>
         <div className="flex h-16 items-center gap-2 px-4 py-2">
           {waHref ? (
-            <a href={waHref} target="_blank" rel="noopener noreferrer" className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#25D366] py-3 text-sm font-semibold text-white active:scale-95">
+            <a href={waHref} target="_blank" rel="noopener noreferrer" onClick={waTap} onAuxClick={waTap} className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#25D366] py-3 text-sm font-semibold text-white active:scale-95">
               💬 WhatsApp
             </a>
           ) : (

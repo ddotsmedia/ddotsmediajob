@@ -12,4 +12,4 @@ export function mostRecentCtaType(clicks: { ctaType: string; clickedAt: Date | s
 
 export const CTA_TYPES = ['whatsapp', 'email', 'external_link', 'apply_button'] as const;
 export const CONVERSION_TYPES = ['application_started', 'application_completed', 'interview_scheduled'] as const;
-export const SOURCE_PAGES = ['job_detail', 'search', 'email', 'push'] as const;
+export const SOURCE_PAGES = ['job_detail', 'search', 'email', 'push', 'mobile_apply_bar'] as const;

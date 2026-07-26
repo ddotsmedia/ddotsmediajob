@@ -601,6 +601,7 @@ export default async function JobDetailPage({ params }: Props) {
       </div>
       <MobileApplyBar
         title={job.title}
+        jobId={job.id}
         url={`${SITE.url}/jobs/${job.slug}`}
         waHref={(() => { const wa = ((job.walkIn && job.walkInContactPhone) || job.applyWhatsapp || job.contactWhatsapp || '').replace(/\D/g, ''); return wa ? `https://wa.me/${wa}?text=${encodeURIComponent(`Hi, I'm interested in the ${job.title}${job.walkIn ? ' walk-in interview' : ' position'}`)}` : null; })()}
         applyHref={job.walkIn

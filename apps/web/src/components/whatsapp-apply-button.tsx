@@ -39,15 +39,10 @@ export function WhatsappApplyButton({
 
   const [warn, setWarn] = useState(false);
 
+  // Umami analytics only — the cta_clicks row is recorded via recordCta below (no beacon,
+  // avoids double-counting now that the beacon route also writes cta_clicks).
   function track() {
     umamiTrack('apply-click', { jobId: slug, source: 'whatsapp' });
-    try {
-      const body = JSON.stringify({ action: 'whatsapp_apply' });
-      if (navigator.sendBeacon) navigator.sendBeacon(`/api/jobs/${slug}/track`, new Blob([body], { type: 'application/json' }));
-      else void fetch(`/api/jobs/${slug}/track`, { method: 'POST', body, headers: { 'content-type': 'application/json' }, keepalive: true });
-    } catch {
-      /* non-blocking */
-    }
   }
 
   function proceed() {
