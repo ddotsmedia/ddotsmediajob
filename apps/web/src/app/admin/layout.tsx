@@ -62,6 +62,7 @@ const NAV: NavItem[] = [
   { href: '/admin/reports', label: 'Job Reports', icon: ShieldAlert },
   { href: '/admin/verification-queue', label: 'Verify Queue', icon: ShieldCheck },
   { href: '/admin/feature-flags', label: 'Feature Flags', icon: Flag },
+  { href: '/admin/cta-funnel', label: 'CTA Analytics', icon: TrendingUp },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
   { href: '/admin/audit', label: 'Audit Log', icon: ScrollText },
 ];

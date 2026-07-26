@@ -91,7 +91,7 @@ export default async function WalkInPage({ searchParams }: { searchParams: Promi
                       <p className="text-sm font-semibold text-teal-700">{formatSalary(j.salaryMin, j.salaryMax, j.salaryPeriod, j.salaryHidden)}</p>
                     </div>
                     <div className="mt-3 flex flex-wrap items-center gap-2">
-                      <WhatsappApplyButton slug={j.slug} title={j.title} company={j.company?.name} applyWhatsapp={j.applyWhatsapp} contactWhatsapp={j.contactWhatsapp} label="WhatsApp for details" />
+                      <WhatsappApplyButton slug={j.slug} jobId={j.id} title={j.title} company={j.company?.name} applyWhatsapp={j.applyWhatsapp} contactWhatsapp={j.contactWhatsapp} label="WhatsApp for details" sourcePage="search" />
                       <Link href={`/jobs/${j.slug}`} className="rounded-lg border border-teal-300 px-3 py-2 text-sm font-semibold text-teal-700 hover:bg-teal-50">View Job →</Link>
                     </div>
                   </div>

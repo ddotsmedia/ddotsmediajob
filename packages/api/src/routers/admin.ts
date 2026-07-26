@@ -31,6 +31,7 @@ import {
 import { slugify, APPLICANT_LOCATIONS } from '@ddots/shared';
 import { tierAtLeast } from '../lib/verification-rules';
 import { featureFlagsAdminRouter } from './feature-flags';
+import { ctaAnalyticsRouter } from './cta-analytics';
 import {
   generateTotpSecret,
   encryptSecret,
@@ -181,6 +182,7 @@ async function insertAdminJob(db: typeof import('@ddots/db').db, actorId: string
 
 export const adminRouter = router({
   featureFlags: featureFlagsAdminRouter,
+  ctaAnalytics: ctaAnalyticsRouter,
   /** Dashboard stats. */
   stats: adminProcedure.query(async ({ ctx }) => {
     const [j, u, a, c, pending, draft, expired, active] = await Promise.all([

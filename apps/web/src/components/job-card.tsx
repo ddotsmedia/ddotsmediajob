@@ -164,11 +164,13 @@ export function JobCard({ job }: { job: JobCardData }) {
       <div className="relative z-10 mt-4 flex items-center gap-2">
         <WhatsappApplyButton
           slug={job.slug}
+          jobId={job.id}
           title={job.title}
           company={job.isAnonymous ? null : job.company?.name}
           applyWhatsapp={job.applyWhatsapp}
           contactWhatsapp={job.contactWhatsapp}
           className="flex-1"
+          sourcePage="search"
         />
         {job.id && <QuickApplyButton jobId={job.id} />}
         <Link

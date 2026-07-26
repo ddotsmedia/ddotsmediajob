@@ -43,8 +43,14 @@ export function JobActions({
     onSuccess: (r) => { utils.jobseekers.isSaved.invalidate({ jobId }); toast.success(r.saved ? 'Job saved' : 'Removed from saved'); },
     onError: (e) => toast.error(e.message),
   });
+  const recordCta = trpc.jobs.recordCtaClick.useMutation();
+  const recordConv = trpc.applications.recordConversion.useMutation();
   const apply = trpc.applications.submit.useMutation({
-    onSuccess: () => { toast.success('Application sent! Check your dashboard.'); setShowApply(false); },
+    onSuccess: () => {
+      toast.success('Application sent! Check your dashboard.');
+      setShowApply(false);
+      recordConv.mutate({ jobId, conversionType: 'application_completed' }); // internal apply = a real conversion
+    },
     onError: (e) => toast.error(e.message),
   });
   const guestApply = trpc.applications.guestApply.useMutation({
@@ -73,11 +79,12 @@ export function JobActions({
   return (
     <div className="space-y-3">
       {hasWa && (
-        <WhatsappApplyButton slug={slug} title={title} company={company} applyWhatsapp={applyWhatsapp} contactWhatsapp={contactWhatsapp} className="w-full" />
+        <WhatsappApplyButton slug={slug} jobId={jobId} title={title} company={company} applyWhatsapp={applyWhatsapp} contactWhatsapp={contactWhatsapp} className="w-full" />
       )}
       {applyEmail && (
         <a
           href={`mailto:${applyEmail}?subject=${encodeURIComponent(`Application for ${title}`)}`}
+          onClick={() => recordCta.mutate({ jobId, ctaType: 'email', sourcePage: 'job_detail' })}
           className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-teal-300 px-4 py-2.5 text-sm font-semibold text-teal-700 hover:bg-teal-50"
         >
           <Mail className="h-4 w-4" /> Apply via Email
@@ -112,6 +119,7 @@ export function JobActions({
             className="w-full"
             disabled={apply.isPending || guestApply.isPending}
             onClick={() => {
+              recordCta.mutate({ jobId, ctaType: 'apply_button', sourcePage: 'job_detail' }); // track the apply tap
               if (authed) apply.mutate({ jobId, coverLetter: coverLetter || undefined });
               else {
                 if (!guest.name || !guest.email) return toast.error('Name and email are required');
