@@ -16,6 +16,7 @@
     "./lib/security": "./src/lib/security.ts",
     "./lib/import": "./src/lib/import.ts",
     "./lib/whapi-criteria": "./src/lib/whapi-criteria.ts",
+    "./lib/file-validator": "./src/lib/file-validator.ts",
     "./lib/deepgram": "./src/lib/deepgram.ts",
     "./lib/whatsapp": "./src/lib/whatsapp/index.ts"
   },

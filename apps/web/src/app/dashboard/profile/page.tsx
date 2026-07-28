@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input, Label, Select, Textarea } from '@/components/ui/primitives';
 import { AvatarUpload } from '@/components/avatar-upload';
 import { UploadButton } from '@/lib/uploadthing-client';
+import { validateCvUpload } from '@/lib/validate-cv-upload';
 
 type Work = { title: string; company: string; from: string; to: string; current: boolean; description: string };
 type Edu = { degree: string; institution: string; year: string };
@@ -198,6 +199,7 @@ export default function ProfilePage() {
                 ) : (
                   <UploadButton
                     endpoint="cvUploader"
+                    onBeforeUploadBegin={(files) => validateCvUpload(files)}
                     onClientUploadComplete={onCvUploaded}
                     onUploadError={(error) => { toast.error(error.message); }}
                   />

@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { trpc } from '@/trpc/react';
 import { UploadButton } from '@/lib/uploadthing-client';
+import { validateCvUpload } from '@/lib/validate-cv-upload';
 import { Button } from '@/components/ui/button';
 
 type Intent = 'jobseeker' | 'employer';
@@ -132,6 +133,7 @@ export default function OnboardingPage() {
             ) : (
               <UploadButton
                 endpoint="cvUploader"
+                onBeforeUploadBegin={(files) => validateCvUpload(files)}
                 onClientUploadComplete={onCvUploaded}
                 onUploadError={(err) => { toast.error(err.message); }}
               />

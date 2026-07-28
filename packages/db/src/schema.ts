@@ -39,6 +39,7 @@ export const applicationStatusEnum = pgEnum('application_status', APPLICATION_ST
 export const alertFrequencyEnum = pgEnum('alert_frequency', ALERT_FREQUENCY);
 export const companySizeEnum = pgEnum('company_size', ['1-10', '11-50', '51-200', '201-500', '500-1000', '1000-plus']);
 export const companyVerificationTierEnum = pgEnum('company_verification_tier', COMPANY_VERIFICATION_TIERS);
+export const uploadScanStatusEnum = pgEnum('upload_scan_status', ['pending', 'clean', 'suspicious', 'quarantined']);
 
 const timestamps = {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
@@ -1807,4 +1808,21 @@ export const ctaConversions = pgTable(
     convertedAt: timestamp('converted_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [index('cta_conv_user_idx').on(t.userId), index('cta_conv_job_idx').on(t.jobId), index('cta_conv_converted_idx').on(t.convertedAt)],
+);
+
+// Upload validation + AV scan ledger (audit Phase 8A). scan_result holds
+// {av_engine, threat_detected, timestamp}. Non-destructive — records only.
+export const uploadScans = pgTable(
+  'upload_scans',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    fileName: varchar('file_name', { length: 512 }).notNull(),
+    fileType: varchar('file_type', { length: 10 }).notNull(), // pdf|doc|docx|jpg|png|svg
+    fileSizeBytes: integer('file_size_bytes').notNull(),
+    scanStatus: uploadScanStatusEnum('scan_status').default('pending').notNull(),
+    scanResult: jsonb('scan_result').$type<{ av_engine: string; threat_detected: boolean; timestamp: string }>(),
+    uploadedBy: uuid('uploaded_by').references(() => users.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index('upload_scans_uploaded_by_idx').on(t.uploadedBy), index('upload_scans_status_idx').on(t.scanStatus), index('upload_scans_created_idx').on(t.createdAt)],
 );
