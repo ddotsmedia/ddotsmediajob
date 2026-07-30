@@ -38,12 +38,17 @@ const EMPTY_STATS = { byCategory: {} as Record<string, number>, byEmirate: {} as
 
 export default async function HomePage() {
   const api = await getApi();
-  const [stats, featured, recent, catRows] = await Promise.all([
+  const results = await Promise.allSettled([
     api.jobs.stats().catch(() => EMPTY_STATS),
     api.jobs.featured({ limit: 6 }).catch(() => [] as Awaited<ReturnType<typeof api.jobs.featured>>),
     api.jobs.recent({ limit: 10 }).catch(() => [] as Awaited<ReturnType<typeof api.jobs.recent>>),
     api.content.categories().catch(() => [] as Awaited<ReturnType<typeof api.content.categories>>),
   ]);
+  const [stats, featured, recent, catRows] = results.map((r, i) => {
+    if (r.status === 'fulfilled') return r.value;
+    const defaults = [EMPTY_STATS, [], [], []];
+    return defaults[i];
+  }) as [typeof EMPTY_STATS, Awaited<ReturnType<typeof api.jobs.featured>>, Awaited<ReturnType<typeof api.jobs.recent>>, Awaited<ReturnType<typeof api.content.categories>>];
   const tickerItems = recent.map((j) => ({ slug: j.slug, title: j.title, emirateSlug: j.emirateSlug, publishedAt: j.publishedAt }));
 
   // Group subcategory names under their parent's slug for the category cards (names only).
