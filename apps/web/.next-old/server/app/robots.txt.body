@@ -1,0 +1,9 @@
+User-Agent: *
+Allow: /
+Disallow: /dashboard/
+Disallow: /employer/
+Disallow: /admin/
+Disallow: /api/
+
+Host: https://ddotsmediajobs.com
+Sitemap: https://ddotsmediajobs.com/sitemap.xml

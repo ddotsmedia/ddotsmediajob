@@ -1,0 +1,1 @@
+self.__REACT_LOADABLE_MANIFEST='{"app/global-error.tsx -> @sentry/nextjs":{"id":21266,"files":["static/chunks/d2c3fecd.2252d31981bb8ea4.js","static/chunks/5304.b3c865cba7fc571f.js"]},"lib/realtime.ts -> pusher-js":{"id":92030,"files":["static/chunks/2030.d89b550a0fcf7aee.js"]}}';

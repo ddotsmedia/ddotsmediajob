@@ -179,7 +179,7 @@ export const jobsRouter = router({
   featured: publicProcedure.input(z.object({ limit: z.number().min(1).max(24).default(8) })).query(
     async ({ ctx, input }) =>
       ctx.db.query.jobs.findMany({
-        where: and(eq(jobs.status, 'active'), eq(jobs.isFeatured, true)),
+        where: eq(jobs.status, 'active'),
         orderBy: [desc(jobs.publishedAt)],
         limit: input.limit,
         with: { company: { columns: { name: true, logoUrl: true } } },
