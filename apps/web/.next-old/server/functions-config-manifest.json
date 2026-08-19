@@ -1,14 +1,14 @@
 {
   "version": 1,
   "functions": {
-    "/jobs/[slug]/opengraph-image": {},
     "/opengraph-image": {},
+    "/jobs/[slug]/opengraph-image": {},
     "/api/jobs/[slug]/track": {},
     "/api/og/group-cover": {},
     "/api/og/hiring": {},
     "/api/og": {},
-    "/api/push/subscribe": {},
     "/api/quick-post": {},
+    "/api/push/subscribe": {},
     "/api/uploadthing": {},
     "/api/voice/transcribe": {},
     "/api/webhooks/whatsapp": {}
