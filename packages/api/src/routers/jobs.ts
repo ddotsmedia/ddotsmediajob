@@ -24,6 +24,7 @@ import {
 import { jobFilterSchema, jobInputSchema, jobFieldsSchema, aiQuickPostSchema, communityPostSchema } from '@ddots/shared';
 import { router, publicProcedure, employerProcedure, protectedProcedure } from '../trpc';
 import { uniqueJobSlug, generateJobSlug, audit, jobExpiry } from '../lib/helpers';
+import { pushToAdmins } from '../lib/realtime';
 import { assertJobOwner } from '../lib/authz';
 import { canTransition } from '../lib/job-state-machine';
 import { recordClick } from '../lib/cta-tracker';
@@ -446,6 +447,8 @@ export const jobsRouter = router({
       .returning();
 
     await audit(ctx, 'job.create.community', 'job', job!.id);
+    // Tell any open admin approval queue that something arrived for review.
+    void pushToAdmins('job-pending', { id: job!.id, title: job!.title });
     return job;
   }),
 

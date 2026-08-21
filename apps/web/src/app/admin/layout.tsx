@@ -5,6 +5,7 @@ import { FilePen } from 'lucide-react';
 import { DashboardSidebar, MobileTabs } from '@/components/dashboard/sidebar';
 import { NAV } from '@/lib/admin-nav';
 import { CommandPalette } from '@/components/admin/command-palette';
+import { RealtimeUpdatesListener } from '@/components/admin/realtime-updates-listener';
 import { trpc } from '@/trpc/react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -21,6 +22,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div className="mx-auto flex max-w-7xl">
       {/* Global to the admin area — Cmd/Ctrl+K works on every admin page. */}
       <CommandPalette />
+      {/* Keeps open admin screens current when another admin changes something. */}
+      <RealtimeUpdatesListener />
       <DashboardSidebar items={nav} title="Admin Panel" variant="dark" />
       <div className="min-w-0 flex-1">
         {/* Header action bar — Drafts quick access (mobile + desktop). */}

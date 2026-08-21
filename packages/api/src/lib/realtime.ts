@@ -3,6 +3,7 @@
  * Pusher is unconfigured — clients then fall back to polling.
  */
 import Pusher from 'pusher';
+import { ADMIN_CHANNEL, type AdminRealtimeEvent } from '@ddots/shared';
 import { isRealtimeConfigured } from './integrations';
 
 export { isRealtimeConfigured };
@@ -23,6 +24,10 @@ function getPusher(): Pusher | null {
 
 export type RealtimeEvent = 'notification' | 'new-application' | 'job-approved' | 'new-message' | 'alert-match';
 
+// Channel/event names live in @ddots/shared so the admin UI subscribes to
+// exactly what this file publishes.
+export { ADMIN_CHANNEL, ADMIN_EVENTS, type AdminRealtimeEvent } from '@ddots/shared';
+
 /** Fire an event to a user's channel (user-{userId}). Best-effort, never throws. */
 export async function pushToUser(
   userId: string,
@@ -35,5 +40,25 @@ export async function pushToUser(
     await p.trigger(`user-${userId}`, event, payload);
   } catch (err) {
     console.error('[realtime] trigger failed:', err instanceof Error ? err.message : err);
+  }
+}
+
+/**
+ * Broadcast to all admins. Best-effort and never throws — when Pusher is
+ * unconfigured this is a no-op and the admin UI keeps its normal refetching.
+ *
+ * Payloads carry only what a list needs to react (id, title, status). Nothing
+ * sensitive: this channel is unauthenticated on the client.
+ */
+export async function pushToAdmins(
+  event: AdminRealtimeEvent,
+  payload: Record<string, unknown> = {},
+): Promise<void> {
+  const p = getPusher();
+  if (!p) return;
+  try {
+    await p.trigger(ADMIN_CHANNEL, event, payload);
+  } catch (err) {
+    console.error('[realtime] admin trigger failed:', err instanceof Error ? err.message : err);
   }
 }

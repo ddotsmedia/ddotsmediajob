@@ -15,8 +15,21 @@ export const isRealtimeEnabled = !!KEY;
  * (useCallback) to avoid resubscribing each render.
  */
 export function useRealtime(userId: string | undefined, event: string, onEvent: () => void): void {
+  useRealtimeChannel(userId ? `user-${userId}` : undefined, event, onEvent);
+}
+
+/**
+ * Subscribe to any Pusher channel. Same lazy-load and no-op-when-unconfigured
+ * behaviour as useRealtime, which now delegates here — one connection stack,
+ * not two. Pass a STABLE onEvent (useCallback) to avoid resubscribing.
+ */
+export function useRealtimeChannel(
+  channel: string | undefined,
+  event: string,
+  onEvent: (payload?: Record<string, unknown>) => void,
+): void {
   useEffect(() => {
-    if (!userId || !KEY) return;
+    if (!channel || !KEY) return;
     let cancelled = false;
     let pusher: { disconnect: () => void } | null = null;
     void (async () => {
@@ -25,7 +38,7 @@ export function useRealtime(userId: string | undefined, event: string, onEvent: 
         if (cancelled) return;
         const Pusher = mod.default;
         const p = new Pusher(KEY, { cluster: CLUSTER });
-        p.subscribe(`user-${userId}`).bind(event, onEvent);
+        p.subscribe(channel).bind(event, onEvent);
         pusher = p;
       } catch (err) {
         console.error('[realtime] subscribe failed:', err);
@@ -35,5 +48,5 @@ export function useRealtime(userId: string | undefined, event: string, onEvent: 
       cancelled = true;
       pusher?.disconnect();
     };
-  }, [userId, event, onEvent]);
+  }, [channel, event, onEvent]);
 }

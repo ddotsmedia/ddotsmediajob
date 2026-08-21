@@ -33,6 +33,7 @@ import { slugify, APPLICANT_LOCATIONS, JOB_STATUS } from '@ddots/shared';
 import { tierAtLeast } from '../lib/verification-rules';
 import { canTransition, allowedTransitions, isNoopTransition } from '../lib/job-state-machine';
 import { adminJobFilterSchema, buildJobWhere } from '../lib/admin-job-filters';
+import { pushToAdmins } from '../lib/realtime';
 import { featureFlagsAdminRouter } from './feature-flags';
 import { ctaAnalyticsRouter } from './cta-analytics';
 import {
@@ -599,6 +600,8 @@ export const adminRouter = router({
         .returning({ title: jobs.title, status: jobs.status, publishedAt: jobs.publishedAt });
       await enqueueSearchSync({ type: input.status === 'active' ? 'upsert' : 'delete', jobId: input.id });
       await audit(ctx, 'admin.job.status', 'job', input.id, { title: before.title, reason: input.reason }, { before, after });
+      // Another admin's open jobs list is now stale — nudge it to refetch.
+      void pushToAdmins('job-changed', { id: input.id, status: input.status });
       if (input.status === 'active') await enqueueJobEvent({ jobId: input.id, event: 'approved' }).catch(() => {});
       return { ok: true, changed: true };
     }),
@@ -703,6 +706,7 @@ export const adminRouter = router({
         ids: eligible.slice(0, BULK_AUDIT_SAMPLE),
         ...(eligible.length > BULK_AUDIT_SAMPLE ? { truncated: eligible.length - BULK_AUDIT_SAMPLE } : {}),
       });
+      if (eligible.length > 0) void pushToAdmins('job-changed', { count: eligible.length, status: input.status });
       return { count: eligible.length, skipped: skipped.length, unchanged };
     }),
 
