@@ -46,6 +46,18 @@ export const jobsRouter = router({
     }),
   ),
 
+  /** Fetch active jobs for the guest "Saved jobs" page from localStorage slugs.
+   *  Separate from bySlugs (which is compare-only, capped at 3). Silently drops
+   *  slugs that are no longer active/exist — the page reconciles the difference. */
+  savedBySlugs: publicProcedure.input(z.object({ slugs: z.array(z.string().max(120)).min(1).max(100) })).query(async ({ ctx, input }) =>
+    ctx.db.query.jobs.findMany({
+      where: and(inArray(jobs.slug, input.slugs), eq(jobs.status, 'active')),
+      with: { company: { columns: { name: true, logoUrl: true, isVerified: true } } },
+      orderBy: [desc(jobs.publishedAt)],
+      limit: 100,
+    }),
+  ),
+
   /** Autocomplete suggestions for the search bar (Meilisearch; [] when unconfigured). */
   suggest: publicProcedure
     .input(z.object({ q: z.string().max(80) }))
@@ -182,7 +194,8 @@ export const jobsRouter = router({
         where: and(eq(jobs.status, 'active'), eq(jobs.isFeatured, true)),
         orderBy: [desc(jobs.publishedAt)],
         limit: input.limit,
-        with: { company: { columns: { name: true, logoUrl: true } } },
+        // isVerified/verificationTier feed the homepage verification badge (JobCard reads isVerified).
+        with: { company: { columns: { name: true, logoUrl: true, isVerified: true, verificationTier: true } } },
       }),
   ),
 
@@ -193,7 +206,7 @@ export const jobsRouter = router({
         where: eq(jobs.status, 'active'),
         orderBy: [desc(jobs.publishedAt)],
         limit: input?.limit ?? 6,
-        with: { company: { columns: { name: true, logoUrl: true } } },
+        with: { company: { columns: { name: true, logoUrl: true, isVerified: true, verificationTier: true } } },
       }),
   ),
 
@@ -296,7 +309,7 @@ export const jobsRouter = router({
       })
       .returning();
 
-    await audit(ctx.session.user.id, 'job.create', 'job', job!.id);
+    await audit(ctx, 'job.create', 'job', job!.id);
     await enqueueJobEvent({ jobId: job!.id, event: 'submitted' }).catch(() => {});
     if (job!.status === 'active') {
       await enqueueSearchSync({ type: 'upsert', jobId: job!.id });
@@ -324,7 +337,7 @@ export const jobsRouter = router({
         .where(eq(jobs.id, input.id))
         .returning();
       await enqueueSearchSync({ type: updated!.status === 'active' ? 'upsert' : 'delete', jobId: updated!.id });
-      await audit(ctx.session.user.id, 'job.update', 'job', input.id);
+      await audit(ctx, 'job.update', 'job', input.id);
       return updated;
     }),
 
@@ -335,7 +348,7 @@ export const jobsRouter = router({
     assertJobOwner(existing, ctx.session.user);
     await ctx.db.update(jobs).set({ status: 'closed' }).where(eq(jobs.id, input.id));
     await enqueueSearchSync({ type: 'delete', jobId: input.id });
-    await audit(ctx.session.user.id, 'job.close', 'job', input.id);
+    await audit(ctx, 'job.close', 'job', input.id);
     return { ok: true };
   }),
 
@@ -346,7 +359,7 @@ export const jobsRouter = router({
     assertJobOwner(existing, ctx.session.user);
     await ctx.db.delete(jobs).where(eq(jobs.id, input.id));
     await enqueueSearchSync({ type: 'delete', jobId: input.id });
-    await audit(ctx.session.user.id, 'job.delete', 'job', input.id);
+    await audit(ctx, 'job.delete', 'job', input.id);
     return { ok: true };
   }),
 
@@ -376,7 +389,7 @@ export const jobsRouter = router({
       await ctx.db.update(jobs).set(patch).where(eq(jobs.id, input.jobId));
       // Only 'active' jobs are searchable — pause/fill/archive removes it from the index.
       await enqueueSearchSync({ type: input.newStatus === 'active' ? 'upsert' : 'delete', jobId: input.jobId });
-      await audit(ctx.session.user.id, 'job.status', 'job', input.jobId, { from: job.status, to: input.newStatus });
+      await audit(ctx, 'job.status', 'job', input.jobId, { from: job.status, to: input.newStatus });
       return { success: true, status: input.newStatus, message: `Job ${input.newStatus}.` };
     }),
 
@@ -391,7 +404,7 @@ export const jobsRouter = router({
       .where(eq(jobs.id, input.id))
       .returning();
     await enqueueSearchSync({ type: 'upsert', jobId: input.id });
-    await audit(ctx.session.user.id, 'job.renew', 'job', input.id);
+    await audit(ctx, 'job.renew', 'job', input.id);
     return updated;
   }),
 
@@ -432,7 +445,7 @@ export const jobsRouter = router({
       })
       .returning();
 
-    await audit(ctx.session.user.id, 'job.create.community', 'job', job!.id);
+    await audit(ctx, 'job.create.community', 'job', job!.id);
     return job;
   }),
 

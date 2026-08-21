@@ -1,71 +1,11 @@
 'use client';
 
-import {
-  LayoutDashboard,
-  CheckSquare,
-  Users,
-  ScrollText,
-  FileEdit,
-  BadgeCheck,
-  Briefcase,
-  Building2,
-  Star,
-  MessageCircle,
-  MessagesSquare,
-  Banknote,
-  Settings,
-  PlusCircle,
-  Award,
-  FileText,
-  TrendingUp,
-  Layers,
-  Bookmark,
-  Sparkles,
-  FilePen,
-  Tags,
-  Inbox,
-  DollarSign,
-  ShieldAlert,
-  ShieldCheck,
-  Flag,
-} from 'lucide-react';
 import Link from 'next/link';
-import { DashboardSidebar, MobileTabs, type NavItem } from '@/components/dashboard/sidebar';
+import { FilePen } from 'lucide-react';
+import { DashboardSidebar, MobileTabs } from '@/components/dashboard/sidebar';
+import { NAV } from '@/lib/admin-nav';
+import { CommandPalette } from '@/components/admin/command-palette';
 import { trpc } from '@/trpc/react';
-
-const NAV: NavItem[] = [
-  { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/admin/analytics', label: 'Analytics', icon: TrendingUp },
-  { href: '/admin/cv-analytics', label: 'CV Costs', icon: DollarSign },
-  { href: '/admin/jobs/add', label: 'Add Job', icon: PlusCircle },
-  { href: '/admin/quick-import', label: 'Quick Import', icon: Sparkles },
-  { href: '/admin/tools/bulk-import', label: 'Bulk Import', icon: Layers },
-  { href: '/admin/bulk-extract', label: 'Bulk Extract', icon: Layers },
-  { href: '/admin/tools/bookmarklet', label: 'Bookmarklet', icon: Bookmark },
-  { href: '/admin/approvals', label: 'Job Approvals', icon: CheckSquare },
-  { href: '/admin/jobs', label: 'All Jobs', icon: Briefcase },
-  { href: '/admin/jobs/drafts', label: 'Drafts', icon: FilePen },
-  { href: '/admin/categories', label: 'Categories', icon: Tags },
-  { href: '/admin/applications', label: 'Applications', icon: FileText },
-  { href: '/admin/verifications', label: 'Verifications', icon: BadgeCheck },
-  { href: '/admin/companies', label: 'Companies', icon: Building2 },
-  { href: '/admin/reviews', label: 'Reviews', icon: Star },
-  { href: '/admin/whatsapp', label: 'WhatsApp Groups', icon: MessageCircle },
-  { href: '/admin/whatsapp-bot', label: 'WhatsApp Bot', icon: MessageCircle },
-  { href: '/admin/salary', label: 'Salary Reports', icon: Banknote },
-  { href: '/admin/community', label: 'Community', icon: MessagesSquare },
-  { href: '/admin/assessments', label: 'Assessments', icon: Award },
-  { href: '/admin/success-stories', label: 'Success Stories', icon: Star },
-  { href: '/admin/users', label: 'Users', icon: Users },
-  { href: '/admin/blog', label: 'Blog Editor', icon: FileEdit },
-  { href: '/admin/feedback', label: 'Feedback', icon: Inbox },
-  { href: '/admin/reports', label: 'Job Reports', icon: ShieldAlert },
-  { href: '/admin/verification-queue', label: 'Verify Queue', icon: ShieldCheck },
-  { href: '/admin/feature-flags', label: 'Feature Flags', icon: Flag },
-  { href: '/admin/cta-funnel', label: 'CTA Analytics', icon: TrendingUp },
-  { href: '/admin/settings', label: 'Settings', icon: Settings },
-  { href: '/admin/audit', label: 'Audit Log', icon: ScrollText },
-];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const stats = trpc.admin.stats.useQuery(undefined, { staleTime: 60_000 });
@@ -79,6 +19,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   });
   return (
     <div className="mx-auto flex max-w-7xl">
+      {/* Global to the admin area — Cmd/Ctrl+K works on every admin page. */}
+      <CommandPalette />
       <DashboardSidebar items={nav} title="Admin Panel" variant="dark" />
       <div className="min-w-0 flex-1">
         {/* Header action bar — Drafts quick access (mobile + desktop). */}

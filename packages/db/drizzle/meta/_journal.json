@@ -414,6 +414,13 @@
       "when": 1785041829239,
       "tag": "0058_upload_scans",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1787132358174,
+      "tag": "0059_audit_user_agent",
+      "breakpoints": true
     }
   ]
 }

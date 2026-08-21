@@ -27,9 +27,12 @@ import {
   count,
   sql,
   ilike,
+  inArray,
 } from '@ddots/db';
-import { slugify, APPLICANT_LOCATIONS } from '@ddots/shared';
+import { slugify, APPLICANT_LOCATIONS, JOB_STATUS } from '@ddots/shared';
 import { tierAtLeast } from '../lib/verification-rules';
+import { canTransition, allowedTransitions, isNoopTransition } from '../lib/job-state-machine';
+import { adminJobFilterSchema, buildJobWhere } from '../lib/admin-job-filters';
 import { featureFlagsAdminRouter } from './feature-flags';
 import { ctaAnalyticsRouter } from './cta-analytics';
 import {
@@ -46,8 +49,7 @@ import { router, adminProcedure } from '../trpc';
 import { audit, notify, uniqueJobSlug, generateJobSlug, jobExpiry } from '../lib/helpers';
 import { enqueueEmail, enqueueSearchSync, enqueueJobEvent } from '../lib/queue';
 import { extractAndSaveDraft } from '../lib/import';
-import { enforceRateLimit } from '../lib/security';
-import { sanitizeHtml } from '../lib/security';
+import { enforceRateLimit, escapeHtml, sanitizeHtml } from '../lib/security';
 import { isSearchConfigured, ensureJobsIndex, bulkUpsert, ping as searchPing, indexCount, jobRowToDoc } from '../lib/meili';
 import { isIndexingConfigured, submitUrl } from '../lib/google-indexing';
 import { ensureVectorSetup, upsertJobEmbedding } from '../lib/embeddings';
@@ -180,6 +182,15 @@ async function insertAdminJob(db: typeof import('@ddots/db').db, actorId: string
   return job;
 }
 
+/** How many affected records a bulk action names individually in its audit
+ *  entry. Beyond this the entry records the overflow count instead, so one
+ *  500-job action can't bloat the log. */
+const BULK_AUDIT_SAMPLE = 100;
+
+/** Ceiling on "select all matching". Keeps one bulk action bounded and the
+ *  id payload small; the UI tells the admin when a filter exceeds it. */
+const SELECT_ALL_CAP = 5000;
+
 export const adminRouter = router({
   featureFlags: featureFlagsAdminRouter,
   ctaAnalytics: ctaAnalyticsRouter,
@@ -225,10 +236,16 @@ export const adminRouter = router({
       with: { employer: { columns: { name: true, email: true } } },
     });
     if (!job) throw new TRPCError({ code: 'NOT_FOUND' });
-    await ctx.db
+    if (job.status === 'active') return { ok: true, changed: false }; // already approved
+    if (!canTransition(job.status, 'active', 'admin')) {
+      throw new TRPCError({ code: 'BAD_REQUEST', message: `Cannot approve a ${job.status} job.` });
+    }
+    const before = { status: job.status, publishedAt: job.publishedAt, rejectionReason: job.rejectionReason };
+    const [after] = await ctx.db
       .update(jobs)
       .set({ status: 'active', publishedAt: new Date(), rejectionReason: null })
-      .where(eq(jobs.id, input.id));
+      .where(eq(jobs.id, input.id))
+      .returning({ status: jobs.status, publishedAt: jobs.publishedAt, rejectionReason: jobs.rejectionReason });
     await enqueueSearchSync({ type: 'upsert', jobId: input.id });
     void submitUrl(`${process.env.NEXT_PUBLIC_APP_URL}/jobs/${job.slug}`, 'URL_UPDATED'); // Google Indexing (best-effort)
     void upsertJobEmbedding(job.id, `${job.title} ${job.categorySlug} ${job.emirateSlug} ${job.description.slice(0, 1000)}`); // semantic (best-effort, no-op if pgvector absent)
@@ -244,21 +261,31 @@ export const adminRouter = router({
     await notify(job.employerId, 'job-approved', `Your job "${job.title}" is live`, {
       link: `/jobs/${job.slug}`,
     });
-    await audit(ctx.session.user.id, 'job.approve', 'job', input.id);
+    await audit(ctx, 'job.approve', 'job', input.id, { title: job.title }, { before, after });
     await enqueueJobEvent({ jobId: input.id, event: 'approved' }).catch(() => {});
-    return { ok: true };
+    return { ok: true, changed: true };
   }),
 
   rejectJob: adminProcedure
     .input(z.object({ id: z.string().uuid(), reason: z.string().max(500) }))
     .mutation(async ({ ctx, input }) => {
-      await ctx.db
+      const [before] = await ctx.db
+        .select({ title: jobs.title, status: jobs.status, rejectionReason: jobs.rejectionReason })
+        .from(jobs)
+        .where(eq(jobs.id, input.id));
+      if (!before) throw new TRPCError({ code: 'NOT_FOUND', message: 'Job not found.' });
+      if (before.status === 'rejected') return { ok: true, changed: false };
+      if (!canTransition(before.status, 'rejected', 'admin')) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: `Cannot reject a ${before.status} job.` });
+      }
+      const [after] = await ctx.db
         .update(jobs)
         .set({ status: 'rejected', rejectionReason: input.reason })
-        .where(eq(jobs.id, input.id));
+        .where(eq(jobs.id, input.id))
+        .returning({ title: jobs.title, status: jobs.status, rejectionReason: jobs.rejectionReason });
       await enqueueSearchSync({ type: 'delete', jobId: input.id });
-      await audit(ctx.session.user.id, 'job.reject', 'job', input.id, { reason: input.reason });
-      return { ok: true };
+      await audit(ctx, 'job.reject', 'job', input.id, { reason: input.reason, title: before.title }, { before, after });
+      return { ok: true, changed: true };
     }),
 
   /** User management. */
@@ -279,36 +306,108 @@ export const adminRouter = router({
   setUserBan: adminProcedure
     .input(z.object({ userId: z.string().uuid(), banned: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
-      await ctx.db.update(users).set({ isBanned: input.banned }).where(eq(users.id, input.userId));
-      await audit(ctx.session.user.id, 'user.ban', 'user', input.userId, { banned: input.banned });
+      const [before] = await ctx.db
+        .select({ email: users.email, isBanned: users.isBanned })
+        .from(users)
+        .where(eq(users.id, input.userId));
+      const [after] = await ctx.db
+        .update(users)
+        .set({ isBanned: input.banned })
+        .where(eq(users.id, input.userId))
+        .returning({ email: users.email, isBanned: users.isBanned });
+      await audit(ctx, 'user.ban', 'user', input.userId, { email: before?.email }, { before, after });
       return { ok: true };
     }),
 
   setUserRole: adminProcedure
     .input(z.object({ userId: z.string().uuid(), role: z.enum(['jobseeker', 'employer', 'admin']) }))
     .mutation(async ({ ctx, input }) => {
-      await ctx.db.update(users).set({ role: input.role }).where(eq(users.id, input.userId));
-      await audit(ctx.session.user.id, 'user.role', 'user', input.userId, { role: input.role });
+      const [before] = await ctx.db
+        .select({ email: users.email, role: users.role })
+        .from(users)
+        .where(eq(users.id, input.userId));
+      const [after] = await ctx.db
+        .update(users)
+        .set({ role: input.role })
+        .where(eq(users.id, input.userId))
+        .returning({ email: users.email, role: users.role });
+      // Privilege escalation is the single most security-relevant admin action.
+      await audit(ctx, 'user.role', 'user', input.userId, { email: before?.email }, { before, after });
       return { ok: true };
     }),
 
   /** Permanently delete a user (cascades to their jobs/applications/profiles). Blocks self + admins. */
   deleteUser: adminProcedure.input(z.object({ userId: z.string().uuid() })).mutation(async ({ ctx, input }) => {
     if (input.userId === ctx.session.user.id) throw new TRPCError({ code: 'BAD_REQUEST', message: 'You cannot delete your own account.' });
-    const target = await ctx.db.query.users.findFirst({ where: eq(users.id, input.userId), columns: { id: true, role: true } });
+    const target = await ctx.db.query.users.findFirst({
+      where: eq(users.id, input.userId),
+      columns: { id: true, role: true, email: true, name: true, isBanned: true, createdAt: true },
+    });
     if (!target) throw new TRPCError({ code: 'NOT_FOUND' });
     if (target.role === 'admin') throw new TRPCError({ code: 'BAD_REQUEST', message: 'Demote the admin before deleting.' });
     // Remove their jobs from Typesense before the DB cascade drops them.
     const theirJobs = await ctx.db.select({ id: jobs.id }).from(jobs).where(eq(jobs.employerId, input.userId));
     await ctx.db.delete(users).where(eq(users.id, input.userId));
     for (const j of theirJobs) await enqueueSearchSync({ type: 'delete', jobId: j.id }).catch(() => {});
-    await audit(ctx.session.user.id, 'admin.user.delete', 'user', input.userId);
+    // Cascades through their jobs/applications/profiles — record what was lost.
+    await audit(ctx, 'admin.user.delete', 'user', input.userId, { cascadedJobs: theirJobs.length }, { before: target });
     return { ok: true };
   }),
 
-  auditLog: adminProcedure.query(async ({ ctx }) =>
-    ctx.db.query.auditLogs.findMany({ orderBy: [desc(auditLogs.createdAt)], limit: 100 }),
-  ),
+  /** Audit log viewer feed. Optional filters (action substring, entity) + actor
+   *  email via a left join. Input is optional so existing no-arg callers still work. */
+  auditLog: adminProcedure
+    .input(
+      z
+        .object({
+          action: z.string().max(80).optional(), // substring match (actions are namespaced, e.g. admin.job.delete)
+          entity: z.string().max(60).optional(),
+          actor: z.string().max(200).optional(), // actor email substring
+          entityId: z.string().max(80).optional(), // trace everything done to one record
+          since: z.date().optional(),
+          limit: z.number().min(1).max(500).default(100),
+        })
+        .optional(),
+    )
+    .query(async ({ ctx, input }) => {
+      const conds = [];
+      if (input?.action) conds.push(ilike(auditLogs.action, `%${input.action}%`));
+      if (input?.entity) conds.push(eq(auditLogs.entity, input.entity));
+      if (input?.entityId) conds.push(eq(auditLogs.entityId, input.entityId));
+      if (input?.actor) conds.push(ilike(users.email, `%${input.actor}%`));
+      if (input?.since) conds.push(gte(auditLogs.createdAt, input.since));
+      return ctx.db
+        .select({
+          id: auditLogs.id,
+          action: auditLogs.action,
+          entity: auditLogs.entity,
+          entityId: auditLogs.entityId,
+          meta: auditLogs.meta,
+          ip: auditLogs.ip,
+          userAgent: auditLogs.userAgent,
+          createdAt: auditLogs.createdAt,
+          actorEmail: users.email,
+        })
+        .from(auditLogs)
+        .leftJoin(users, eq(auditLogs.actorId, users.id))
+        .where(conds.length ? and(...conds) : undefined)
+        .orderBy(desc(auditLogs.createdAt))
+        .limit(input?.limit ?? 100);
+    }),
+
+  /** Distinct action names actually present in the log — drives the viewer's
+   *  filter dropdown so it can't drift from what the mutations emit. */
+  auditActions: adminProcedure.query(async ({ ctx }) => {
+    const rows = await ctx.db
+      .selectDistinct({ action: auditLogs.action, entity: auditLogs.entity })
+      .from(auditLogs)
+      .orderBy(auditLogs.action)
+      .limit(500);
+    return {
+      actions: [...new Set(rows.map((r) => r.action))],
+      entities: [...new Set(rows.map((r) => r.entity).filter((e): e is string => !!e))],
+    };
+  }),
 
   // ── Employer verification queue ────────────────────────
   pendingVerifications: adminProcedure.query(async ({ ctx }) =>
@@ -342,7 +441,7 @@ export const adminRouter = router({
       if (prof?.companyId) {
         await ctx.db.update(companies).set({ isVerified: input.approve }).where(eq(companies.id, prof.companyId));
       }
-      await audit(ctx.session.user.id, 'employer.verify.review', 'employer', input.userId, { approve: input.approve });
+      await audit(ctx, 'employer.verify.review', 'employer', input.userId, { approve: input.approve });
       return { ok: true };
     }),
 
@@ -395,6 +494,64 @@ export const adminRouter = router({
       });
     }),
 
+  /** Infinite/virtualized variant of allJobs — offset-cursor pagination so the
+   *  admin table can scroll through 10k+ rows, loading ~100 at a time, without
+   *  ever shipping the whole set to the browser. Additive; allJobs stays as-is. */
+  allJobsInfinite: adminProcedure
+    .input(
+      adminJobFilterSchema.extend({
+        limit: z.number().min(1).max(200).default(100),
+        cursor: z.number().min(0).default(0), // row offset
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      // Fetch one extra to know whether a next page exists.
+      const rows = await ctx.db.query.jobs.findMany({
+        where: buildJobWhere(input),
+        orderBy: [desc(jobs.createdAt)],
+        limit: input.limit + 1,
+        offset: input.cursor,
+        with: { company: { columns: { name: true } } },
+      });
+      let nextCursor: number | undefined;
+      if (rows.length > input.limit) {
+        rows.pop();
+        nextCursor = input.cursor + input.limit;
+      }
+      return { items: rows, nextCursor };
+    }),
+
+  /** Total matching the current filters — drives the "select all N" affordance
+   *  and the result count, without paging through the whole feed. */
+  jobCount: adminProcedure.input(adminJobFilterSchema).query(async ({ ctx, input }) => {
+    const [row] = await ctx.db.select({ n: count() }).from(jobs).where(buildJobWhere(input));
+    return { total: row?.n ?? 0 };
+  }),
+
+  /**
+   * Counts per status and per emirate for the current filters.
+   *
+   * Each facet omits its own condition, so the status counts show what you'd get
+   * by switching status while keeping every other filter — the point of a facet.
+   */
+  jobFacets: adminProcedure.input(adminJobFilterSchema).query(async ({ ctx, input }) => {
+    const [byStatus, byEmirate] = await Promise.all([
+      ctx.db
+        .select({ value: jobs.status, n: count() })
+        .from(jobs)
+        .where(buildJobWhere(input, 'status'))
+        .groupBy(jobs.status),
+      ctx.db
+        .select({ value: jobs.emirateSlug, n: count() })
+        .from(jobs)
+        .where(buildJobWhere(input, 'emirate'))
+        .groupBy(jobs.emirateSlug),
+    ]);
+    const toMap = (rows: { value: string | null; n: number }[]) =>
+      Object.fromEntries(rows.filter((r) => r.value).map((r) => [r.value as string, r.n]));
+    return { status: toMap(byStatus), emirate: toMap(byEmirate) };
+  }),
+
   setJobFeatured: adminProcedure
     .input(z.object({ id: z.string().uuid(), featured: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
@@ -404,24 +561,215 @@ export const adminRouter = router({
     }),
 
   setJobStatus: adminProcedure
-    .input(z.object({ id: z.string().uuid(), status: z.enum(['active', 'pending', 'rejected', 'closed', 'expired', 'filled', 'draft']) }))
+    .input(
+      z.object({
+        id: z.string().uuid(),
+        status: z.enum(JOB_STATUS),
+        /** Recorded on the job when rejecting, and in the audit entry either way. */
+        reason: z.string().max(500).optional(),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
-      await ctx.db
-        .update(jobs)
-        .set({ status: input.status, publishedAt: input.status === 'active' ? new Date() : undefined })
+      const [before] = await ctx.db
+        .select({ title: jobs.title, status: jobs.status, publishedAt: jobs.publishedAt })
+        .from(jobs)
         .where(eq(jobs.id, input.id));
+      if (!before) throw new TRPCError({ code: 'NOT_FOUND', message: 'Job not found.' });
+
+      // Re-selecting the current status is a no-op, not an error.
+      if (isNoopTransition(before.status, input.status)) return { ok: true, changed: false };
+
+      if (!canTransition(before.status, input.status, 'admin')) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Cannot move a ${before.status} job to ${input.status}. Allowed: ${
+            allowedTransitions(before.status, 'admin').join(', ') || 'none — this status is terminal'
+          }.`,
+        });
+      }
+
+      const [after] = await ctx.db
+        .update(jobs)
+        .set({
+          status: input.status,
+          publishedAt: input.status === 'active' ? new Date() : undefined,
+          ...(input.status === 'rejected' ? { rejectionReason: input.reason ?? null } : {}),
+        })
+        .where(eq(jobs.id, input.id))
+        .returning({ title: jobs.title, status: jobs.status, publishedAt: jobs.publishedAt });
       await enqueueSearchSync({ type: input.status === 'active' ? 'upsert' : 'delete', jobId: input.id });
-      await audit(ctx.session.user.id, 'admin.job.status', 'job', input.id, { status: input.status });
+      await audit(ctx, 'admin.job.status', 'job', input.id, { title: before.title, reason: input.reason }, { before, after });
       if (input.status === 'active') await enqueueJobEvent({ jobId: input.id, event: 'approved' }).catch(() => {});
-      return { ok: true };
+      return { ok: true, changed: true };
+    }),
+
+  /** Which statuses an admin may move this job to — drives the table dropdown so
+   *  invalid targets are never offered in the first place. */
+  jobTransitions: adminProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      const [job] = await ctx.db.select({ status: jobs.status }).from(jobs).where(eq(jobs.id, input.id));
+      if (!job) throw new TRPCError({ code: 'NOT_FOUND' });
+      return { current: job.status, allowed: allowedTransitions(job.status, 'admin') };
     }),
 
   deleteJob: adminProcedure.input(z.object({ id: z.string().uuid() })).mutation(async ({ ctx, input }) => {
+    // Snapshot before the row is gone — a delete is irreversible, so this is the
+    // only record of what was removed.
+    const [before] = await ctx.db
+      .select({
+        title: jobs.title,
+        slug: jobs.slug,
+        status: jobs.status,
+        employerId: jobs.employerId,
+        companyId: jobs.companyId,
+        salaryMin: jobs.salaryMin,
+        salaryMax: jobs.salaryMax,
+        createdAt: jobs.createdAt,
+      })
+      .from(jobs)
+      .where(eq(jobs.id, input.id));
     await ctx.db.delete(jobs).where(eq(jobs.id, input.id));
     await enqueueSearchSync({ type: 'delete', jobId: input.id });
-    await audit(ctx.session.user.id, 'admin.job.delete', 'job', input.id);
+    await audit(ctx, 'admin.job.delete', 'job', input.id, undefined, { before });
     return { ok: true };
   }),
+
+  /** Every job id matching the current filter — the ids only, so "select all
+   *  1,240 pending" costs one small round-trip instead of scrolling the
+   *  infinite feed to load them. Mirrors allJobsInfinite's filters exactly. */
+  jobIdsMatching: adminProcedure
+    .input(adminJobFilterSchema)
+    .query(async ({ ctx, input }) => {
+      // Same WHERE as the feed — see admin-job-filters: if these two drift,
+      // "select all matching" silently selects a different set than is shown.
+      const rows = await ctx.db
+        .select({ id: jobs.id })
+        .from(jobs)
+        .where(buildJobWhere(input))
+        .orderBy(desc(jobs.createdAt))
+        .limit(SELECT_ALL_CAP + 1);
+      // Signals to the UI that the filter is wider than one bulk operation should span.
+      const capped = rows.length > SELECT_ALL_CAP;
+      return { ids: rows.slice(0, SELECT_ALL_CAP).map((r) => r.id), capped };
+    }),
+
+  /** Bulk status change — ONE UPDATE for all ids (vs N per-id calls), then per-job
+   *  search sync + approval events, and a single audit entry. Serves "approve 100+
+   *  in one click". Mirrors setJobStatus's side effects. */
+  bulkSetJobStatus: adminProcedure
+    .input(z.object({
+      ids: z.array(z.string().uuid()).min(1).max(500),
+      status: z.enum(JOB_STATUS),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // Partition by whether the move is legal from each job's *current* status.
+      // Rejecting the whole batch because one job is archived would make bulk
+      // moderation unusable, so invalid ones are skipped and reported instead.
+      const current = await ctx.db
+        .select({ id: jobs.id, status: jobs.status })
+        .from(jobs)
+        .where(inArray(jobs.id, input.ids));
+
+      const eligible: string[] = [];
+      const skipped: { id: string; from: string }[] = [];
+      let unchanged = 0;
+      for (const j of current) {
+        if (isNoopTransition(j.status, input.status)) { unchanged++; continue; }
+        if (canTransition(j.status, input.status, 'admin')) eligible.push(j.id);
+        else skipped.push({ id: j.id, from: j.status });
+      }
+
+      if (eligible.length > 0) {
+        await ctx.db
+          .update(jobs)
+          .set({ status: input.status, publishedAt: input.status === 'active' ? new Date() : undefined })
+          .where(inArray(jobs.id, eligible));
+        // Search index + approval events are per-job side effects (cheap queue pushes, run in parallel).
+        await Promise.all(
+          eligible.map(async (id) => {
+            await enqueueSearchSync({ type: input.status === 'active' ? 'upsert' : 'delete', jobId: id }).catch(() => {});
+            if (input.status === 'active') await enqueueJobEvent({ jobId: id, event: 'approved' }).catch(() => {});
+          }),
+        );
+      }
+
+      await audit(ctx, 'admin.job.bulkStatus', 'job', undefined, {
+        status: input.status,
+        count: eligible.length,
+        unchanged,
+        skipped: skipped.length,
+        skippedSample: skipped.slice(0, BULK_AUDIT_SAMPLE),
+        ids: eligible.slice(0, BULK_AUDIT_SAMPLE),
+        ...(eligible.length > BULK_AUDIT_SAMPLE ? { truncated: eligible.length - BULK_AUDIT_SAMPLE } : {}),
+      });
+      return { count: eligible.length, skipped: skipped.length, unchanged };
+    }),
+
+  /** Bulk delete — ONE DELETE for all ids, per-job search removal, single audit entry. */
+  bulkDeleteJobs: adminProcedure
+    .input(z.object({ ids: z.array(z.string().uuid()).min(1).max(500) }))
+    .mutation(async ({ ctx, input }) => {
+      // Record which jobs were destroyed, not just how many — this is the most
+      // destructive admin action and the rows are unrecoverable afterwards.
+      const doomed = await ctx.db
+        .select({ id: jobs.id, title: jobs.title, slug: jobs.slug, status: jobs.status })
+        .from(jobs)
+        .where(inArray(jobs.id, input.ids));
+      await ctx.db.delete(jobs).where(inArray(jobs.id, input.ids));
+      await Promise.all(input.ids.map((id) => enqueueSearchSync({ type: 'delete', jobId: id }).catch(() => {})));
+      await audit(ctx, 'admin.job.bulkDelete', 'job', undefined, {
+        count: doomed.length,
+        requested: input.ids.length,
+        jobs: doomed.slice(0, BULK_AUDIT_SAMPLE),
+        ...(doomed.length > BULK_AUDIT_SAMPLE ? { truncated: doomed.length - BULK_AUDIT_SAMPLE } : {}),
+      });
+      return { count: input.ids.length };
+    }),
+
+  /** Email the employers behind a set of jobs (e.g. "your listing expires soon").
+   *  Recipients are deduplicated by address, so an employer with 40 selected jobs
+   *  receives one message, not 40. Rate limited — this sends real mail. */
+  bulkEmailEmployers: adminProcedure
+    .input(
+      z.object({
+        ids: z.array(z.string().uuid()).min(1).max(500),
+        subject: z.string().min(3).max(150),
+        message: z.string().min(10).max(5000),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      await enforceRateLimit(`bulkemail:${ctx.session.user.id}`, 10, 3600);
+
+      const rows = await ctx.db
+        .select({ email: users.email, name: users.name })
+        .from(jobs)
+        .innerJoin(users, eq(jobs.employerId, users.id))
+        .where(inArray(jobs.id, input.ids));
+
+      // One message per address, however many of their jobs were selected.
+      const recipients = [...new Map(rows.filter((r) => r.email).map((r) => [r.email, r])).values()];
+
+      // Admin-authored copy still gets escaped — it lands inside an HTML email.
+      const body = escapeHtml(input.message).replace(/\n/g, '<br/>');
+
+      let sent = 0;
+      let failed = 0;
+      for (const r of recipients) {
+        const ok = await sendAlertEmail(r.email, input.subject, body);
+        if (ok) sent++;
+        else failed++;
+      }
+
+      await audit(ctx, 'admin.job.bulkEmail', 'job', undefined, {
+        subject: input.subject,
+        jobs: input.ids.length,
+        recipients: recipients.length,
+        sent,
+        failed,
+      });
+      return { sent, failed, recipients: recipients.length };
+    }),
 
   /** Push a job's expiry out by N days (default 30). Reactivates an already-expired job. */
   extendJobExpiry: adminProcedure
@@ -435,7 +783,7 @@ export const adminRouter = router({
       const reactivate = job.status === 'expired';
       await ctx.db.update(jobs).set({ expiresAt, ...(reactivate ? { status: 'active' as const } : {}) }).where(eq(jobs.id, input.id));
       if (reactivate) await enqueueSearchSync({ type: 'upsert', jobId: input.id });
-      await audit(ctx.session.user.id, 'admin.job.extendExpiry', 'job', input.id, { days: input.days, reactivated: reactivate });
+      await audit(ctx, 'admin.job.extendExpiry', 'job', input.id, { days: input.days, reactivated: reactivate });
       return { ok: true, expiresAt, reactivated: reactivate };
     }),
 
@@ -508,7 +856,7 @@ export const adminRouter = router({
         .where(eq(jobs.id, id))
         .returning();
       await enqueueSearchSync({ type: input.status === 'active' ? 'upsert' : 'delete', jobId: id });
-      await audit(ctx.session.user.id, 'admin.job.update', 'job', id, { status: input.status });
+      await audit(ctx, 'admin.job.update', 'job', id, { status: input.status });
       return { ok: true, slug: job!.slug };
     }),
 
@@ -578,14 +926,14 @@ export const adminRouter = router({
         .update(companies)
         .set({ verificationTier: input.newTier, verificationStatus: newStatus, isVerified: true })
         .where(eq(companies.id, input.companyId));
-      await audit(ctx.session.user.id, 'company.verification', 'company', input.companyId, { from: co.verificationTier, to: input.newTier, notes: input.reviewNotes });
+      await audit(ctx, 'company.verification', 'company', input.companyId, { from: co.verificationTier, to: input.newTier, notes: input.reviewNotes });
       return { success: true, tier: input.newTier };
     }),
 
   /** Delete a company. Jobs/profiles keep working (company_id set null); reviews cascade. */
   deleteCompany: adminProcedure.input(z.object({ id: z.string().uuid() })).mutation(async ({ ctx, input }) => {
     await ctx.db.delete(companies).where(eq(companies.id, input.id));
-    await audit(ctx.session.user.id, 'admin.company.delete', 'company', input.id);
+    await audit(ctx, 'admin.company.delete', 'company', input.id);
     return { ok: true };
   }),
 
@@ -640,7 +988,7 @@ export const adminRouter = router({
     .input(z.object({ id: z.string().uuid(), status: z.enum(['applied', 'reviewing', 'shortlisted', 'interview', 'offered', 'hired', 'rejected', 'withdrawn']) }))
     .mutation(async ({ ctx, input }) => {
       await ctx.db.update(applications).set({ status: input.status }).where(eq(applications.id, input.id));
-      await audit(ctx.session.user.id, 'admin.application.status', 'application', input.id, { status: input.status });
+      await audit(ctx, 'admin.application.status', 'application', input.id, { status: input.status });
       return { ok: true };
     }),
 
@@ -761,7 +1109,7 @@ export const adminRouter = router({
         .insert(siteSettings)
         .values({ key: input.key, value: input.value })
         .onConflictDoUpdate({ target: siteSettings.key, set: { value: input.value } });
-      await audit(ctx.session.user.id, 'admin.setting', 'setting', input.key);
+      await audit(ctx, 'admin.setting', 'setting', input.key);
       return { ok: true };
     }),
 
@@ -769,7 +1117,7 @@ export const adminRouter = router({
   createJob: adminProcedure.input(adminJobInput).mutation(async ({ ctx, input }) => {
     const job = await insertAdminJob(ctx.db, ctx.session.user.id, input);
     if (job!.status === 'active') await enqueueSearchSync({ type: 'upsert', jobId: job!.id });
-    await audit(ctx.session.user.id, 'admin.job.create', 'job', job!.id, { source: input.source, status: input.status });
+    await audit(ctx, 'admin.job.create', 'job', job!.id, { source: input.source, status: input.status });
     return { id: job!.id, slug: job!.slug, status: job!.status };
   }),
 
@@ -787,7 +1135,7 @@ export const adminRouter = router({
           errors.push({ row: i + 1, error: e instanceof Error ? e.message : 'failed' });
         }
       }
-      await audit(ctx.session.user.id, 'admin.job.bulk', 'job', undefined, { created, failed: errors.length });
+      await audit(ctx, 'admin.job.bulk', 'job', undefined, { created, failed: errors.length });
       return { created, errors };
     }),
 
@@ -812,7 +1160,7 @@ export const adminRouter = router({
     console.log(`[admin] publishDraft ${input.id} -> status=${job.status} (was draft)`);
     await enqueueSearchSync({ type: 'upsert', jobId: input.id });
     if (isIndexingConfigured()) void submitUrl(`${process.env.NEXT_PUBLIC_APP_URL}/jobs/${job.slug}`, 'URL_UPDATED'); // Google Indexing (best-effort)
-    await audit(ctx.session.user.id, 'admin.job.publish', 'job', input.id);
+    await audit(ctx, 'admin.job.publish', 'job', input.id);
     return { ok: true, slug: job.slug };
   }),
 
@@ -861,7 +1209,7 @@ export const adminRouter = router({
         isFresher: input.isFresher ?? false,
         ...(companyId ? { companyId } : {}),
       }).where(and(eq(jobs.id, input.id), eq(jobs.status, 'draft')));
-      await audit(ctx.session.user.id, 'admin.draft.update', 'job', input.id);
+      await audit(ctx, 'admin.draft.update', 'job', input.id);
       return { ok: true };
     }),
 
@@ -878,7 +1226,7 @@ export const adminRouter = router({
         .values({ phone: input.phone, name: input.name })
         .onConflictDoUpdate({ target: whatsappAdmins.phone, set: { isActive: true, name: input.name } })
         .returning();
-      await audit(ctx.session.user.id, 'admin.wabot.addNumber', 'whatsapp_admin', row!.id, { phone: input.phone });
+      await audit(ctx, 'admin.wabot.addNumber', 'whatsapp_admin', row!.id, { phone: input.phone });
       return row;
     }),
 
@@ -891,7 +1239,7 @@ export const adminRouter = router({
 
   waBotDeleteNumber: adminProcedure.input(z.object({ id: z.string().uuid() })).mutation(async ({ ctx, input }) => {
     await ctx.db.delete(whatsappAdmins).where(eq(whatsappAdmins.id, input.id));
-    await audit(ctx.session.user.id, 'admin.wabot.delNumber', 'whatsapp_admin', input.id);
+    await audit(ctx, 'admin.wabot.delNumber', 'whatsapp_admin', input.id);
     return { ok: true };
   }),
 
@@ -931,7 +1279,7 @@ export const adminRouter = router({
           results.push({ error: err instanceof Error ? err.message : 'failed', title: title || '(no title)' });
         }
       }
-      await audit(ctx.session.user.id, 'admin.wabot.bulkCreate', 'job', undefined, { posted, total: input.jobs.length });
+      await audit(ctx, 'admin.wabot.bulkCreate', 'job', undefined, { posted, total: input.jobs.length });
       return { posted, failed: input.jobs.length - posted, results };
     }),
 
@@ -955,13 +1303,13 @@ export const adminRouter = router({
 
   blockIp: adminProcedure.input(z.object({ ip: z.string().min(3).max(64), hours: z.number().int().min(1).max(720).default(24) })).mutation(async ({ ctx, input }) => {
     await blockIp(input.ip, input.hours * 3600, ctx.session.user.id);
-    await audit(ctx.session.user.id, 'admin.security.blockIp', 'ip', undefined, { ip: input.ip });
+    await audit(ctx, 'admin.security.blockIp', 'ip', undefined, { ip: input.ip });
     return { ok: true };
   }),
 
   unblockIp: adminProcedure.input(z.object({ ip: z.string().min(3).max(64) })).mutation(async ({ ctx, input }) => {
     await unblockIp(input.ip, ctx.session.user.id);
-    await audit(ctx.session.user.id, 'admin.security.unblockIp', 'ip', undefined, { ip: input.ip });
+    await audit(ctx, 'admin.security.unblockIp', 'ip', undefined, { ip: input.ip });
     return { ok: true };
   }),
 
@@ -975,7 +1323,7 @@ export const adminRouter = router({
       await upsertJobEmbedding(r.id, `${r.title} ${r.categorySlug} ${r.emirateSlug} ${(r.skills ?? []).join(' ')} ${r.description.slice(0, 1000)}`);
       embedded++;
     }
-    await audit(ctx.session.user.id, 'admin.embeddings.build', 'job', undefined, { embedded });
+    await audit(ctx, 'admin.embeddings.build', 'job', undefined, { embedded });
     return { embedded, available: true };
   }),
 
@@ -989,7 +1337,7 @@ export const adminRouter = router({
     const base = process.env.NEXT_PUBLIC_APP_URL ?? 'https://ddotsmediajobs.com';
     let submitted = 0;
     for (const r of rows) if (await submitUrl(`${base}/jobs/${r.slug}`, 'URL_UPDATED')) submitted++;
-    await audit(ctx.session.user.id, 'admin.googleIndex.bulk', 'job', undefined, { submitted });
+    await audit(ctx, 'admin.googleIndex.bulk', 'job', undefined, { submitted });
     return { submitted, configured: true };
   }),
 
@@ -1002,7 +1350,7 @@ export const adminRouter = router({
       with: { company: { columns: { name: true } } },
     });
     await bulkUpsert(rows.map((r) => jobRowToDoc(r, r.company?.name)));
-    await audit(ctx.session.user.id, 'admin.search.reindex', 'job', undefined, { indexed: rows.length });
+    await audit(ctx, 'admin.search.reindex', 'job', undefined, { indexed: rows.length });
     return { indexed: rows.length, configured: true };
   }),
 
@@ -1031,7 +1379,7 @@ export const adminRouter = router({
           ...(input.status === 'replied' ? { repliedAt: new Date() } : {}),
         })
         .where(eq(feedback.id, input.id));
-      await audit(ctx.session.user.id, 'admin.feedback.update', 'feedback', input.id, { status: input.status });
+      await audit(ctx, 'admin.feedback.update', 'feedback', input.id, { status: input.status });
       return { ok: true };
     }),
 
@@ -1053,7 +1401,7 @@ export const adminRouter = router({
       await ctx.db.insert(jobCategories).values({ slug, name: input.name, nameAr: input.nameAr || null, icon: input.icon || null, parentId: input.parentId ?? null, sortOrder: input.sortOrder, isActive: input.isActive }).onConflictDoNothing();
       await invalidateCategories();
       revalidateCategoryPages();
-      await audit(ctx.session.user.id, 'admin.category.create', 'job_categories', undefined, { slug });
+      await audit(ctx, 'admin.category.create', 'job_categories', undefined, { slug });
       return { ok: true, slug };
     }),
 
@@ -1063,7 +1411,7 @@ export const adminRouter = router({
       await ctx.db.update(jobCategories).set({ name: input.name, nameAr: input.nameAr ?? null, icon: input.icon ?? null, parentId: input.parentId ?? null, sortOrder: input.sortOrder, isActive: input.isActive }).where(eq(jobCategories.id, input.id));
       await invalidateCategories();
       revalidateCategoryPages();
-      await audit(ctx.session.user.id, 'admin.category.update', 'job_categories', input.id);
+      await audit(ctx, 'admin.category.update', 'job_categories', input.id);
       return { ok: true };
     }),
 
@@ -1075,7 +1423,7 @@ export const adminRouter = router({
     await ctx.db.delete(jobCategories).where(eq(jobCategories.id, input.id));
     await invalidateCategories();
     revalidateCategoryPages();
-    await audit(ctx.session.user.id, 'admin.category.delete', 'job_categories', input.id, { slug: cat.slug });
+    await audit(ctx, 'admin.category.delete', 'job_categories', input.id, { slug: cat.slug });
     return { ok: true };
   }),
 
@@ -1094,7 +1442,7 @@ export const adminRouter = router({
       await ctx.db.insert(jobCategories).values(values).onConflictDoNothing();
       await invalidateCategories();
       revalidateCategoryPages();
-      await audit(ctx.session.user.id, 'admin.category.bulkAddSubs', 'job_categories', parent.id, { count: names.length });
+      await audit(ctx, 'admin.category.bulkAddSubs', 'job_categories', parent.id, { count: names.length });
       return { ok: true, added: names.length };
     }),
 
@@ -1105,7 +1453,7 @@ export const adminRouter = router({
     if (!to) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Your admin account has no email address.' });
     const sent = await sendAlertEmail(to, 'DdotsMediaJobs — Email Test', 'If you receive this, Resend is configured correctly.');
     if (!sent) throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Email not sent — RESEND_API_KEY is missing or the send failed.' });
-    await audit(ctx.session.user.id, 'admin.email.test', 'system', undefined, { to });
+    await audit(ctx, 'admin.email.test', 'system', undefined, { to });
     return { ok: true, to };
   }),
 
@@ -1138,7 +1486,7 @@ export const adminRouter = router({
         await ctx.db.insert(whapiSettings).values(input);
       }
       await invalidateWhapiSettings();
-      await audit(ctx.session.user.id, 'admin.whapi.settings', 'site_settings', undefined, input);
+      await audit(ctx, 'admin.whapi.settings', 'site_settings', undefined, input);
       return { ok: true };
     }),
 
@@ -1206,7 +1554,7 @@ export const adminRouter = router({
       }
       const { plain, hashed } = await generateBackupCodes();
       await ctx.db.update(users).set({ totpEnabled: true, totpBackupCodes: hashed }).where(eq(users.id, u.id));
-      await audit(ctx.session.user.id, 'admin.2fa.enable', 'user', u.id);
+      await audit(ctx, 'admin.2fa.enable', 'user', u.id);
       return { backupCodes: plain };
     }),
 
@@ -1220,7 +1568,7 @@ export const adminRouter = router({
       const ok = (secret && (await verifyTotp(input.code, secret))) || (await consumeBackupCode(input.code, u.totpBackupCodes ?? []));
       if (!ok) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid code' });
       await ctx.db.update(users).set({ totpEnabled: false, totpSecret: null, totpBackupCodes: [] }).where(eq(users.id, u.id));
-      await audit(ctx.session.user.id, 'admin.2fa.disable', 'user', u.id);
+      await audit(ctx, 'admin.2fa.disable', 'user', u.id);
       return { ok: true };
     }),
 });

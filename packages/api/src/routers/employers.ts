@@ -91,7 +91,7 @@ export const employersRouter = router({
           .where(eq(employerProfiles.userId, userId));
       }
 
-      await audit(userId, 'employer.onboarding', 'company', companyId);
+      await audit({ ...ctx, actorId: userId }, 'employer.onboarding', 'company', companyId);
       return {
         success: true,
         tier,
@@ -194,7 +194,7 @@ export const employersRouter = router({
           verificationNote: null,
         })
         .where(eq(employerProfiles.userId, ctx.session.user.id));
-      await audit(ctx.session.user.id, 'employer.verify.submit', 'employer', ctx.session.user.id);
+      await audit(ctx, 'employer.verify.submit', 'employer', ctx.session.user.id);
       return { status: 'pending' };
     }),
 

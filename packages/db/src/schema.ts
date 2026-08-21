@@ -636,11 +636,20 @@ export const auditLogs = pgTable(
     action: varchar('action', { length: 80 }).notNull(),
     entity: varchar('entity', { length: 60 }),
     entityId: varchar('entity_id', { length: 80 }),
+    // Freeform detail. When a mutation changes existing state it stores
+    // { before, after } so the viewer can render a field-level diff.
     meta: jsonb('meta').$type<Record<string, unknown>>(),
     ip: varchar('ip', { length: 64 }),
+    userAgent: text('user_agent'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [index('audit_actor_idx').on(t.actorId), index('audit_action_idx').on(t.action)],
+  (t) => [
+    index('audit_actor_idx').on(t.actorId),
+    index('audit_action_idx').on(t.action),
+    // The viewer always sorts newest-first and often filters by entity.
+    index('audit_created_idx').on(t.createdAt),
+    index('audit_entity_idx').on(t.entity),
+  ],
 );
 
 // ─── Short links (job sharing) ───────────────────────────

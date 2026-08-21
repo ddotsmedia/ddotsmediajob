@@ -44,7 +44,7 @@ export const communityRouter = router({
         .insert(communityPosts)
         .values({ ...input, authorId: ctx.session.user.id })
         .returning();
-      await audit(ctx.session.user.id, 'community.thread', 'community_post', post!.id);
+      await audit(ctx, 'community.thread', 'community_post', post!.id);
       return post;
     }),
 

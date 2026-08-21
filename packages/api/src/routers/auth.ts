@@ -78,7 +78,7 @@ export const authRouter = router({
       }
     }
 
-    await audit(user!.id, 'user.register', 'user', user!.id, { role: input.role });
+    await audit({ ...ctx, actorId: user!.id }, 'user.register', 'user', user!.id, { role: input.role });
     return { id: user!.id, email: user!.email };
   }),
 

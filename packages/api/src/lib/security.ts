@@ -133,6 +133,20 @@ export function sanitizeHtml(html: string): string {
   });
 }
 
+/**
+ * Escape plain text for interpolation into an HTML document (e.g. an email
+ * body). Use this — not sanitizeHtml — when the input is meant to be literal
+ * text: sanitizeHtml would silently drop anything that looks like markup.
+ */
+export function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 // ─── Prompt-injection guards ────────────────────────────────────────
 const JAILBREAK_PATTERNS = [
   /ignore (all |the )?previous/i,

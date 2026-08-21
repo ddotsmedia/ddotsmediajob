@@ -1,4 +1,4 @@
-import { db, jobs, auditLogs, notifications, eq, and, lt, sql } from '@ddots/db';
+import { db, jobs, notifications, eq, and, lt, sql } from '@ddots/db';
 import { slugify } from '@ddots/shared';
 import { pushToUser } from './realtime';
 
@@ -88,16 +88,6 @@ export async function expireStaleJobs(): Promise<number> {
   return stale.length;
 }
 
-export async function audit(
-  actorId: string | undefined,
-  action: string,
-  entity?: string,
-  entityId?: string,
-  meta?: Record<string, unknown>,
-): Promise<void> {
-  try {
-    await db.insert(auditLogs).values({ actorId: actorId ?? null, action, entity, entityId, meta });
-  } catch (err) {
-    console.error('[audit] failed', err);
-  }
-}
+// Audit logging lives in ./audit; re-exported here so existing importers keep working.
+export { audit, diffFields, clientIp, clientUserAgent } from './audit';
+export type { AuditCtx, AuditChange, FieldDiff } from './audit';

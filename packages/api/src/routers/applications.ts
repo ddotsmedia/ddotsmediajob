@@ -104,7 +104,7 @@ export const applicationsRouter = router({
       body: `${ctx.session.user.name ?? 'A candidate'} applied.`,
       link: `/employer/jobs/${job.id}/applications`,
     });
-    await audit(ctx.session.user.id, 'application.create', 'application', app!.id);
+    await audit(ctx, 'application.create', 'application', app!.id);
     return app;
   }),
 
@@ -258,7 +258,7 @@ export const applicationsRouter = router({
         link: '/dashboard/applications',
       });
     }
-    await audit(ctx.session.user.id, 'application.status', 'application', input.applicationId, {
+    await audit(ctx, 'application.status', 'application', input.applicationId, {
       status: input.status,
     });
     return updated;

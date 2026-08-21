@@ -26,7 +26,7 @@ export const billingRouter = router({
         .update(users)
         .set({ plan: 'premium', premiumUntil: until })
         .where(eq(users.id, ctx.session.user.id));
-      await audit(ctx.session.user.id, 'billing.upgrade', 'user', ctx.session.user.id, { months: input.months });
+      await audit(ctx, 'billing.upgrade', 'user', ctx.session.user.id, { months: input.months });
       return { plan: 'premium', premiumUntil: until };
     }),
 

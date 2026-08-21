@@ -83,7 +83,7 @@ export const employerAtsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const app = await assertAppOwner(ctx, input.applicationId);
       await ctx.db.insert(applicationStages).values({ applicationId: app.id, jobId: app.jobId, stageId: input.stageId, movedBy: ctx.session.user.id, notes: input.note });
-      await audit(ctx.session.user.id, 'ats.moveApplication', 'application', app.id, { stageId: input.stageId });
+      await audit(ctx, 'ats.moveApplication', 'application', app.id, { stageId: input.stageId });
       return { ok: true };
     }),
 
@@ -124,7 +124,7 @@ export const employerAtsRouter = router({
         const app = await assertAppOwner(ctx, id);
         await ctx.db.insert(applicationStages).values({ applicationId: app.id, jobId: app.jobId, stageId: input.stageId, movedBy: ctx.session.user.id });
       }
-      await audit(ctx.session.user.id, 'ats.bulkMove', 'application', undefined, { count: input.applicationIds.length, stageId: input.stageId });
+      await audit(ctx, 'ats.bulkMove', 'application', undefined, { count: input.applicationIds.length, stageId: input.stageId });
       return { moved: input.applicationIds.length };
     }),
 
@@ -136,7 +136,7 @@ export const employerAtsRouter = router({
         await ctx.db.update(applications).set({ status: 'rejected' }).where(eq(applications.id, app.id));
         await ctx.db.insert(applicationStages).values({ applicationId: app.id, jobId: app.jobId, stageId: 'rejected', movedBy: ctx.session.user.id, notes: input.note });
       }
-      await audit(ctx.session.user.id, 'ats.bulkReject', 'application', undefined, { count: input.applicationIds.length });
+      await audit(ctx, 'ats.bulkReject', 'application', undefined, { count: input.applicationIds.length });
       return { rejected: input.applicationIds.length };
     }),
 
@@ -253,7 +253,7 @@ export const employerAtsRouter = router({
 
   decideApproval: employerProcedure.input(z.object({ id: z.string().uuid(), decision: z.enum(['approved', 'rejected']), comment: z.string().max(2000).optional() })).mutation(async ({ ctx, input }) => {
     await ctx.db.update(approvalRequests).set({ status: input.decision, approvedBy: ctx.session.user.id, comment: input.comment, decidedAt: new Date() }).where(eq(approvalRequests.id, input.id));
-    await audit(ctx.session.user.id, 'ats.decideApproval', 'approval', input.id, { decision: input.decision });
+    await audit(ctx, 'ats.decideApproval', 'approval', input.id, { decision: input.decision });
     return { ok: true };
   }),
 
@@ -290,7 +290,7 @@ export const employerAtsRouter = router({
     if (!offer || offer.employerId !== ctx.session.user.id) throw new TRPCError({ code: 'FORBIDDEN' });
     await ctx.db.update(offerLetters).set({ status: 'sent', sentAt: new Date() }).where(eq(offerLetters.id, input.id));
     if (offer.candidateId) await notify(offer.candidateId, 'offer', 'You received a job offer 🎉', { body: 'Open to review and respond.', link: `/offer/${offer.token}` });
-    await audit(ctx.session.user.id, 'ats.sendOffer', 'offer', offer.id);
+    await audit(ctx, 'ats.sendOffer', 'offer', offer.id);
     return { token: offer.token };
   }),
 
