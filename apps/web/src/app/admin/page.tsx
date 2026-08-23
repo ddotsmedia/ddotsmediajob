@@ -3,7 +3,8 @@ import { Briefcase, Users, CheckSquare, Clock, TrendingUp, FilePen, Plus } from 
 import { categoryBySlug, timeAgo } from '@ddots/shared';
 import { getApi } from '@/trpc/server';
 import { StatCard } from '@/components/dashboard/stat-card';
-import { MiniBar, HBars } from '@/components/admin/mini-bar';
+import { HBars } from '@/components/admin/mini-bar';
+import { AdminAnalyticsWidget } from '@/components/admin/admin-analytics-widget';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/primitives';
 
@@ -20,8 +21,6 @@ const STATUS_COLOR: Record<string, string> = {
 export default async function AdminDashboard() {
   const api = await getApi();
   const [stats, ov] = await Promise.all([api.admin.stats(), api.admin.overview()]);
-
-  const series = (ov.jobsSeries ?? []).map((d) => ({ label: d.label, value: Number(d.value) }));
 
   return (
     <div className="space-y-8">
@@ -58,17 +57,17 @@ export default async function AdminDashboard() {
         <StatCard icon={Users} label="Users" value={stats.users} />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="rounded-xl border bg-white p-6 lg:col-span-2">
-          <div className="mb-1 flex items-center gap-2">
-            <TrendingUp className="h-4 w-4 text-teal-500" />
-            <h2 className="font-display text-sm font-bold text-navy-900">Jobs posted — last 14 days</h2>
-          </div>
-          <MiniBar data={series.length ? series : [{ label: 'n/a', value: 0 }]} />
-        </div>
+      {/* Trends over time, with period-over-period change. Supersedes the old
+          fixed 14-day jobs bar chart, which this covers with a selectable range
+          plus application volume. */}
+      <AdminAnalyticsWidget />
 
-        <div className="rounded-xl border bg-white p-6">
-          <h2 className="mb-3 font-display text-sm font-bold text-navy-900">Top active categories</h2>
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="rounded-xl border bg-white p-6 lg:col-span-3">
+          <div className="mb-3 flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-teal-500" />
+            <h2 className="font-display text-sm font-bold text-navy-900">Top active categories</h2>
+          </div>
           <HBars data={ov.topCategories.map((c) => ({ label: categoryBySlug(c.slug ?? '')?.name ?? c.slug ?? '—', value: c.count }))} />
         </div>
       </div>
