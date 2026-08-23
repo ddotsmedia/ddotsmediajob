@@ -1,5 +1,5 @@
 import { db, jobs, users, companies, whatsappBotLogs, eq } from '@ddots/db';
-import { slugify, CATEGORY_SLUGS, EMIRATE_SLUGS, JOB_TYPES } from '@ddots/shared';
+import { slugify, CATEGORY_SLUGS, JOB_TYPES, toEmirateSlug } from '@ddots/shared';
 import { enqueueSearchSync } from '../queue';
 import type { ParsedJob } from './parser';
 
@@ -22,7 +22,9 @@ function resolveCategory(c: string | null): string {
   return 'admin';
 }
 function resolveEmirate(e: string | null): string {
-  return e && (EMIRATE_SLUGS as readonly string[]).includes(e) ? e : 'dubai';
+  // Was a case-sensitive membership test, so "SHARJAH" fell through to the
+  // default and was filed under Dubai. Normalise before giving up.
+  return toEmirateSlug(e) ?? 'dubai';
 }
 function resolveJobType(t: string | null): string {
   return t && (JOB_TYPES as readonly string[]).includes(t) ? t : 'full-time';

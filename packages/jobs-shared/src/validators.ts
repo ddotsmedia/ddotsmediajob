@@ -10,6 +10,7 @@ import {
   APPLICATION_STATUS,
   ALERT_FREQUENCY,
 } from './constants';
+import { toEmirateSlug } from './emirate-normalize';
 
 const nonEmpty = (max: number) => z.string().trim().min(1).max(max);
 
@@ -45,12 +46,24 @@ export const loginSchema = z.object({
 });
 export type LoginInput = z.infer<typeof loginSchema>;
 
+/**
+ * Emirate slug, tolerant of the casing and spacing real inputs arrive with.
+ *
+ * AI extraction, CSV and WhatsApp imports supply "DUBAI" / "Abu Dhabi" / "RAK";
+ * a bare z.enum rejects all three with "Invalid enum value". Normalising first
+ * accepts them, while anything that still isn't an emirate is rejected as before.
+ */
+const emirateSlugSchema = z.preprocess(
+  (v) => (typeof v === 'string' ? (toEmirateSlug(v) ?? v.trim().toLowerCase()) : v),
+  z.enum(EMIRATE_SLUGS as [string, ...string[]]),
+);
+
 // ─── Jobs ────────────────────────────────────────────────
 export const jobFieldsSchema = z.object({
   title: nonEmpty(160),
   description: z.string().trim().min(30).max(20000),
   categorySlug: z.enum(CATEGORY_SLUGS as [string, ...string[]]),
-  emirateSlug: z.enum(EMIRATE_SLUGS as [string, ...string[]]),
+  emirateSlug: emirateSlugSchema,
   location: z.string().trim().max(160).optional(),
   jobType: z.enum(JOB_TYPES),
   experienceLevel: z.enum(EXPERIENCE_LEVELS).optional(),
@@ -79,7 +92,7 @@ export const jobFieldsSchema = z.object({
 export const communityPostSchema = z.object({
   title: nonEmpty(160),
   categorySlug: z.enum(CATEGORY_SLUGS as [string, ...string[]]),
-  emirateSlug: z.enum(EMIRATE_SLUGS as [string, ...string[]]),
+  emirateSlug: emirateSlugSchema,
   description: z.string().trim().min(30).max(8000),
   salaryMin: z.number().int().nonnegative().nullable().optional(),
   salaryMax: z.number().int().nonnegative().nullable().optional(),

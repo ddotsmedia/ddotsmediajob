@@ -8,6 +8,7 @@ import {
   describeFilters,
   filtersToSearchParams,
   filtersFromSearchParams,
+  normalizeEmirateValue,
   STATUS_OPTIONS,
   EMIRATE_OPTIONS,
   type AdminFilters,
@@ -196,5 +197,32 @@ describe('URL synchronisation', () => {
     const f = filtersFromSearchParams(new URLSearchParams('q=nurse&status=pending&emirate=dubai&min=4000'));
     expect(f).toEqual({ q: 'nurse', status: ['pending'], emirate: ['dubai'], salaryMin: 4000 });
     expect(toQueryInput(f).status).toEqual(['pending']);
+  });
+});
+
+describe('emirate casing in the URL', () => {
+  it('resolves an uppercase emirate instead of silently dropping it', () => {
+    // ?emirate=DUBAI previously parsed to nothing: the list came back
+    // unfiltered with no error to explain why.
+    expect(filtersFromSearchParams(new URLSearchParams('emirate=DUBAI')).emirate).toEqual(['dubai']);
+  });
+
+  it('resolves display names and abbreviations', () => {
+    expect(filtersFromSearchParams(new URLSearchParams('emirate=Abu%20Dhabi')).emirate).toEqual(['abu-dhabi']);
+    expect(filtersFromSearchParams(new URLSearchParams('emirate=RAK')).emirate).toEqual(['ras-al-khaimah']);
+  });
+
+  it('keeps mixed-case lists together and drops only the unknown ones', () => {
+    const f = filtersFromSearchParams(new URLSearchParams('emirate=DUBAI,sharjah,Atlantis'));
+    expect(f.emirate).toEqual(['dubai', 'sharjah']);
+  });
+
+  it('normalizeEmirateValue is re-exported for filter code', () => {
+    expect(normalizeEmirateValue(' DUBAI ')).toBe('dubai');
+  });
+
+  it('round-trips through the URL in canonical form', () => {
+    const parsed = filtersFromSearchParams(new URLSearchParams('emirate=DUBAI'));
+    expect(filtersToSearchParams(parsed).get('emirate')).toBe('dubai');
   });
 });

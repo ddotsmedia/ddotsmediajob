@@ -1,4 +1,4 @@
-import { EMIRATES, JOB_STATUS, type JobStatus } from '@ddots/shared';
+import { EMIRATES, JOB_STATUS, toEmirateSlug, normalizeEmirateValue, type JobStatus } from '@ddots/shared';
 import { statusLabel } from './job-status-display';
 
 /**
@@ -30,6 +30,9 @@ export const STATUS_OPTIONS: FilterOption[] = JOB_STATUS.map((s) => ({ value: s,
 export const EMIRATE_OPTIONS: FilterOption[] = EMIRATES.map((e) => ({ value: e.slug, label: e.name }));
 
 export const EMPTY_FILTERS: AdminFilters = {};
+
+/** Canonical emirate casing. Re-exported so filter code has one obvious import. */
+export { normalizeEmirateValue };
 
 /** A filter key counts as active only when it actually narrows the results. */
 function isActive(value: unknown): boolean {
@@ -124,7 +127,13 @@ export function filtersFromSearchParams(sp: URLSearchParams): AdminFilters {
   const status = sp.get(PARAM.status)?.split(',').filter((s) => VALID_STATUS.has(s)) as JobStatus[] | undefined;
   if (status?.length) f.status = status;
 
-  const emirate = sp.get(PARAM.emirate)?.split(',').filter((s) => VALID_EMIRATE.has(s));
+  // Resolve casing/aliases before validating: ?emirate=DUBAI used to be
+  // dropped silently, leaving the user with an unfiltered list and no clue why.
+  const emirate = sp
+    .get(PARAM.emirate)
+    ?.split(',')
+    .map((s) => toEmirateSlug(s))
+    .filter((s): s is string => !!s && VALID_EMIRATE.has(s));
   if (emirate?.length) f.emirate = emirate;
 
   // Non-numeric or negative bounds are dropped rather than sent as NaN.

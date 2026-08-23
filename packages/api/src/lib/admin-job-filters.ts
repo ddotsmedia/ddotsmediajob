@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { db, jobs, companies, and, or, gte, lte, ilike, inArray, isNotNull } from '@ddots/db';
 import type { SQL } from 'drizzle-orm';
-import { JOB_STATUS } from '@ddots/shared';
+import { JOB_STATUS, toEmirateSlug } from '@ddots/shared';
 
 /**
  * One definition of "which jobs match" for the admin list.
@@ -15,7 +15,12 @@ export const adminJobFilterSchema = z.object({
   q: z.string().trim().max(200).optional(),
   /** An empty array means "no status filter", not "match nothing". */
   status: z.array(z.enum(JOB_STATUS)).optional(),
-  emirate: z.array(z.string().max(40)).optional(),
+  // Normalised then validated: an un-normalised 'DUBAI' previously passed the
+  // string check and matched zero rows — a silently wrong result, not an error.
+  emirate: z
+    .array(z.string().max(40))
+    .transform((arr) => arr.map((e) => toEmirateSlug(e)).filter((e): e is string => !!e))
+    .optional(),
   /** AED. Matched as an overlap against the job's own salary band. */
   salaryMin: z.number().int().min(0).max(1_000_000).optional(),
   salaryMax: z.number().int().min(0).max(1_000_000).optional(),
