@@ -24,6 +24,7 @@ import {
 import { jobFilterSchema, jobInputSchema, jobFieldsSchema, aiQuickPostSchema, communityPostSchema } from '@ddots/shared';
 import { router, publicProcedure, employerProcedure, protectedProcedure } from '../trpc';
 import { uniqueJobSlug, generateJobSlug, audit, jobExpiry } from '../lib/helpers';
+import { NEWEST_FIRST } from '../lib/job-ordering';
 import { assertJobOwner } from '../lib/authz';
 import { canTransition } from '../lib/job-state-machine';
 import { recordClick } from '../lib/cta-tracker';
@@ -109,10 +110,10 @@ export const jobsRouter = router({
     const where = and(...conds);
     const orderBy =
       input.sort === 'salary'
-        ? [desc(jobs.salaryMax)]
+        ? [desc(jobs.salaryMax), ...NEWEST_FIRST]
         : input.sort === 'relevance'
-          ? [desc(jobs.isFeatured), desc(jobs.publishedAt)]
-          : [desc(jobs.publishedAt)];
+          ? [desc(jobs.isFeatured), ...NEWEST_FIRST]
+          : NEWEST_FIRST;
 
     const [rows, totalRow] = await Promise.all([
       ctx.db.query.jobs.findMany({
@@ -149,7 +150,7 @@ export const jobsRouter = router({
     if (!src) return [];
     return ctx.db.query.jobs.findMany({
       where: and(eq(jobs.status, 'active'), eq(jobs.categorySlug, src.categorySlug), eq(jobs.emirateSlug, src.emirateSlug), sql`${jobs.id} <> ${input.jobId}`),
-      orderBy: [desc(jobs.publishedAt)],
+      orderBy: NEWEST_FIRST,
       limit: input.limit,
       with: { company: { columns: { name: true, logoUrl: true, isVerified: true } } },
     });
@@ -180,7 +181,7 @@ export const jobsRouter = router({
     async ({ ctx, input }) =>
       ctx.db.query.jobs.findMany({
         where: eq(jobs.status, 'active'),
-        orderBy: [desc(jobs.publishedAt)],
+        orderBy: NEWEST_FIRST,
         limit: input.limit,
         with: { company: { columns: { name: true, logoUrl: true } } },
       }),
@@ -191,7 +192,7 @@ export const jobsRouter = router({
     async ({ ctx, input }) =>
       ctx.db.query.jobs.findMany({
         where: eq(jobs.status, 'active'),
-        orderBy: [desc(jobs.publishedAt)],
+        orderBy: NEWEST_FIRST,
         limit: input?.limit ?? 6,
         with: { company: { columns: { name: true, logoUrl: true } } },
       }),
@@ -465,7 +466,7 @@ export const jobsRouter = router({
         where: and(...conds),
         orderBy: [
           profile?.emirateSlug ? sql`(${jobs.emirateSlug} = ${profile.emirateSlug}) desc` : desc(jobs.isFeatured),
-          desc(jobs.publishedAt),
+          ...NEWEST_FIRST,
         ],
         limit: input.limit,
         with: { company: { columns: { name: true, logoUrl: true } } },
