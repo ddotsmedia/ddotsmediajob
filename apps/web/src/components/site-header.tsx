@@ -7,6 +7,7 @@ import { Menu, X, LayoutDashboard, LogOut, Briefcase, MessageCircle } from 'luci
 import { Logo } from './logo';
 import { Button } from './ui/button';
 import { NotificationBell } from './notification-bell';
+import { SavedJobsIndicator } from './saved-jobs-indicator';
 import { DesktopMegaNav, MobileMegaNav } from './mega-nav';
 import { useLocale } from '@/lib/i18n';
 
@@ -59,6 +60,10 @@ export function SiteHeader() {
           </div>
 
           <div className="hidden items-center gap-3 md:flex">
+            {/* Renders its own link to /saved and hides itself at zero, so it needs
+                no wrapper — nesting it in a <Link> would nest anchors. Outside the
+                session check: guest bookmarks are the whole point. */}
+            <SavedJobsIndicator />
             <LangToggle />
             <Button asChild variant="accent" size="sm">
               <Link href={postHref}><Briefcase /> {t('nav.postJob')}</Link>
@@ -79,6 +84,9 @@ export function SiteHeader() {
           </div>
 
           <div className="flex items-center gap-1 md:hidden">
+            {/* Mobile too — most traffic here is mobile, and the desktop actions
+                row is md:flex only, so this would otherwise be invisible to them. */}
+            <SavedJobsIndicator />
             <LangToggle />
           </div>
           <button type="button" className="flex h-11 w-11 items-center justify-center md:hidden" onClick={() => setOpen((v) => !v)} aria-label="Toggle menu">

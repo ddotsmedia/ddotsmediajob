@@ -5,6 +5,7 @@ import { Badge } from './ui/primitives';
 import { WhatsappApplyButton } from './whatsapp-apply-button';
 import { QuickApplyButton } from './quick-apply-button';
 import { CompareButton } from './compare-button';
+import { SaveJobButton } from './save-job-button';
 import { cn } from '@/lib/utils';
 
 export type JobCardData = {
@@ -180,6 +181,8 @@ export function JobCard({ job }: { job: JobCardData }) {
           View
         </Link>
         <CompareButton slug={job.slug} title={job.title} />
+        {/* title feeds the button's aria-label ("Save Chef" / "Remove Chef from saved jobs"). */}
+        <SaveJobButton slug={job.slug} title={job.title} />
       </div>
     </div>
   );
