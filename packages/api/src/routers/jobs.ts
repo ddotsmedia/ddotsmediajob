@@ -47,6 +47,26 @@ export const jobsRouter = router({
     }),
   ),
 
+  /**
+   * Public: resolve a guest's saved-job slugs (kept in localStorage) to jobs.
+   *
+   * Filtered to `active` deliberately — this is unauthenticated, so without it
+   * anyone could read draft, pending, rejected or archived listings by guessing
+   * slugs. It also gives the UI its "no longer available" count: expired and
+   * removed jobs drop out here, and the client compares the counts.
+   */
+  savedBySlugs: publicProcedure
+    .input(z.object({ slugs: z.array(z.string().max(120)).min(1).max(100) }))
+    .query(async ({ ctx, input }) =>
+      ctx.db.query.jobs.findMany({
+        where: and(inArray(jobs.slug, input.slugs), eq(jobs.status, 'active')),
+        // isVerified feeds JobCard's verification badge.
+        with: { company: { columns: { name: true, logoUrl: true, isVerified: true } } },
+        orderBy: NEWEST_FIRST,
+        limit: 100,
+      }),
+    ),
+
   /** Autocomplete suggestions for the search bar (Meilisearch; [] when unconfigured). */
   suggest: publicProcedure
     .input(z.object({ q: z.string().max(80) }))
