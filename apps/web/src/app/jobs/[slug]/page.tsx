@@ -23,6 +23,7 @@ import {
 import { getApi } from '@/trpc/server';
 import { JobActions } from '@/components/job-actions';
 import { WhatsappApplyButton } from '@/components/whatsapp-apply-button';
+import { CandidateChatbot } from '@/components/candidate-chatbot';
 import { JobViewTracker } from '@/components/job-view-tracker';
 import { QuickApplyButton } from '@/components/quick-apply-button';
 import { CvQuickApply } from '@/components/cv-quick-apply';
@@ -462,6 +463,9 @@ export default async function JobDetailPage({ params }: Props) {
                 </CardContent>
               </Card>
             )}
+
+            {/* Answers from this listing only; applying stays with the Apply panel. */}
+            <CandidateChatbot jobId={job.id} />
 
             <SimilarJobs jobId={job.id} />
           </div>

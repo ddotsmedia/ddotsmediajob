@@ -1,6 +1,7 @@
 import { router } from './trpc';
 import { authRouter } from './routers/auth';
 import { jobsRouter } from './routers/jobs';
+import { chatbotRouter } from './routers/chatbot';
 import { applicationsRouter } from './routers/applications';
 import { jobseekersRouter } from './routers/jobseekers';
 import { employersRouter } from './routers/employers';
@@ -40,6 +41,7 @@ import { feedbackRouter } from './routers/feedback';
 export const appRouter = router({
   auth: authRouter,
   jobs: jobsRouter,
+  chatbot: chatbotRouter,
   applications: applicationsRouter,
   jobseekers: jobseekersRouter,
   employers: employersRouter,
