@@ -32,6 +32,7 @@ import { slugify, APPLICANT_LOCATIONS } from '@ddots/shared';
 import { tierAtLeast } from '../lib/verification-rules';
 import { featureFlagsAdminRouter } from './feature-flags';
 import { ctaAnalyticsRouter } from './cta-analytics';
+import { delta, rate, fillSeries, dayKeys } from '../lib/analytics-period';
 import {
   generateTotpSecret,
   encryptSecret,
@@ -606,6 +607,68 @@ export const adminRouter = router({
     }),
 
   // ── Analytics ──────────────────────────────────────────
+
+  /**
+   * Trends for the dashboard widget: a dual time series plus period-over-period
+   * KPIs. Distinct from `analytics` above, which is a current-state snapshot
+   * (group-by counts) with no notion of change over time.
+   */
+  analyticsTrends: adminProcedure
+    .input(z.object({ days: z.union([z.literal(7), z.literal(14), z.literal(30), z.literal(90)]).default(30) }))
+    .query(async ({ ctx, input }) => {
+      const d = input.days;
+      // One row per day across the window, zero-filled by generate_series so the
+      // chart's x-axis has no holes. Counts come from correlated subqueries
+      // rather than joins to keep each metric independent.
+      const seriesRes = await ctx.db.execute(sql`
+        SELECT to_char(g::date, 'YYYY-MM-DD') AS date,
+               (SELECT count(*) FROM jobs j WHERE j.created_at::date = g::date)::int AS jobs,
+               (SELECT count(*) FROM applications a WHERE a.created_at::date = g::date)::int AS applications
+        FROM generate_series(current_date - (${d - 1} || ' days')::interval, current_date, interval '1 day') g
+        ORDER BY g`);
+
+      // Totals for this window and the one immediately before it, for deltas.
+      const totalsRes = await ctx.db.execute(sql`
+        SELECT
+          (SELECT count(*) FROM jobs WHERE created_at >= current_date - (${d - 1} || ' days')::interval)::int AS jobs_cur,
+          (SELECT count(*) FROM jobs WHERE created_at >= current_date - (${2 * d - 1} || ' days')::interval
+             AND created_at < current_date - (${d - 1} || ' days')::interval)::int AS jobs_prev,
+          (SELECT count(*) FROM applications WHERE created_at >= current_date - (${d - 1} || ' days')::interval)::int AS apps_cur,
+          (SELECT count(*) FROM applications WHERE created_at >= current_date - (${2 * d - 1} || ' days')::interval
+             AND created_at < current_date - (${d - 1} || ' days')::interval)::int AS apps_prev,
+          (SELECT count(*) FROM users WHERE created_at >= current_date - (${d - 1} || ' days')::interval)::int AS users_cur,
+          (SELECT count(*) FROM users WHERE created_at >= current_date - (${2 * d - 1} || ' days')::interval
+             AND created_at < current_date - (${d - 1} || ' days')::interval)::int AS users_prev,
+          (SELECT count(*) FROM jobs WHERE status = 'active'
+             AND created_at >= current_date - (${d - 1} || ' days')::interval)::int AS approved_cur,
+          (SELECT count(*) FROM jobs WHERE status = 'rejected'
+             AND created_at >= current_date - (${d - 1} || ' days')::interval)::int AS rejected_cur`);
+
+      // postgres.js returns an array; some drivers wrap rows in { rows }.
+      const unwrap = <T,>(r: unknown): T[] =>
+        (r as { rows?: T[] }).rows ?? (r as T[]);
+
+      const rawSeries = unwrap<{ date: string; jobs: number; applications: number }>(seriesRes);
+      const series = fillSeries(rawSeries, dayKeys(new Date(), d));
+      const t = unwrap<Record<string, number>>(totalsRes)[0] ?? {};
+      const n = (k: string) => Number(t[k] ?? 0);
+
+      const decided = n('approved_cur') + n('rejected_cur');
+      return {
+        days: d,
+        series,
+        kpis: {
+          jobs: delta(n('jobs_cur'), n('jobs_prev')),
+          applications: delta(n('apps_cur'), n('apps_prev')),
+          users: delta(n('users_cur'), n('users_prev')),
+        },
+        // Share of jobs decided in this window that were approved rather than rejected.
+        approvalRate: rate(n('approved_cur'), decided),
+        /** Applications per job posted — demand per listing. */
+        appsPerJob: n('jobs_cur') > 0 ? Math.round((n('apps_cur') / n('jobs_cur')) * 10) / 10 : null,
+      };
+    }),
+
   analytics: adminProcedure.query(async ({ ctx }) => {
     const [jobsByStatus, jobsByCategory, appsByStatus, usersByRole] = await Promise.all([
       ctx.db.select({ key: jobs.status, n: count() }).from(jobs).groupBy(jobs.status),

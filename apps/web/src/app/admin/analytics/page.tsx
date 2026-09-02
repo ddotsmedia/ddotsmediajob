@@ -1,6 +1,7 @@
 import { BarChart3 } from 'lucide-react';
 import { getApi } from '@/trpc/server';
 import { HBars } from '@/components/admin/mini-bar';
+import { AdminAnalyticsWidget } from '@/components/admin/admin-analytics-widget';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,6 +22,12 @@ export default async function AdminAnalyticsPage() {
   return (
     <div>
       <div className="flex items-center gap-2"><BarChart3 className="h-5 w-5 text-teal-500" /><h1 className="font-display text-2xl font-bold text-navy-900">Analytics</h1></div>
+
+      {/* Movement over time. The cards below are current-state counts, which say
+          nothing about whether the numbers are rising or falling. */}
+      <div className="mt-6">
+        <AdminAnalyticsWidget />
+      </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <Card title={`Jobs by status (${sum(a.jobsByStatus)})`}><HBars data={a.jobsByStatus} /></Card>
