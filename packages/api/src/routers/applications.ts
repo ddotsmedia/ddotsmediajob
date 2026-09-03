@@ -11,6 +11,7 @@ import { enqueueEmail, enqueueAiScoring } from '../lib/queue';
 import { presignUpload } from '../lib/r2';
 import { enforceRateLimit, assertUploadType } from '../lib/security';
 import { sendWhapiText } from '../lib/import';
+import { pushToAdmins } from '../lib/realtime';
 
 const ipOf = (ctx: { headers?: Headers }) => ctx.headers?.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
 
@@ -50,6 +51,7 @@ export const applicationsRouter = router({
         status: 'quick_apply',
       });
       await ctx.db.update(jobs).set({ applicationCount: sql`${jobs.applicationCount} + 1` }).where(eq(jobs.id, job.id));
+      void pushToAdmins('application-received', { jobId: job.id, title: job.title });
 
       const dest = (job.contactWhatsapp ?? '').replace(/\D/g, '');
       if (dest) {
@@ -88,6 +90,7 @@ export const applicationsRouter = router({
       .update(jobs)
       .set({ applicationCount: sql`${jobs.applicationCount} + 1` })
       .where(eq(jobs.id, input.jobId));
+    void pushToAdmins('application-received', { jobId: input.jobId });
 
     await enqueueAiScoring({ applicationId: app!.id }).catch(() => {});
 

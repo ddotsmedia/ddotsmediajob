@@ -32,6 +32,7 @@ import { slugify, APPLICANT_LOCATIONS } from '@ddots/shared';
 import { tierAtLeast } from '../lib/verification-rules';
 import { featureFlagsAdminRouter } from './feature-flags';
 import { ctaAnalyticsRouter } from './cta-analytics';
+import { pushToAdmins } from '../lib/realtime';
 import { delta, rate, fillSeries, dayKeys } from '../lib/analytics-period';
 import {
   generateTotpSecret,
@@ -246,6 +247,8 @@ export const adminRouter = router({
       link: `/jobs/${job.slug}`,
     });
     await audit(ctx.session.user.id, 'job.approve', 'job', input.id);
+      // Another admin's open dashboard is now stale — nudge it to refresh.
+      void pushToAdmins('job-changed', { id: input.id, status: 'active' });
     await enqueueJobEvent({ jobId: input.id, event: 'approved' }).catch(() => {});
     return { ok: true };
   }),
@@ -259,6 +262,8 @@ export const adminRouter = router({
         .where(eq(jobs.id, input.id));
       await enqueueSearchSync({ type: 'delete', jobId: input.id });
       await audit(ctx.session.user.id, 'job.reject', 'job', input.id, { reason: input.reason });
+      // Another admin's open dashboard is now stale — nudge it to refresh.
+      void pushToAdmins('job-changed', { id: input.id, status: 'rejected' });
       return { ok: true };
     }),
 
@@ -413,6 +418,8 @@ export const adminRouter = router({
         .where(eq(jobs.id, input.id));
       await enqueueSearchSync({ type: input.status === 'active' ? 'upsert' : 'delete', jobId: input.id });
       await audit(ctx.session.user.id, 'admin.job.status', 'job', input.id, { status: input.status });
+      // Another admin's open dashboard is now stale — nudge it to refresh.
+      void pushToAdmins('job-changed', { id: input.id, status: input.status });
       if (input.status === 'active') await enqueueJobEvent({ jobId: input.id, event: 'approved' }).catch(() => {});
       return { ok: true };
     }),

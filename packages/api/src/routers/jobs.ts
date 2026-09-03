@@ -25,6 +25,7 @@ import { jobFilterSchema, jobInputSchema, jobFieldsSchema, aiQuickPostSchema, co
 import { router, publicProcedure, employerProcedure, protectedProcedure } from '../trpc';
 import { uniqueJobSlug, generateJobSlug, audit, jobExpiry } from '../lib/helpers';
 import { NEWEST_FIRST } from '../lib/job-ordering';
+import { pushToAdmins } from '../lib/realtime';
 import { assertJobOwner } from '../lib/authz';
 import { canTransition } from '../lib/job-state-machine';
 import { recordClick } from '../lib/cta-tracker';
@@ -454,6 +455,8 @@ export const jobsRouter = router({
       .returning();
 
     await audit(ctx.session.user.id, 'job.create.community', 'job', job!.id);
+    // Tell any open admin approval queue that something arrived for review.
+    void pushToAdmins('job-pending', { id: job!.id, title: job!.title });
     return job;
   }),
 

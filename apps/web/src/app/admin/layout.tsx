@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { DashboardSidebar, MobileTabs, type NavItem } from '@/components/dashboard/sidebar';
+import { RealtimeUpdatesListener } from '@/components/admin/realtime-updates-listener';
 import { trpc } from '@/trpc/react';
 
 const NAV: NavItem[] = [
@@ -79,6 +80,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   });
   return (
     <div className="mx-auto flex max-w-7xl">
+      {/* Refreshes open admin screens when another admin, an employer or a
+          candidate changes something. Inert without Pusher credentials. */}
+      <RealtimeUpdatesListener />
       <DashboardSidebar items={nav} title="Admin Panel" variant="dark" />
       <div className="min-w-0 flex-1">
         {/* Header action bar — Drafts quick access (mobile + desktop). */}
