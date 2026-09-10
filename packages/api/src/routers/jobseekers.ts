@@ -107,6 +107,11 @@ export const jobseekersRouter = router({
 
   /** Toggle profile visibility to employers (hidden ↔ employers_only). */
   toggleVisibility: protectedProcedure.mutation(async ({ ctx }) => {
+    // Creates a profile with a username below, which is what makes a row
+    // searchable — so non-jobseekers must not reach it.
+    if (ctx.session.user.role !== 'jobseeker') {
+      throw new TRPCError({ code: 'FORBIDDEN', message: 'Only jobseekers can toggle visibility' });
+    }
     const p = await ctx.db.query.jobseekerProfiles.findFirst({ where: eq(jobseekerProfiles.userId, ctx.session.user.id), columns: { visibility: true } });
     const next = p?.visibility === 'hidden' ? 'employers_only' : 'hidden';
     const username = await ensureUsername(ctx.db, ctx.session.user.id, ctx.session.user.name ?? null);
@@ -116,6 +121,9 @@ export const jobseekersRouter = router({
 
   /** Toggle the open-to-work flag. */
   toggleOpenToWork: protectedProcedure.mutation(async ({ ctx }) => {
+    if (ctx.session.user.role !== 'jobseeker') {
+      throw new TRPCError({ code: 'FORBIDDEN', message: 'Only jobseekers can toggle availability' });
+    }
     const p = await ctx.db.query.jobseekerProfiles.findFirst({ where: eq(jobseekerProfiles.userId, ctx.session.user.id), columns: { openToWork: true } });
     const next = !(p?.openToWork ?? true);
     const username = await ensureUsername(ctx.db, ctx.session.user.id, ctx.session.user.name ?? null);
@@ -253,6 +261,9 @@ export const jobseekersRouter = router({
         ne(jobseekerProfiles.visibility, 'hidden'),
         ne(jobseekerProfiles.availabilityStatus, 'not_looking'),
         sql`${jobseekerProfiles.username} IS NOT NULL`,
+        // Employers get jobseeker_profiles on every sign-in (auth bug).
+        // Filter to actual jobseekers only.
+        sql`EXISTS (SELECT 1 FROM ${users} u WHERE u.id = ${jobseekerProfiles.userId} AND u.role = 'jobseeker')`,
       ];
       if (input.category) conds.push(eq(jobseekerProfiles.categorySlug, input.category));
       if (input.emirate) conds.push(eq(jobseekerProfiles.emirateSlug, input.emirate));

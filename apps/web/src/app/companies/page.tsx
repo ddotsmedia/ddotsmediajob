@@ -39,7 +39,8 @@ export default async function CompaniesPage() {
             </span>
             <div className="min-w-0">
               <div className="flex items-center gap-1">
-                <h2 className="truncate font-display font-bold text-navy-900 group-hover:text-teal-600">{c.name}</h2>
+                {/* h3, not h2: these are cards under the page h1, not page sections. */}
+                <h3 className="truncate font-display font-bold text-navy-900 group-hover:text-teal-600">{c.name}</h3>
                 {c.isVerified && <BadgeCheck className="h-4 w-4 shrink-0 text-teal-500" />}
               </div>
               <p className="text-sm text-navy-700/60">{c.industry ?? emirateBySlug(c.emirateSlug ?? '')?.name}</p>

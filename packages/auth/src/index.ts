@@ -168,6 +168,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     // Runs only in the Node auth handler, never in edge middleware — safe to touch the DB here.
     async signIn({ user }) {
       if (!user?.id) return;
+      // Only actual jobseekers get a profile shell. Creating one for every
+      // user put employers into talent search (jobseekers.talentSearch reads
+      // this table). Undefined role falls back to 'jobseeker', matching the
+      // jwt/session callbacks above, so genuine signups are never skipped.
+      if ((user.role ?? 'jobseeker') !== 'jobseeker') return;
       await db
         .insert(jobseekerProfiles)
         .values({ userId: user.id })
