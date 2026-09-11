@@ -182,6 +182,19 @@ async function insertAdminJob(db: typeof import('@ddots/db').db, actorId: string
   return job;
 }
 
+/** Midnight today in the UAE, as a timestamptz. Computed in Postgres so "today"
+ *  doesn't depend on the Node process's TZ — `new Date().setHours(0)` on a UTC
+ *  server would start the UAE day at 04:00. */
+const UAE_TODAY = sql`(date_trunc('day', now() AT TIME ZONE 'Asia/Dubai') AT TIME ZONE 'Asia/Dubai')`;
+
+/** Distinct jobs that received a given moderation audit event since UAE midnight. */
+const auditedJobsToday = (db: typeof import('@ddots/db').db, action: string) =>
+  db
+    .select({ v: sql<number>`count(DISTINCT ${auditLogs.entityId})`.mapWith(Number) })
+    .from(auditLogs)
+    .where(and(eq(auditLogs.action, action), sql`${auditLogs.createdAt} >= ${UAE_TODAY}`))
+    .then((r) => r[0]?.v ?? 0);
+
 export const adminRouter = router({
   featureFlags: featureFlagsAdminRouter,
   ctaAnalytics: ctaAnalyticsRouter,
@@ -215,6 +228,49 @@ export const adminRouter = router({
   pendingJobsCount: adminProcedure.query(async ({ ctx }) => {
     const rows = await ctx.db.select({ v: count() }).from(jobs).where(eq(jobs.status, 'pending'));
     return rows[0]?.v ?? 0;
+  }),
+
+  /** Jobs submitted since UAE midnight, whatever their status now. Drafts are
+   *  excluded — they're unpublished imports, not postings. */
+  jobsPostedToday: adminProcedure.query(async ({ ctx }) => {
+    const rows = await ctx.db
+      .select({ v: count() })
+      .from(jobs)
+      .where(and(sql`${jobs.createdAt} >= ${UAE_TODAY}`, sql`${jobs.status} <> 'draft'`));
+    return rows[0]?.v ?? 0;
+  }),
+
+  /** Jobs approved from the queue since UAE midnight. Read from audit_logs, the
+   *  only record of *when* a decision happened: jobs has no approvedAt, and
+   *  publishedAt is also stamped for admin-created jobs that were never queued. */
+  jobsApprovedToday: adminProcedure.query(({ ctx }) => auditedJobsToday(ctx.db, 'job.approve')),
+
+  /** Jobs rejected from the queue since UAE midnight. jobs has no rejectedAt,
+   *  and updatedAt moves on any later edit, so audit_logs is the source. */
+  jobsRejectedToday: adminProcedure.query(({ ctx }) => auditedJobsToday(ctx.db, 'job.reject')),
+
+  /** Jobs created per UAE day for the last 7 days, oldest first, zero-filled. */
+  jobsTrendLast7Days: adminProcedure.query(async ({ ctx }) => {
+    // One query instead of seven. Range-joins on created_at (not a ::date cast
+    // of the column) so an index on created_at stays usable.
+    const res = await ctx.db.execute(sql`
+      SELECT to_char(d, 'YYYY-MM-DD') AS date, count(j.id)::int AS count
+      FROM generate_series(
+        (now() AT TIME ZONE 'Asia/Dubai')::date - 6,
+        (now() AT TIME ZONE 'Asia/Dubai')::date,
+        interval '1 day'
+      ) AS d
+      LEFT JOIN jobs j
+        ON j.created_at >= (d AT TIME ZONE 'Asia/Dubai')
+       AND j.created_at < ((d + interval '1 day') AT TIME ZONE 'Asia/Dubai')
+      GROUP BY d
+      ORDER BY d`);
+    // postgres.js returns an array; some drivers wrap rows in { rows }.
+    const rows = (res as { rows?: unknown[] }).rows ?? (res as unknown as unknown[]);
+    return (rows as { date: string; count: number | string }[]).map((r) => ({
+      date: r.date,
+      count: Number(r.count),
+    }));
   }),
 
   /** Full-text job search for the admin Cmd+K palette.
