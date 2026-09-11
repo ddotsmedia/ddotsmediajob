@@ -256,6 +256,21 @@ export const cvViewLogs = pgTable('cv_view_logs', {
 }, (t) => [index('cv_view_employer_idx').on(t.employerId), index('cv_view_profile_idx').on(t.profileUserId)]);
 
 // ─── Jobs ────────────────────────────────────────────────
+//
+// ⚠ The `jobs` table also has a `search_vector` tsvector column and a
+// `jobs_search_idx` GIN index (migration 0059_jobs_fts.sql). They are
+// INTENTIONALLY not declared here.
+//
+// Drizzle's relational loader selects every declared column, and 75 call sites
+// run `db.query.jobs.find*` without a `columns:` filter — including the main
+// /jobs feed, which already pulls `description`. Declaring search_vector would
+// ship a second copy of every description on the hottest query on the site
+// (verified by rendering the feed query's SQL).
+//
+// It is read only through raw SQL in admin.jobsSearch, which does not need the
+// column declared. The cost is that `drizzle-kit generate` sees the column as
+// drift and will emit `DROP COLUMN "search_vector"` — review generated
+// migrations and delete that statement if it appears.
 export const jobs = pgTable(
   'jobs',
   {

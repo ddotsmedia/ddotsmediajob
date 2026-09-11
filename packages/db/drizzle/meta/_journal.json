@@ -414,6 +414,13 @@
       "when": 1785041829239,
       "tag": "0058_upload_scans",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1789090417826,
+      "tag": "0059_jobs_fts",
+      "breakpoints": true
     }
   ]
 }

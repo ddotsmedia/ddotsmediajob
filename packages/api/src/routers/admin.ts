@@ -209,6 +209,53 @@ export const adminRouter = router({
     };
   }),
 
+  /** Cheap count for the sidebar badge — polled every 30s, so it stays a
+   *  single COUNT rather than reusing `stats` (8 counts) or `pendingJobs`
+   *  (full rows + 2 joins). */
+  pendingJobsCount: adminProcedure.query(async ({ ctx }) => {
+    const rows = await ctx.db.select({ v: count() }).from(jobs).where(eq(jobs.status, 'pending'));
+    return rows[0]?.v ?? 0;
+  }),
+
+  /** Full-text job search for the admin Cmd+K palette.
+   *  Hits the `jobs_search_idx` GIN index on the generated `search_vector`. */
+  jobsSearch: adminProcedure.input(z.object({ q: z.string().max(120) })).query(async ({ ctx, input }) => {
+    // to_tsquery is a parser, not a value slot: an unescaped ':', '&', '|', '!'
+    // or '(' from the search box raises a syntax error rather than returning
+    // nothing. Strip everything that isn't a word character before building it.
+    const terms = input.q
+      .toLowerCase()
+      .split(/[^a-z0-9]+/i)
+      .filter((w) => w.length > 0)
+      .slice(0, 6);
+    if (terms.length === 0 || input.q.trim().length < 2) return [];
+    const tsquery = terms.map((w) => `${w}:*`).join(' & ');
+
+    return ctx.db
+      .select({
+        id: jobs.id,
+        title: jobs.title,
+        slug: jobs.slug,
+        status: jobs.status,
+        emirateSlug: jobs.emirateSlug,
+        createdAt: jobs.createdAt,
+        // jobs has no company_name column — the name comes from the joined
+        // company, and companyId is nullable, so this can be null.
+        companyName: companies.name,
+      })
+      .from(jobs)
+      .leftJoin(companies, eq(jobs.companyId, companies.id))
+      // search_vector is not declared in the Drizzle schema on purpose (see the
+      // note above the jobs table in packages/db/src/schema.ts) — referencing it
+      // as raw SQL keeps it out of every other job query's SELECT list.
+      .where(sql`"jobs"."search_vector" @@ to_tsquery('english', ${tsquery})`)
+      .orderBy(
+        sql`ts_rank("jobs"."search_vector", to_tsquery('english', ${tsquery})) DESC`,
+        desc(jobs.createdAt),
+      )
+      .limit(20);
+  }),
+
   /** Approval queue. */
   pendingJobs: adminProcedure.query(async ({ ctx }) =>
     ctx.db.query.jobs.findMany({

@@ -1,5 +1,6 @@
 'use client';
 
+import { useCallback, useEffect, useState } from 'react';
 import {
   LayoutDashboard,
   CheckSquare,
@@ -28,10 +29,13 @@ import {
   ShieldAlert,
   ShieldCheck,
   Flag,
+  Search,
 } from 'lucide-react';
 import Link from 'next/link';
 import { DashboardSidebar, MobileTabs, type NavItem } from '@/components/dashboard/sidebar';
 import { RealtimeUpdatesListener } from '@/components/admin/realtime-updates-listener';
+import { JobSearchDialog } from '@/components/admin/job-search-dialog';
+import { useAdminPendingJobs } from '@/hooks/useAdminPendingJobs';
 import { trpc } from '@/trpc/react';
 
 const NAV: NavItem[] = [
@@ -71,11 +75,31 @@ const NAV: NavItem[] = [
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const stats = trpc.admin.stats.useQuery(undefined, { staleTime: 60_000 });
   const feedbackUnread = trpc.admin.feedbackUnread.useQuery(undefined, { staleTime: 60_000 });
+  // Polls on its own 30s interval and toasts on growth — stats is staleTime 60s
+  // and would make the badge lag the queue.
+  const pendingCount = useAdminPendingJobs();
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  // Cmd/Ctrl+K toggles job search from anywhere in the admin panel.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() !== 'k' || !(e.metaKey || e.ctrlKey)) return;
+      e.preventDefault();
+      // Functional update, so the handler never closes over a stale value and
+      // the listener does not need re-binding on every toggle.
+      setSearchOpen((v) => !v);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
+
+  const openSearch = useCallback(() => setSearchOpen(true), []);
   const draftCount = stats.data?.draftJobs ?? 0;
   const unread = feedbackUnread.data ?? 0;
   const nav = NAV.map((n) => {
     if (n.href === '/admin/jobs/drafts' && draftCount > 0) return { ...n, badge: draftCount };
     if (n.href === '/admin/feedback' && unread > 0) return { ...n, badge: unread };
+    if (n.href === '/admin/approvals' && pendingCount > 0) return { ...n, badge: pendingCount };
     return n;
   });
   return (
@@ -83,11 +107,33 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Refreshes open admin screens when another admin, an employer or a
           candidate changes something. Inert without Pusher credentials. */}
       <RealtimeUpdatesListener />
+      <JobSearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
       <DashboardSidebar items={nav} title="Admin Panel" variant="dark" />
       <div className="min-w-0 flex-1">
         {/* Header action bar — Drafts quick access (mobile + desktop). */}
         <div className="flex items-center justify-between gap-2 border-b border-navy-800 bg-navy-900 px-4 py-2">
           <span className="text-sm font-semibold text-white/80">Admin</span>
+          <div className="flex items-center gap-2">
+          {/* Cmd+K is invisible without a trigger, and unreachable on touch. */}
+          <button
+            type="button"
+            onClick={openSearch}
+            className="inline-flex items-center gap-2 rounded-lg border border-white/15 px-3 py-1.5 text-sm font-medium text-navy-100/80 transition-colors hover:border-teal-400 hover:text-white"
+          >
+            <Search className="h-4 w-4" />
+            <span className="hidden sm:inline">Search jobs</span>
+            <kbd className="hidden rounded border border-white/15 px-1.5 py-0.5 text-[10px] md:inline">⌘K</kbd>
+          </button>
+          {pendingCount > 0 && (
+            <Link
+              href="/admin/approvals"
+              className="inline-flex items-center gap-2 rounded-lg border border-white/15 px-3 py-1.5 text-sm font-medium text-navy-100/80 transition-colors hover:border-red-400 hover:text-white"
+            >
+              <CheckSquare className="h-4 w-4" />
+              Approvals
+              <span className="rounded-full bg-red-500 px-2 py-0.5 text-xs font-bold text-white">{pendingCount}</span>
+            </Link>
+          )}
           <Link
             href="/admin/jobs/drafts"
             className="inline-flex items-center gap-2 rounded-lg border border-white/15 px-3 py-1.5 text-sm font-medium text-navy-100/80 transition-colors hover:border-amber-400 hover:text-white"
@@ -98,6 +144,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <span className="rounded-full bg-amber-500 px-2 py-0.5 text-xs font-semibold text-white">{draftCount}</span>
             )}
           </Link>
+          </div>
         </div>
         <MobileTabs items={nav} variant="dark" />
         <div className="p-4 md:p-8">{children}</div>
