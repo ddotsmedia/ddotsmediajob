@@ -27,7 +27,10 @@ type SP = Record<string, string | string[] | undefined>;
 export default async function JobsPage({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams;
   const wantMatch = sp.sort === 'match';
-  const filter = jobFilterSchema.parse({ ...sp, sort: wantMatch ? 'newest' : sp.sort });
+  // Emirate slugs are lowercase; ?emirate=DUBAI (hand-typed, or from an
+  // external link) would otherwise throw in the enum parse and error the page.
+  const emirate = typeof sp.emirate === 'string' ? sp.emirate.toLowerCase() : sp.emirate;
+  const filter = jobFilterSchema.parse({ ...sp, emirate, sort: wantMatch ? 'newest' : sp.sort });
   const api = await getApi();
   const { jobs, total, page, totalPages } = await api.jobs.list(filter);
 
