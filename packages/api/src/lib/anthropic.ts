@@ -40,7 +40,8 @@ function getGemini(): OpenAI {
 }
 
 const GROQ_KEY = process.env.GROQ_API_KEY;
-const GROQ_MODEL = process.env.GROQ_MODEL ?? 'llama-3.3-70b-versatile';
+// See ai-router.ts — llama-3.3-70b-versatile is enterprise-only since 2026-08-16.
+const GROQ_MODEL = process.env.GROQ_MODEL ?? 'openai/gpt-oss-120b';
 let groq: OpenAI | null = null;
 function getGroq(): OpenAI {
   groq ??= new OpenAI({ apiKey: GROQ_KEY, baseURL: 'https://api.groq.com/openai/v1', timeout: 30_000, maxRetries: 1 });

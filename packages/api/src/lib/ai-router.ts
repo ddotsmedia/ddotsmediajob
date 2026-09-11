@@ -17,7 +17,9 @@ const GROQ_KEY = process.env.GROQ_API_KEY;
 const GEMINI_KEY = process.env.GOOGLE_AI_API_KEY ?? process.env.GEMINI_API_KEY;
 
 const HAIKU = process.env.CLAUDE_MODEL_FAST ?? 'claude-haiku-4-5';
-const GROQ_MODEL = process.env.GROQ_MODEL ?? 'llama-3.3-70b-versatile';
+// llama-3.3-70b-versatile became enterprise-only on 2026-08-16; gpt-oss-120b is
+// Groq's named replacement and is on the free tier. Override with GROQ_MODEL.
+const GROQ_MODEL = process.env.GROQ_MODEL ?? 'openai/gpt-oss-120b';
 const GEMINI_MODEL = process.env.GEMINI_MODEL_FAST ?? 'gemini-2.0-flash';
 
 let anthropic: Anthropic | null = null;
