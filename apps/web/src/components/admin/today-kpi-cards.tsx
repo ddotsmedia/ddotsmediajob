@@ -36,13 +36,13 @@ function Kpi({
       variants={card}
       whileHover={{ scale: 1.02 }}
       transition={{ type: 'spring', stiffness: 300 }}
-      className="rounded-xl border bg-white p-5"
+      className="rounded-xl border bg-white p-5 dark:border-navy-800 dark:bg-navy-900"
     >
       <div className={`flex items-center gap-2 text-sm font-semibold ${tone}`}>
         <Icon className="h-4 w-4" />
         {label}
       </div>
-      <div className="mt-2 font-display text-4xl font-bold text-navy-900 tabular-nums">{value}</div>
+      <div className="mt-2 font-display text-4xl font-bold tabular-nums text-navy-900 dark:text-white">{value}</div>
     </motion.div>
   );
 }
@@ -68,7 +68,7 @@ export function TodayKpiCards() {
         <Kpi label="Approved today" icon={CheckCircle2} tone="text-green-700" query={approved} />
         <Kpi label="Rejected today" icon={XCircle} tone="text-red-700" query={rejected} />
       </motion.div>
-      <p className="mt-2 text-xs text-navy-700/50">
+      <p className="mt-2 text-xs text-navy-700/50 dark:text-navy-100/50">
         UAE time · refreshes every 30s · approvals and rejections count decisions made in the approval queue
         </p>
       </section>

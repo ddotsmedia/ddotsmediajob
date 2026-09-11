@@ -1,6 +1,10 @@
 @import 'tailwindcss';
 @plugin '@tailwindcss/typography';
 
+/* Tailwind v4's `dark:` follows prefers-color-scheme by default, which no
+   toggle can override. Bind it to next-themes' .dark class on <html> instead. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   /* ─── Brand teal (logo background) ───────────────────── */
   --color-teal-50: #eef8f7;
