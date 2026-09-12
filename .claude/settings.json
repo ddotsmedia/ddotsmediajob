@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm typecheck)",
+      "Bash(pnpm -F web typecheck)",
+      "Bash(pnpm test)",
+      "Bash(pnpm -F web test)"
+    ]
+  }
+}

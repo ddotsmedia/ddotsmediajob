@@ -8,7 +8,7 @@ import { ToolHero } from '@/components/tools/tool-hero';
 export const revalidate = 600;
 
 export const metadata: Metadata = {
-  title: 'Free Zone Jobs in the UAE — DMCC, DIFC, ADGM, JAFZA',
+  title: { absolute: 'Free Zone Jobs in the UAE — DMCC, DIFC, ADGM, JAFZA' },
   description: 'Browse the latest free-zone jobs across the UAE — DMCC, DIFC, ADGM, JAFZA, SHAMS and more. Free-zone visa roles updated daily.',
   alternates: { canonical: `${SITE.url}/jobs/freezone` },
 };

@@ -20,7 +20,7 @@ import { Badge } from '@/components/ui/primitives';
 export const revalidate = 300; // ISR — refresh stats/featured every 5 min
 
 export const metadata: Metadata = {
-  title: { absolute: 'UAE Jobs 2026 — Find Jobs in Dubai, Abu Dhabi & All Emirates | DdotsMediaJobs' },
+  title: { absolute: 'UAE Jobs 2026 — Find Jobs in Dubai, Abu Dhabi & All Emirates' },
   description:
     'Find jobs in UAE across Dubai, Abu Dhabi, Sharjah and all emirates. Browse driver, nurse, accountant, engineer jobs. Walk-in interviews, visa provided & urgent hiring. Free to apply. WhatsApp-powered job portal.',
   keywords: ['UAE Jobs', 'Dubai Jobs', 'Jobs in UAE', 'Gulf Jobs', 'UAE Careers', 'UAE Vacancies'],

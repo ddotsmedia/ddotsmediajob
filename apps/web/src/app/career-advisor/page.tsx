@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { CareerAdvisorChat } from './career-advisor-client';
 
 export const metadata: Metadata = {
-  title: { absolute: 'AI Career Coach UAE — Free AI Career Advisor | DdotsMediaJobs' },
+  title: { absolute: 'AI Career Coach UAE — Free AI Career Advisor' },
   description:
     'Get free AI career advice for UAE job market. Salary negotiation, career switching, interview prep. Powered by Claude AI.',
   alternates: { canonical: '/career-advisor' },

@@ -5,7 +5,7 @@ import { SITE } from '@ddots/shared';
 import { getApi } from '@/trpc/server';
 
 export const metadata: Metadata = {
-  title: 'UAE Career Events & Webinars — DdotsMediaJobs Community',
+  title: { absolute: 'UAE Career Events & Webinars — DdotsMediaJobs Community' },
   description: 'Virtual career fairs, CV review sessions, AMAs and industry deep-dives for UAE job seekers. Free to join.',
   alternates: { canonical: `${SITE.url}/community/events` },
 };

@@ -4,7 +4,7 @@ import { ToolLandingView, type ToolConfig } from '@/components/seo/tool-landing-
 
 export const revalidate = 3600;
 export const metadata: Metadata = {
-  title: { absolute: 'Free AI Mock Interview Practice for UAE Jobs | DdotsMediaJobs' },
+  title: { absolute: 'Free AI Mock Interview Practice for UAE Jobs' },
   description: 'Practise UAE job interviews with AI for free. Role-specific questions, model answers and instant feedback to help you get hired.',
   alternates: { canonical: `${SITE.url}/tools/ai-mock-interview` },
 };

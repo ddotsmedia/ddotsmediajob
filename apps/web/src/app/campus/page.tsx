@@ -4,7 +4,7 @@ import { GraduationCap, Building2, Users, BadgeCheck, Briefcase, ArrowRight } fr
 import { CampusJobBoard } from './campus-job-board';
 
 export const metadata: Metadata = {
-  title: 'Campus Jobs UAE 2026 — Internships & Graduate Jobs',
+  title: { absolute: 'Campus Jobs UAE 2026 — Internships & Graduate Jobs' },
   description:
     'Find internships and graduate jobs in UAE. Partner universities: UAEU, AUS, HCT. Apply free.',
   alternates: { canonical: 'https://ddotsmediajobs.com/campus' },

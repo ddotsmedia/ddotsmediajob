@@ -8,7 +8,7 @@ import { ToolHero } from '@/components/tools/tool-hero';
 export const revalidate = 600;
 
 export const metadata: Metadata = {
-  title: 'UAE Blue Visa Jobs — Long-Term Residency Roles',
+  title: { absolute: 'UAE Blue Visa Jobs — Long-Term Residency Roles' },
   description: 'Jobs in the UAE that support the Blue Visa — the 10-year residency for professionals contributing to environmental and sustainability work. Visa-sponsored roles updated daily.',
   alternates: { canonical: `${SITE.url}/jobs/blue-visa` },
 };

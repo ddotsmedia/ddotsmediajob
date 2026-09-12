@@ -1,0 +1,7 @@
+# Fast pre-commit: format + lint only STAGED files (see "lint-staged" in package.json).
+# ESLINT_USE_FLAT_CONFIG=false forces the repo's .eslintrc.json and dodges a stray
+# eslint.config.js in a parent directory that otherwise breaks per-file linting.
+# Full typecheck + test suite are intentionally left to `pnpm typecheck` / CI to
+# keep commits quick.
+export ESLINT_USE_FLAT_CONFIG=false
+pnpm exec lint-staged

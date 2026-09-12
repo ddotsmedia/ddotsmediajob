@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { InterviewPrepTool } from './interview-prep-client';
 
 export const metadata: Metadata = {
-  title: { absolute: 'AI Interview Preparation UAE — Practice Free | DdotsMediaJobs' },
+  title: { absolute: 'AI Interview Preparation UAE — Practice Free' },
   description:
     'Prepare for UAE job interviews with AI. Role-specific questions, model answers, UAE workplace tips. Free AI interview coach.',
   alternates: { canonical: '/interview-prep' },

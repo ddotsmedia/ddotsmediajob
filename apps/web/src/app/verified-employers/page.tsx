@@ -4,7 +4,7 @@ import { ShieldCheck, FileCheck, Search, Star, ArrowRight } from 'lucide-react';
 import { VerifiedDirectory } from './directory';
 
 export const metadata: Metadata = {
-  title: 'Verified UAE Employers — Trusted Companies Hiring in UAE',
+  title: { absolute: 'Verified UAE Employers — Trusted Companies Hiring in UAE' },
   description:
     'Browse verified UAE employers checked by DET trade licence or MOHRE registration. Hire and apply with confidence.',
   alternates: { canonical: 'https://ddotsmediajobs.com/verified-employers' },

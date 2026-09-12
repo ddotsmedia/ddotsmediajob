@@ -21,6 +21,7 @@ import {
   getJobEmoji,
 } from '@ddots/shared';
 import { getApi } from '@/trpc/server';
+import { truncateDescription } from '@/lib/seo-utils';
 import { JobActions } from '@/components/job-actions';
 import { WhatsappApplyButton } from '@/components/whatsapp-apply-button';
 import { CandidateChatbot } from '@/components/candidate-chatbot';
@@ -92,7 +93,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // Drop the job title if the description repeats it at the start, then cap length.
   const stripTitle = (s: string) => { const t = job.title.trim(); return s.toLowerCase().startsWith(t.toLowerCase()) ? s.slice(t.length).replace(/^[\s:–-]+/, '') : s; };
   const cleanDescription = stripTitle(stripHtml(job.description)).slice(0, 100);
-  const description = `Apply for ${job.title} at ${company} in ${locationStr}. ${pay}. ${cleanDescription}. Posted ${posted}. Apply on WhatsApp.`.slice(0, 200);
+  // 155 chars at a word boundary: the old .slice(0, 200) both overshot what
+  // Google renders and cut mid-word.
+  const description = truncateDescription(
+    `Apply for ${job.title} at ${company} in ${locationStr}. ${pay}. ${cleanDescription}. Posted ${posted}. Apply on WhatsApp.`,
+  );
   const ogImage = `/jobs/${job.slug}/opengraph-image`;
   return {
     title,

@@ -4,7 +4,7 @@ import { ToolHero } from '@/components/tools/tool-hero';
 import { NafisCalculator } from '@/components/tools/nafis-calculator';
 
 export const metadata: Metadata = {
-  title: 'Nafis & Emiratisation Guide + Subsidy Calculator 2026',
+  title: { absolute: 'Nafis & Emiratisation Guide + Subsidy Calculator 2026' },
   description: 'Understand UAE Emiratisation rules and Nafis subsidies. Calculate your Emirati hiring quota, shortfall and estimated monthly salary support.',
   alternates: { canonical: `${SITE.url}/nafis-guide` },
 };

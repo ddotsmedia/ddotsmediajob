@@ -3,7 +3,7 @@ import { GraduationCap } from 'lucide-react';
 import { CourseGrid, type Course } from './courses';
 
 export const metadata: Metadata = {
-  title: 'Learn & Certify — UAE Career Courses & Certifications',
+  title: { absolute: 'Learn & Certify — UAE Career Courses & Certifications' },
   description: 'Upskill for UAE jobs. KHDA-approved providers, in-demand certifications and courses that employers value. Browse free.',
   alternates: { canonical: 'https://ddotsmediajobs.com/learn' },
 };

@@ -8,7 +8,7 @@ import { ToolHero } from '@/components/tools/tool-hero';
 export const revalidate = 600;
 
 export const metadata: Metadata = {
-  title: 'Emiratization Jobs in the UAE — Roles for UAE Nationals',
+  title: { absolute: 'Emiratization Jobs in the UAE — Roles for UAE Nationals' },
   description: 'Jobs supporting Emiratization and the Nafis programme. Private-sector roles for UAE nationals with salary support and benefits. Updated daily on DdotsMediaJobs.',
   alternates: { canonical: `${SITE.url}/jobs/emiratization` },
 };

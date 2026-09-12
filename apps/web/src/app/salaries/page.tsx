@@ -6,7 +6,7 @@ import { SALARY_ROLES } from '@/config/salary-roles';
 import { SalarySubmitForm } from '@/components/salary-submit-form';
 
 export const metadata: Metadata = {
-  title: { absolute: 'UAE Salary Guide 2026 — Real Salaries by Role & Emirate | DdotsMediaJobs' },
+  title: { absolute: 'UAE Salary Guide 2026 — Real Salaries by Role & Emirate' },
   description: 'Crowd-sourced UAE salaries by job role, emirate and experience level. See median, average and salary ranges, or share yours anonymously.',
   alternates: { canonical: '/salaries' },
 };

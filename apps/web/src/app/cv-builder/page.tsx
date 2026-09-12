@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 const OG = `/api/og?title=${encodeURIComponent('Free ATS CV Builder UAE')}&subtitle=${encodeURIComponent('AI-powered, ATS-optimized, UAE templates')}&tag=${encodeURIComponent('CV Builder')}`;
 
 export const metadata: Metadata = {
-  title: { absolute: 'Free ATS CV Builder UAE 2026 — Create Professional Resume | DdotsMediaJobs' },
+  title: { absolute: 'Free ATS CV Builder UAE 2026 — Create Professional Resume' },
   description: 'Build a professional ATS-optimized CV for UAE jobs. Free CV builder with AI assistance, UAE-specific templates, Arabic support. Download PDF instantly.',
   keywords: ['ATS CV builder UAE', 'resume builder Dubai', 'professional CV format UAE', 'free CV maker'],
   alternates: { canonical: `${SITE.url}/cv-builder` },

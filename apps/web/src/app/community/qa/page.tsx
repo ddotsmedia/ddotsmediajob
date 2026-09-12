@@ -3,7 +3,7 @@ import { SITE } from '@ddots/shared';
 import { QaHub } from './qa-hub';
 
 export const metadata: Metadata = {
-  title: 'UAE Jobs Community Q&A — Ask Career Questions',
+  title: { absolute: 'UAE Jobs Community Q&A — Ask Career Questions' },
   description: 'Ask and answer UAE job, salary, visa and career questions. Real answers from the DdotsMediaJobs community.',
   alternates: { canonical: `${SITE.url}/community/qa` },
 };

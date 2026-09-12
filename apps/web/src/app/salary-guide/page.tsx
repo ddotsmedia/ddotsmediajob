@@ -9,7 +9,7 @@ import { Card, CardContent } from '@/components/ui/primitives';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'UAE Salary Guide 2026 — Average Salaries by Role & Emirate',
+  title: { absolute: 'UAE Salary Guide 2026 — Average Salaries by Role & Emirate' },
   description: 'UAE salary data for 50+ roles across all emirates. Driver, nurse, accountant, engineer, IT salaries in Dubai, Abu Dhabi, Sharjah 2026.',
   alternates: { canonical: `${SITE.url}/salary-guide` },
 };

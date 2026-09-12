@@ -4,7 +4,7 @@ import { SITE } from '@ddots/shared';
 import { ToolHero } from '@/components/tools/tool-hero';
 
 export const metadata: Metadata = {
-  title: 'UAE Visa Types Guide 2026 — Employment, Golden, Blue & More',
+  title: { absolute: 'UAE Visa Types Guide 2026 — Employment, Golden, Blue & More' },
   description: 'A clear 2026 guide to UAE work visas: standard employment visa, free-zone visa, Golden Visa, Blue Visa, Job Exploration Visa and family sponsorship.',
   alternates: { canonical: `${SITE.url}/visa-guide` },
 };

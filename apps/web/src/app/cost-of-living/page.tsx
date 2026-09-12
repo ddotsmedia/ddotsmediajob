@@ -4,7 +4,7 @@ import { ToolHero } from '@/components/tools/tool-hero';
 import { CostOfLiving } from '@/components/tools/cost-of-living';
 
 export const metadata: Metadata = {
-  title: 'UAE Cost of Living Calculator — Dubai vs Abu Dhabi vs Sharjah',
+  title: { absolute: 'UAE Cost of Living Calculator — Dubai, Abu Dhabi, Sharjah' },
   description: 'Calculate your net salary after rent, food and transport across Dubai, Abu Dhabi and Sharjah. Compare the cost of living side by side.',
   alternates: { canonical: `${SITE.url}/cost-of-living` },
 };
